@@ -5,6 +5,8 @@
 { config, pkgs, ... }:
 
 {
+  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -40,18 +42,6 @@
     LC_TIME = "de_DE.UTF-8";
   };
 
-  # Enable the X11 windowing system.
-  services.xserver.enable = true;
-
-  # Enable the LXQT Desktop Environment.
-  services.xserver.displayManager.lightdm.enable = true;
-  services.xserver.desktopManager.lxqt.enable = true;
-
-  # Configure keymap in X11
-  services.xserver.xkb = {
-    layout = "de";
-    variant = "";
-  };
 
   # Configure console keymap
   console.keyMap = "de";
@@ -97,14 +87,15 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
+    git
     firefox
+    fd
     spotify
     steam
     vscode
-    hyprland
-    waybar            # Optional: status bar for Hyprland
-    rofi              # Optional: app launcher
-    kitty             # Optional: terminal emulator
+    waybar
+    rofi
+    kitty
     networkmanager    # Make sure you have this if you're using WiFi
   ];
 
@@ -119,7 +110,7 @@
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
-services.openssh.enable = true;
+  services.openssh.enable = true;
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ ... ];
