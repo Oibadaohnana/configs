@@ -2,7 +2,10 @@
 
 {
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
-
+  # Plasma
+  services.xserver.enable = true;
+  services.desktopManager.plasma6.enable = true;
+  services.displayManager.sddm.enable = true;
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -66,34 +69,30 @@
   programs.firefox.enable = true;
 
   nixpkgs.config.allowUnfree = true;
-
   environment.systemPackages = with pkgs; [
     git
     firefox
+    foot
+    kitty
     fd
     spotify
     steam
     vscode
-    rofi-wayland
-    foot
-    kitty
-    sway
-    swaybg
-    wayland-utils
-    wdisplays
     networkmanager
-    xwayland
     vim
     telegram-desktop
     vlc
     grim
     slurp
-    xfce.thunar
     nomacs
-    bluetuith
     gamescope
     libreoffice
-  ];
+  ] ++ (with pkgs.kdePackages; [
+    dolphin
+    kate
+    konsole  # explicitly from kdePackages now
+  ]);
+
 
   hardware.graphics = {
     enable = true;
@@ -106,7 +105,7 @@
         wayland
     ];
   };
-
+  programs.sway.enable = true;
   services.openssh.enable = true;
 
   system.stateVersion = "25.05"; # Your NixOS release version

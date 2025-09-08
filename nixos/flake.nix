@@ -13,7 +13,6 @@
       modules = [
         ./configuration.nix
         ./hardware-configuration.nix
-        ./sway.nix
       ];
     };
   };

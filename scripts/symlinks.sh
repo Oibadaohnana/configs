@@ -26,3 +26,4 @@ function make_symlink {
 }
 
 make_symlink configs/bashrc .bashrc
+make_symlink configs/swayconfig /etc/sway/swayconfig
