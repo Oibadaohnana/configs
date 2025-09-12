@@ -1,0 +1,17 @@
+
+git:
+
+git init
+# . alle Dateien in diesem Ordner
+git add . 
+#
+git add "Dateiname"
+
+git commit -m "commit message"
+
+#schick git auf den remote "repository" auf gitHub z.B.
+git push origin main
+#repository in neuen Pc schreiben
+#fuer neues aufsetzten dann auch noch harware config Device name anpassen
+git clone git@github.com:Oibadaohnana/configs
+fdisk -l
