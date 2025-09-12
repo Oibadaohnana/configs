@@ -5,7 +5,7 @@ if [[ -z $HOME ]]; then
     exit 2
 fi
 
-CONFIG=$HOME/configs
+CONFIG=$HOME/nixcfg
 
 function make_symlink {
     target="$CONFIG/$1"
@@ -26,4 +26,4 @@ function make_symlink {
 }
 
 make_symlink configs/bashrc .bashrc
-make_symlink configs/swayconfig /etc/sway/swayconfig
+make_symlink configs/swayconfig .config/sway/config

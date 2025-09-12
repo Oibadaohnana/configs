@@ -2,10 +2,16 @@
 
 {
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
-  # Plasma
+
   services.xserver.enable = true;
   services.desktopManager.plasma6.enable = true;
+  programs.sway.enable = true;
   services.displayManager.sddm.enable = true;
+  services.displayManager.defaultSession = "plasma";  # or "sway"
+
+  services.onedrive.enable = true;
+
+
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -55,9 +61,9 @@
       };
       Policy = {
         AutoEnable = true;
+      };
     };
   };
-};
   
   # User configuration
   users.users.benji = {
@@ -89,11 +95,14 @@
     libreoffice
   ] ++ (with pkgs.kdePackages; [
     dolphin
-    kate
     konsole  # explicitly from kdePackages now
   ]);
 
-
+  environment.sessionVariables = {
+    NIXOS_OZONE_WL = "1";
+    MOZ_ENABLE_WAYLAND = "1";
+    QT_QPA_PLATFORM = "wayland";
+  };
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
@@ -103,10 +112,12 @@
         vulkan-extension-layer
         vulkan-tools
         wayland
+        mesa
+        vaapiVdpau
+        libvdpau-va-gl
     ];
   };
-  programs.sway.enable = true;
-  services.openssh.enable = true;
+  #services.openssh.enable = true;
 
   system.stateVersion = "25.05"; # Your NixOS release version
 }

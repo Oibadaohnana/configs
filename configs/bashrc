@@ -1,1 +1,1 @@
-alias buildsys="sudo nixos-rebuild switch --flake ~/configs/nixos#benji"
+alias buildsys="sudo nixos-rebuild switch --flake ~/nixcfg/nixos#benji"

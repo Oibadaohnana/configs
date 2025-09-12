@@ -1,5 +1,5 @@
 {
-  description = "My NixOS config using flakes with Hyprland";
+  description = "Fuck Hyperland -- for now";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
