@@ -7,6 +7,7 @@
     enable = true;
     wrapperFeatures.gtk = true;
     extraOptions = ["--unsupported-gpu"];
+    extraConfigFile = "/home/benji/nixcfg/configs/swayconfig";
   };
 
   services.greetd = {

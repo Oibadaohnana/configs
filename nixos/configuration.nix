@@ -10,7 +10,7 @@
   services.displayManager.defaultSession = "plasma";  # or "sway"
 
   services.onedrive.enable = true;
-
+  
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
@@ -38,6 +38,7 @@
   console.keyMap = "de";
 
   services.printing.enable = true;
+  
   
 
 
