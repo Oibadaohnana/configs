@@ -3,12 +3,17 @@
 {
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  services.xserver.enable = true;
-  services.desktopManager.plasma6.enable = true;
+  #services.desktopManager.plasma6.enable = true;
+  #services.displayManager.defaultSession = "sway";  # or "plasma"
+  #services.displayManager.sddm.enable = true;
   programs.sway.enable = true;
-  services.displayManager.sddm.enable = true;
-  services.displayManager.defaultSession = "plasma";  # or "sway"
-
+  services.greetd.enable = true;
+  services.greetd.settings = {
+    default_session = {
+      command = "${pkgs.sway}/bin/sway";
+      user = "benji";
+    };
+  };
   services.onedrive.enable = true;
   
 
@@ -79,7 +84,6 @@
   environment.systemPackages = with pkgs; [
     git
     firefox
-    foot
     kitty
     fd
     spotify
@@ -90,14 +94,22 @@
     telegram-desktop
     vlc
     grim
+    wofi
     slurp
     nomacs
     gamescope
     libreoffice
-  ] ++ (with pkgs.kdePackages; [
-    dolphin
-    konsole  # explicitly from kdePackages now
-  ]);
+    pavucontrol
+    xfce.thunar
+    bluetuith
+    gvfs
+    libappindicator
+    xwayland
+  ] #++ (with pkgs.kdePackages; [
+    #dolphin
+    #konsole  # explicitly from kdePackages now
+  #])
+  ;
 
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";
