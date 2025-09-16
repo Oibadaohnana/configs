@@ -110,6 +110,7 @@
     waybar
     wl-clipboard
     mako
+    wdisplays
   ] #++ (with pkgs.kdePackages; [
     #dolphin
     #konsole  # explicitly from kdePackages now

@@ -76,8 +76,7 @@ input type:keyboard {
     bindsym $mod+F1 exec pavucontrol
     bindsym $mod+F10 exec blueman-manager
     bindsym $mod+Shift+p exec systemctl poweroff
-    bindsym Shift+F7 exec swaymsg output HDMI-A-1 enable
-    bindsym Shift+F8 exec swaymsg output HDMI-A-1 disable
+    bindsym Shift+F7 exec wdisplays
     # Kill focused window
     bindsym $mod+q kill
 
