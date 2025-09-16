@@ -14,7 +14,7 @@
       user = "benji";
     };
   };
-  services.onedrive.enable = true;
+  #services.onedrive.enable = true;
   
 
   # Bootloader.
@@ -56,6 +56,7 @@
     alsa.support32Bit = true;
     pulse.enable = true;
   };
+  services.pipewire.wireplumber.enable = true;
   services.blueman.enable = true;
   hardware.bluetooth = {
     enable = true;
@@ -105,6 +106,7 @@
     gvfs
     libappindicator
     xwayland
+    mumble
   ] #++ (with pkgs.kdePackages; [
     #dolphin
     #konsole  # explicitly from kdePackages now
@@ -115,7 +117,7 @@
     NIXOS_OZONE_WL = "1";
     MOZ_ENABLE_WAYLAND = "1";
     QT_QPA_PLATFORM = "wayland";
-  };
+  };  
   hardware.graphics = {
     enable = true;
     enable32Bit = true;

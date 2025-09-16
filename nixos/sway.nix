@@ -46,7 +46,7 @@
     brightnessctl    # screen brightness
     networkmanagerapplet
     swaylock         # lock screen
-    swayidle         # idle management
+    #swayidle         # idle management
   ];
 
   # Set default shell if needed

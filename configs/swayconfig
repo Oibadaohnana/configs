@@ -36,15 +36,15 @@ output DP-3 scale 1.2
 # Example configuration:
 #
 exec systemctl --user import-environment
-exec swayidle -w \
-        timeout 300 'swaylock -f -c 000000' \
-        timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
-        before-sleep 'swaylock -f -c 000000'
+#exec swayidle -w \
+#        timeout 300 'swaylock -f -c 000000' \
+#        timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
+#        before-sleep 'swaylock -f -c 000000'
 #
 # This will lock your screen after 300 seconds of inactivity, then turn off
 # your displays after another 300 seconds, and turn your screens back on when
 # resumed. It will also lock your screen before your computer goes to sleep.
-
+        
 ### Input configuration
 #
 # Example configuration:
@@ -72,7 +72,8 @@ input type:keyboard {
     bindsym $mod+Return exec $term
     bindsym $mod+F2 exec firefox
     bindsym $mod+F1 exec pavucontrol
-    bindsym $mod+F10 exec bluetuith
+    bindsym $mod+F10 exec blueman-manager
+    bindsym $mod+Shift+p exec systemctl poweroff
     bindsym Shift+F7 exec swaymsg output HDMI-A-1 enable
     bindsym Shift+F8 exec swaymsg output HDMI-A-1 disable
     # Kill focused window
