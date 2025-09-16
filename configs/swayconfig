@@ -76,7 +76,7 @@ input type:keyboard {
     bindsym $mod+F1 exec pavucontrol
     bindsym $mod+F10 exec blueman-manager
     bindsym $mod+Shift+p exec systemctl poweroff
-    bindsym Shift+F7 exec wdisplays
+    bindsym $mod+F7 exec wdisplays
     # Kill focused window
     bindsym $mod+q kill
 
@@ -228,7 +228,7 @@ bindsym $mod+r mode "resize"
 # Read `man 5 sway-bar` for more information about this section.
 
 default_border pixel 1
-client.focused          #FF8800 #FF8800 #FFFFFF #FFFFFF #FF8800
+client.focused          #545353 #FF8800 #FFFFFF #FFFFFF #545353
 client.unfocused        #222222 #222222 #888888 #444444 #222222
 client.focused_inactive #222222 #222222 #888888 #444444 #222222
 client.urgent           #FF0000 #FF0000 #FFFFFF #FFFFFF #FF0000
