@@ -74,9 +74,9 @@ input type:keyboard {
     bindsym $mod+Return exec $term
     bindsym $mod+F2 exec firefox
     bindsym $mod+F1 exec pavucontrol
-    bindsym $mod+F10 exec blueman-manager
+    bindsym $mod+F3 exec blueman-manager
     bindsym $mod+Shift+p exec systemctl poweroff
-    bindsym $mod+F7 exec wdisplays
+    bindsym $mod+F4 exec wdisplays
     # Kill focused window
     bindsym $mod+q kill
 
@@ -234,6 +234,8 @@ client.focused_inactive #222222 #222222 #888888 #444444 #222222
 client.urgent           #FF0000 #FF0000 #FFFFFF #FFFFFF #FF0000
 
 exec_always waybar -c ~/nixcfg/configs/waybarconfig/config -s ~/nixcfg/configs/waybarconfig/style.css
+exec_always mako
+exec swaymsg output HDMI-1-A disable
 
 # bar {
 #     position bottom

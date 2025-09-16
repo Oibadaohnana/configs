@@ -29,4 +29,6 @@ make_symlink configs/bashrc .bashrc
 make_symlink configs/swayconfig .config/sway/config
 make_symlink configs/waybarconfig/config .config/waybar/config
 make_symlink configs/waybarconfig/style.css .config/waybar/style.css
+make_symlink configs/makoconfig .config/mako/config
+
 

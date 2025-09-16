@@ -111,6 +111,7 @@
     wl-clipboard
     mako
     wdisplays
+    libnotify
   ] #++ (with pkgs.kdePackages; [
     #dolphin
     #konsole  # explicitly from kdePackages now
