@@ -233,7 +233,8 @@ client.unfocused        #222222 #222222 #888888 #444444 #222222
 client.focused_inactive #222222 #222222 #888888 #444444 #222222
 client.urgent           #FF0000 #FF0000 #FFFFFF #FFFFFF #FF0000
 
-exec waybar &
+exec_always waybar -c ~/nixcfg/configs/waybarconfig/config -s ~/nixcfg/configs/waybarconfig/style.css
+
 # bar {
 #     position bottom
 #     # When the status_command prints a new line to stdout, swaybar updates.
