@@ -227,6 +227,12 @@ bindsym $mod+r mode "resize"
 # Status Bar:
 #
 # Read `man 5 sway-bar` for more information about this section.
+
+default_border pixel 1
+client.focused          #FF8800 #FF8800 #FFFFFF #FFFFFF #FF8800
+client.unfocused        #222222 #222222 #888888 #444444 #222222
+client.focused_inactive #222222 #222222 #888888 #444444 #222222
+client.urgent           #FF0000 #FF0000 #FFFFFF #FFFFFF #FF0000
 bar {
     position bottom
 
@@ -236,9 +242,13 @@ bar {
     status_command /home/benji/nixcfg/scripts/swaybar.sh
 
     colors {
-        statusline #ffffff
-        background #323232
-        inactive_workspace #32323200 #32323200 #5c5c5c
+        focused_workspace  #FF8800 #FF8800 #000000
+        active_workspace   #444444 #444444 #FFFFFF
+        inactive_workspace #222222 #222222 #888888
+        urgent_workspace   #FF0000 #FF0000 #FFFFFF
+        binding_mode       #990000 #990000 #FFFFFF
+        background         #000000
+        separator          #666666
     }
 }
 
