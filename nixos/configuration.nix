@@ -108,6 +108,8 @@
     xwayland
     mumble
     waybar
+    wl-clipboard
+    mako
   ] #++ (with pkgs.kdePackages; [
     #dolphin
     #konsole  # explicitly from kdePackages now
