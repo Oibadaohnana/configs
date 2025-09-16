@@ -25,5 +25,5 @@ function make_symlink {
     fi
 }
 
-make_symlink configs/configs/bashrc .bashrc
-make_symlink configs/configs/swayconfig .config/sway/config
+make_symlink configs/bashrc .bashrc
+make_symlink configs/swayconfig .config/sway/config
