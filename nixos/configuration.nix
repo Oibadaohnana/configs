@@ -107,6 +107,7 @@
     libappindicator
     xwayland
     mumble
+    waybar
   ] #++ (with pkgs.kdePackages; [
     #dolphin
     #konsole  # explicitly from kdePackages now
@@ -117,7 +118,12 @@
     NIXOS_OZONE_WL = "1";
     MOZ_ENABLE_WAYLAND = "1";
     QT_QPA_PLATFORM = "wayland";
-  };  
+  };
+
+  environment.variables = {
+    GTK_ICON_THEME = "Papirus-Dark";
+  };
+  
   hardware.graphics = {
     enable = true;
     enable32Bit = true;

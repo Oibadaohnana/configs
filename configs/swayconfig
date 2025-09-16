@@ -55,7 +55,6 @@ input "Logitech USB Receiver" {
 input type:touchpad {
     dwt enabled
     tap enabled
-    natural_scroll enabled
     middle_emulation enabled
 }
 #
@@ -233,23 +232,23 @@ client.focused          #FF8800 #FF8800 #FFFFFF #FFFFFF #FF8800
 client.unfocused        #222222 #222222 #888888 #444444 #222222
 client.focused_inactive #222222 #222222 #888888 #444444 #222222
 client.urgent           #FF0000 #FF0000 #FFFFFF #FFFFFF #FF0000
-bar {
-    position bottom
 
-    # When the status_command prints a new line to stdout, swaybar updates.
-    # The default just shows the current date and time.
-    #status_command while date +'%Y-%m-%d %X'; do sleep 1; done
-    status_command /home/benji/nixcfg/scripts/swaybar.sh
-
-    colors {
-        focused_workspace  #FF8800 #FF8800 #000000
-        active_workspace   #444444 #444444 #FFFFFF
-        inactive_workspace #222222 #222222 #888888
-        urgent_workspace   #FF0000 #FF0000 #FFFFFF
-        binding_mode       #990000 #990000 #FFFFFF
-        background         #000000
-        separator          #666666
-    }
-}
+exec waybar &
+# bar {
+#     position bottom
+#     # When the status_command prints a new line to stdout, swaybar updates.
+#     # The default just shows the current date and time.
+#     #status_command while date +'%Y-%m-%d %X'; do sleep 1; done
+#     status_command /home/benji/nixcfg/scripts/swaybar.sh
+#     colors {
+#         focused_workspace  #FF8800 #FF8800 #000000
+#         active_workspace   #444444 #444444 #FFFFFF
+#         inactive_workspace #222222 #222222 #888888
+#         urgent_workspace   #FF0000 #FF0000 #FFFFFF
+#         binding_mode       #990000 #990000 #FFFFFF
+#         background         #0000002
+#         separator          #666666
+#     }
+# }
 
 # include /etc/sway/config.d/*

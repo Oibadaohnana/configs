@@ -45,7 +45,7 @@
     slurp       # screenshots
     brightnessctl    # screen brightness
     networkmanagerapplet
-    swaylock         # lock screen
+    waybar
     #swayidle         # idle management
   ];
 
