@@ -26,3 +26,9 @@ Created symlink '/home/benji/.config/systemd/user/plasma-workspace@.service' →
 [benji@Bdawg:~]$ systemctl --user mask ksmserver-logout-greeter.service
 Unit ksmserver-logout-greeter.service does not exist, proceeding anyway.
 Created symlink '/home/benji/.config/systemd/user/ksmserver-logout-greeter.service' → '/dev/null'.
+
+#Update Flakes:
+nix flakes update
+ls -la /home/benji/nixcfg/.git/objects 
+# wenn irgendein .git nicht von User controlled dann:
+sudo chown -R benji:users /home/benji/nixcfg/.git
