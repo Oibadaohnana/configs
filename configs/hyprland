@@ -1,0 +1,149 @@
+########################################
+# Variables
+########################################
+$mod = SUPER
+$term = kitty
+$menu = wmenu-run
+
+########################################
+# Monitors
+########################################
+# Equivalent of sway "output DP-3 mode 2560x1440@180Hz"
+monitor=DP-3,2560x1440@180,0x0,1
+
+# To disable/enable HDMI-A-1, you can use keybinds:
+bind=$mod,SHIFT,M,exec,hyprctl keyword monitor HDMI-A-1,disable
+bind=$mod,SHIFT,N,exec,hyprctl keyword monitor HDMI-A-1,preferred,auto,1
+
+########################################
+# Inputs
+########################################
+# Logitech mouse
+device:Logitech USB Receiver {
+    sensitivity=0
+    accel_profile=flat
+}
+
+# Touchpad
+device:touchpad {
+    natural_scroll=no
+    tap-to-click=yes
+    middle_button_emulation=yes
+    scroll_factor=0.5
+}
+
+# Keyboard
+device:keyboard {
+    kb_layout=de
+    kb_options=caps:super
+}
+
+########################################
+# Keybinds
+########################################
+# Terminal / Apps
+bind=$mod,RETURN,exec,$term
+bind=$mod,F2,exec,firefox
+bind=$mod,F1,exec,pavucontrol
+bind=$mod,F3,exec,blueman-manager
+bind=$mod,SHIFT,P,exec,systemctl poweroff
+bind=$mod,F4,exec,wdisplays
+bind=$mod,D,exec,$menu
+bind=$mod,Q,killactive
+
+# Reload config
+bind=$mod,SHIFT,C,exec,hyprctl reload
+
+# Exit session (no swaynag equivalent, you could make a script)
+bind=$mod,SHIFT,E,exit
+
+# Focus movement
+bind=$mod,H,movefocus,l
+bind=$mod,J,movefocus,d
+bind=$mod,K,movefocus,u
+bind=$mod,L,movefocus,r
+bind=$mod,LEFT,movefocus,l
+bind=$mod,DOWN,movefocus,d
+bind=$mod,UP,movefocus,u
+bind=$mod,RIGHT,movefocus,r
+
+# Move windows
+bind=$mod,SHIFT,H,movewindow,l
+bind=$mod,SHIFT,J,movewindow,d
+bind=$mod,SHIFT,K,movewindow,u
+bind=$mod,SHIFT,L,movewindow,r
+bind=$mod,SHIFT,LEFT,movewindow,l
+bind=$mod,SHIFT,DOWN,movewindow,d
+bind=$mod,SHIFT,UP,movewindow,u
+bind=$mod,SHIFT,RIGHT,movewindow,r
+
+# Workspaces
+bind=$mod,1,workspace,1
+bind=$mod,2,workspace,2
+bind=$mod,3,workspace,3
+bind=$mod,4,workspace,4
+bind=$mod,5,workspace,5
+bind=$mod,6,workspace,6
+bind=$mod,7,workspace,7
+bind=$mod,8,workspace,8
+bind=$mod,9,workspace,9
+bind=$mod,0,workspace,10
+
+bind=$mod,SHIFT,1,movetoworkspace,1
+bind=$mod,SHIFT,2,movetoworkspace,2
+bind=$mod,SHIFT,3,movetoworkspace,3
+bind=$mod,SHIFT,4,movetoworkspace,4
+bind=$mod,SHIFT,5,movetoworkspace,5
+bind=$mod,SHIFT,6,movetoworkspace,6
+bind=$mod,SHIFT,7,movetoworkspace,7
+bind=$mod,SHIFT,8,movetoworkspace,8
+bind=$mod,SHIFT,9,movetoworkspace,9
+bind=$mod,SHIFT,0,movetoworkspace,10
+
+# Fullscreen / Floating toggle
+bind=$mod,F,fullscreen,1
+bind=$mod,SHIFT,SPACE,togglefloating
+
+# Toggle between floating/tiling areas (rough equivalent: cyclenext)
+bind=$mod,SPACE,cyclenext
+
+# Resizing windows (resize mode isn’t in Hyprland, but direct binds work)
+bind=$mod,R,submap,resize
+
+submap=resize
+    bind=,H,resizeactive,-10 0
+    bind=,J,resizeactive,0 10
+    bind=,K,resizeactive,0 -10
+    bind=,L,resizeactive,10 0
+    bind=,RETURN,submap,reset
+    bind=,ESCAPE,submap,reset
+submap=reset
+
+# Volume / Brightness
+bind=,XF86AudioMute,exec,pactl set-sink-mute @DEFAULT_SINK@ toggle
+bind=,XF86AudioLowerVolume,exec,pactl set-sink-volume @DEFAULT_SINK@ -5%
+bind=,XF86AudioRaiseVolume,exec,pactl set-sink-volume @DEFAULT_SINK@ +5%
+bind=,XF86AudioMicMute,exec,pactl set-source-mute @DEFAULT_SOURCE@ toggle
+bind=,XF86MonBrightnessDown,exec,brightnessctl set 5%-
+bind=,XF86MonBrightnessUp,exec,brightnessctl set 5%+
+bind=,F11,exec,/home/benji/nixcfg/scripts/screenshot.sh
+
+########################################
+# Appearance
+########################################
+decoration {
+    rounding=5
+    active_opacity=1.0
+    inactive_opacity=0.9
+    blur=true
+}
+
+col.active_border = rgba(ff8800ff)
+col.inactive_border = rgba(222222ff)
+col.urgent_border = rgba(ff0000ff)
+
+########################################
+# Autostart
+########################################
+exec-once = waybar -c ~/nixcfg/configs/waybarconfig/config -s ~/nixcfg/configs/waybarconfig/style.css
+exec-once = mako

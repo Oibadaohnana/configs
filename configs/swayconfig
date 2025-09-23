@@ -26,7 +26,8 @@ set $menu wmenu-run
 # Example configuration:
 #
 #   output HDMI-A-1 resolution 1920x1080 position 1920,0
-output DP-3 scale 1.2
+#output DP-3 scale 1
+output DP-3 mode 2560x1440@180Hz
     bindsym $mod+Shift+m output "HDMI-A-1" disable
     bindsym $mod+Shift+n output "HDMI-A-1" enable
 exec swaymsg output HDMI-A-1 disable
@@ -75,7 +76,8 @@ input type:keyboard {
 #
     # Start a terminal
     bindsym $mod+Return exec $term
-    bindsym $mod+F2 exec firefox
+    bindsym F1 exec firefox
+    bindsym F2 exec firefox --new-tab about:blank
     bindsym $mod+F1 exec pavucontrol
     bindsym $mod+F3 exec blueman-manager
     bindsym $mod+Shift+p exec systemctl poweroff
