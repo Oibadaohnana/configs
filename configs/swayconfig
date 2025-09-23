@@ -224,7 +224,7 @@ bindsym $mod+r mode "resize"
     bindsym --locked XF86MonBrightnessDown exec brightnessctl set 5%-
     bindsym --locked XF86MonBrightnessUp exec brightnessctl set 5%+
     # Special key to take a screenshot with grim
-    bindsym F11 exec /home/benji/nixcfg/scripts/screenshot.sh
+    bindsym $mod+F11 exec /home/benji/nixcfg/scripts/screenshot.sh
 
 
 #
