@@ -27,8 +27,12 @@ Created symlink '/home/benji/.config/systemd/user/plasma-workspace@.service' →
 Unit ksmserver-logout-greeter.service does not exist, proceeding anyway.
 Created symlink '/home/benji/.config/systemd/user/ksmserver-logout-greeter.service' → '/dev/null'.
 
+
 #Update Flakes:
 nix flakes update
 ls -la /home/benji/nixcfg/.git/objects 
+#delete old generations
+sudo nix-collect-garbage -5d
+sudo nixos-rebuild boot --flake ~/nixos#benji
 # wenn irgendein .git nicht von User controlled dann:
 sudo chown -R benji:users /home/benji/nixcfg/.git
