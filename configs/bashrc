@@ -1,1 +1,2 @@
 alias buildsys="sudo nixos-rebuild switch --flake /home/benji/nixcfg/nixos/#benji"
+alias onesync="onedrive --synchronize --verbose"
