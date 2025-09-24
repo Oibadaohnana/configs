@@ -117,11 +117,8 @@
     libnotify
     python3
     uv
-  ] #++ (with pkgs.kdePackages; [
-    #dolphin
-    #konsole  # explicitly from kdePackages now
-  #])
-  ;
+    beyond-all-reason
+  ];
 
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";
