@@ -28,6 +28,8 @@ set $menu wmenu-run
 #   output HDMI-A-1 resolution 1920x1080 position 1920,0
 #output DP-3 scale 1
 output DP-3 mode 2560x1440@180Hz
+output DP-3 render_bit_depth 10
+output HDMI-A-1 mode 1920x1080@60Hz
     bindsym $mod+Shift+m output "HDMI-A-1" disable
     bindsym $mod+Shift+n output "HDMI-A-1" enable
 exec swaymsg output HDMI-A-1 disable
