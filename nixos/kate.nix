@@ -6,5 +6,6 @@
     omnisharp-roslyn
     kdePackages.konsole
     dotnet-sdk
-  ];
+    mono
+    ];
 }
