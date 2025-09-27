@@ -92,7 +92,6 @@
     fd
     spotify
     steam
-    vscode
     networkmanager
     vim
     telegram-desktop
