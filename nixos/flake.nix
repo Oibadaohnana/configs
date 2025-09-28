@@ -14,6 +14,7 @@
         ./configuration.nix
         ./hardware-configuration.nix
         ./vscode.nix
+        ./emacs.nix
         ./sway.nix
       ];
     };

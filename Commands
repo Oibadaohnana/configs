@@ -35,6 +35,7 @@ ls -la /home/benji/nixcfg/.git/objects
 sudo nix-collect-garbage -d
 sudo nixos-rebuild boot --flake nixcfg/nixos#benji
 sudo nixos-rebuild boot --flake ~/nixos#benji
+sudo nixos-rebuild boot --flake /home/benji/nixcfg/nixos#benji
 #wenn irgendein .git nicht von User controlled dann:
 sudo chown -R benji:users /home/benji/nixcfg/.git
 

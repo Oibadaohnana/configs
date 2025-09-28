@@ -8,8 +8,8 @@ namespace DodgeGame
             Unit playerUnit = new Unit();
 
             playerUnit.unitGraphic = "@";
-            playerUnit.x = 10;
-            playerUnit.y = 15;
+            playerUnit.x = 5;
+            playerUnit.y = 5;
 
             Console.SetCursorPosition(playerUnit.x,playerUnit.y);
             Console.Write(playerUnit.unitGraphic);
@@ -21,4 +21,3 @@ namespace DodgeGame
         }
     }
 }
-
