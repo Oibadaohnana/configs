@@ -14,7 +14,6 @@
         ./configuration.nix
         ./hardware-configuration.nix
         ./vscode.nix
-        ./kate.nix
         ./sway.nix
       ];
     };
