@@ -3,32 +3,9 @@
     "target_sets": [
         {
             "cmake_config": "",
-            "directory": "/home/benji/",
+            "directory": "/home/benji/nixcfg/scripts/csharp",
             "loaded_via_cmake": false,
-            "name": "Target Set",
-            "targets": [
-                {
-                    "build_cmd": "",
-                    "name": "Configure",
-                    "run_cmd": ""
-                },
-                {
-                    "build_cmd": "",
-                    "name": "Build C#",
-                    "run_cmd": ""
-                },
-                {
-                    "build_cmd": "",
-                    "name": "Build Command",
-                    "run_cmd": ""
-                }
-            ]
-        },
-        {
-            "cmake_config": "",
-            "directory": "/home/benji/nixcfg/csharp/build",
-            "loaded_via_cmake": false,
-            "name": "Builds C#",
+            "name": "Builds C#Proj",
             "targets": [
                 {
                     "build_cmd": "dotnet ",
@@ -39,6 +16,24 @@
                     "build_cmd": "build %{CurrentDocument:Path}",
                     "name": "Build Command",
                     "run_cmd": ""
+                },
+                {
+                    "build_cmd": "",
+                    "name": "Run/Execute",
+                    "run_cmd": ""
+                }
+            ]
+        },
+        {
+            "cmake_config": "",
+            "directory": "/home/benji/nixcfg/scripts/csharp",
+            "loaded_via_cmake": false,
+            "name": "BuildC#.cs",
+            "targets": [
+                {
+                    "build_cmd": "csc %f",
+                    "name": "build",
+                    "run_cmd": "mono %n.exe"
                 }
             ]
         }

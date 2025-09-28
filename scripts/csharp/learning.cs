@@ -2,12 +2,15 @@ using System;
 
 namespace DodgeGame
 {
-    calss DodgeGameMain;
+    class DodgeGameMain
+    {
         static void Main()
         {
-            Console.Write("asd");
+            int x=10;
+            int y=10;
+            Console.SetCursorPosition(x,y);
+            Console.Write("|");
         }
-
-
+    }
 }
-    
+
