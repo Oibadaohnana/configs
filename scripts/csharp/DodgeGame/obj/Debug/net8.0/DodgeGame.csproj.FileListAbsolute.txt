@@ -1,0 +1,15 @@
+/home/benji/nixcfg/scripts/csharp/DodgeGame/bin/Debug/net8.0/DodgeGame
+/home/benji/nixcfg/scripts/csharp/DodgeGame/bin/Debug/net8.0/DodgeGame.deps.json
+/home/benji/nixcfg/scripts/csharp/DodgeGame/bin/Debug/net8.0/DodgeGame.runtimeconfig.json
+/home/benji/nixcfg/scripts/csharp/DodgeGame/bin/Debug/net8.0/DodgeGame.dll
+/home/benji/nixcfg/scripts/csharp/DodgeGame/bin/Debug/net8.0/DodgeGame.pdb
+/home/benji/nixcfg/scripts/csharp/DodgeGame/obj/Debug/net8.0/DodgeGame.GeneratedMSBuildEditorConfig.editorconfig
+/home/benji/nixcfg/scripts/csharp/DodgeGame/obj/Debug/net8.0/DodgeGame.AssemblyInfoInputs.cache
+/home/benji/nixcfg/scripts/csharp/DodgeGame/obj/Debug/net8.0/DodgeGame.AssemblyInfo.cs
+/home/benji/nixcfg/scripts/csharp/DodgeGame/obj/Debug/net8.0/DodgeGame.csproj.CoreCompileInputs.cache
+/home/benji/nixcfg/scripts/csharp/DodgeGame/obj/Debug/net8.0/DodgeGame.sourcelink.json
+/home/benji/nixcfg/scripts/csharp/DodgeGame/obj/Debug/net8.0/DodgeGame.dll
+/home/benji/nixcfg/scripts/csharp/DodgeGame/obj/Debug/net8.0/refint/DodgeGame.dll
+/home/benji/nixcfg/scripts/csharp/DodgeGame/obj/Debug/net8.0/DodgeGame.pdb
+/home/benji/nixcfg/scripts/csharp/DodgeGame/obj/Debug/net8.0/DodgeGame.genruntimeconfig.cache
+/home/benji/nixcfg/scripts/csharp/DodgeGame/obj/Debug/net8.0/ref/DodgeGame.dll

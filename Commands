@@ -35,5 +35,10 @@ ls -la /home/benji/nixcfg/.git/objects
 sudo nix-collect-garbage -d
 sudo nixos-rebuild boot --flake nixcfg/nixos#benji
 sudo nixos-rebuild boot --flake ~/nixos#benji
-# wenn irgendein .git nicht von User controlled dann:
+#wenn irgendein .git nicht von User controlled dann:
 sudo chown -R benji:users /home/benji/nixcfg/.git
+
+#csharp
+dotnet new console -n <Project NAME>
+dotnet build
+dotnet run
