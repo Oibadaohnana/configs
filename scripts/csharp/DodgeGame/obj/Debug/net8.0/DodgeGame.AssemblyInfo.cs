@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DodgeGame")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7f43fd2a29014ff022b4d8edce40d08625c8ef91")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f26594e710665e931dbfa63b2667c10a0da084de")]
 [assembly: System.Reflection.AssemblyProductAttribute("DodgeGame")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DodgeGame")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

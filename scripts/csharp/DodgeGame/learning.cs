@@ -1,23 +1,11 @@
 using System;
-namespace DodgeGame
+namespace Learning
 {
-    class DodgeGameMain
+    class Program
     {
-        static void Main()
+        static void Main(string[] args)
         {
-            Unit playerUnit = new Unit();
-
-            playerUnit.unitGraphic = "@";
-            playerUnit.x = 5;
-            playerUnit.y = 5;
-
-            Console.SetCursorPosition(playerUnit.x,playerUnit.y);
-            Console.Write(playerUnit.unitGraphic);
-
-            Console.SetCursorPosition(
-                0,
-                Console.WindowHeight-1
-            );
+            Console.WriteLine("Hello, World!");
         }
     }
 }
