@@ -104,6 +104,7 @@
     nodejs_24
     electron
     discord
+    brightnessctl
   ];
 
   hardware.graphics = {
