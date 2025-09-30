@@ -2,6 +2,7 @@
 import time
 import notify2
 
+#click anschauen! -> library für Inputs
 def get_inputs():
     try:
         set_timer = input("Timer: ").split()
@@ -9,6 +10,10 @@ def get_inputs():
         in1 = in2 = 0
         time_minute_or_second1 = time_minute_or_second2 = None
 
+        if len(set_timer) == 1:
+            in1 = int(set_timer[0])
+            time_minute_or_second1 = "s"
+        
         if len(set_timer) >= 2:
             in1 = int(set_timer[0])
             time_minute_or_second1 = set_timer[1]
@@ -33,7 +38,7 @@ def timer(time_processed):
         total_seconds += in2
     else:
         total_seconds = total_seconds
-    total_minutes = total_seconds/60
+    total_minutes = round(total_seconds/60, 2)
     print(f"Time has been set for {total_minutes} minutes")
     while total_seconds != 0:
         mins, seconds = divmod(total_seconds, 60)
@@ -43,11 +48,8 @@ def timer(time_processed):
         total_seconds-=1
     print("\ntimes over!")
     notify2.init("Timer.py")
-    n = notify2.Notification("Time IS OVER MOOOIIIT!!")
+    n = notify2.Notification("Time IS OVER MOOOIIIT!! YOU GOT YOUR TROUSERS ONNN?!")
     n.show()
-    
-        
-            
 
 def main():
     time_processed = get_inputs()

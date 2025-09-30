@@ -98,7 +98,6 @@
     mumble
     libnotify
     python3
-
     uv
     beyond-all-reason
     nodejs_24
