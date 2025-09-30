@@ -52,7 +52,7 @@ def timer(time_processed):
     n = notify2.Notification("Time IS OVER MOOOIIIT!! YOU GOT YOUR TROUSERS ONNN?!")
     n.show()
     file ="/home/benji/nixcfg/scripts/python/Tones_Trousers.ogg"
-    os.system(f'vlc "{file}" --play-and-exit')
+    os.system(f'cvlc "{file}" --play-and-exit')
 
 def main():
     time_processed = get_inputs()
