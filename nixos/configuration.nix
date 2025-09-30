@@ -75,6 +75,7 @@
 
   nixpkgs.config.allowUnfree = true;
   environment.systemPackages = with pkgs; [
+    pulseaudio
     firefox-bin
     git
     firefox
