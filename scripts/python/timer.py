@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import time
 import notify2
+import os
 
 #click anschauen! -> library für Inputs
 def get_inputs():
@@ -50,6 +51,8 @@ def timer(time_processed):
     notify2.init("Timer.py")
     n = notify2.Notification("Time IS OVER MOOOIIIT!! YOU GOT YOUR TROUSERS ONNN?!")
     n.show()
+    file ="/home/benji/nixcfg/scripts/python/Tones_Trousers.ogg"
+    os.system(f'vlc "{file}" --play-and-exit')
 
 def main():
     time_processed = get_inputs()
