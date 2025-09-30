@@ -6,7 +6,6 @@
   programs.nix-ld.libraries = with pkgs; [
     stdenv.cc.cc glibc zlib curl openssl icu
   ];
-
   programs.sway.enable = true;
   services.greetd.enable = true;
   services.greetd.settings = {
@@ -99,6 +98,7 @@
     mumble
     libnotify
     python3
+
     uv
     beyond-all-reason
     nodejs_24

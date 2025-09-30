@@ -20,7 +20,7 @@
         "sway/window"
     ],
     "modules-right": [
-        "mpd",
+        //"mpd",
         "battery",
         "battery#bat2",
         "clock",
@@ -74,8 +74,8 @@
     },
     "clock": {
         // "timezone": "America/New_York",
-        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
-        "format": "{:%d.%m.%Y | %H:%M}"
+        "format": "{:%d.%m.%Y | %H:%M}",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
     },
     "cpu": {
         "format": "{usage}% ",
