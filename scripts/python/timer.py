@@ -13,7 +13,7 @@ def get_inputs():
 
         if len(set_timer) == 1:
             in1 = int(set_timer[0])
-            time_minute_or_second1 = "s"
+            time_minute_or_second1 = "m"
         
         if len(set_timer) >= 2:
             in1 = int(set_timer[0])

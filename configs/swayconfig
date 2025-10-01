@@ -27,6 +27,10 @@ set $menu wmenu-run
 #
 #   output HDMI-A-1 resolution 1920x1080 position 1920,0
 #output DP-3 scale 1
+#exec --no-startup-id wlsunset \
+#  -l 50.59 -L 8.68 \
+#  -t 3700 -T 5500
+
 output DP-3 mode 2560x1440@180Hz
 output DP-3 render_bit_depth 10
 output HDMI-A-1 mode 1920x1080@60Hz
@@ -243,6 +247,7 @@ client.urgent           #FF0000 #FF0000 #FFFFFF #FFFFFF #FF0000
 
 exec_always waybar -c ~/nixcfg/configs/waybarconfig/config -s ~/nixcfg/configs/waybarconfig/style.css
 exec_always mako
+exec_always wlsunset -l 50.59 -L 8.69 -t 4000 -T 6500
 
 
 # bar {

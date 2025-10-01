@@ -104,6 +104,7 @@
     electron
     discord
     brightnessctl
+    wlsunset
   ];
 
   hardware.graphics = {
@@ -120,6 +121,5 @@
       libvdpau-va-gl
     ];
   };
-
   system.stateVersion = "25.05";
 }
