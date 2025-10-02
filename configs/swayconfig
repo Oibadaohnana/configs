@@ -247,7 +247,7 @@ client.urgent           #FF0000 #FF0000 #FFFFFF #FFFFFF #FF0000
 
 exec_always waybar -c ~/nixcfg/configs/waybarconfig/config -s ~/nixcfg/configs/waybarconfig/style.css
 exec_always mako
-exec_always wlsunset -l 50.59 -L 8.69 -t 4000 -T 6500
+exec_always wlsunset -l 50.59 -L 8.69 -t 3600 -T 6500
 
 
 # bar {

@@ -17,7 +17,7 @@
   services.onedrive.enable = true;
   systemd.user.services.onedrive.enable = false;
   systemd.user.services."onedrive-launcher".enable = false;
-
+  
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
