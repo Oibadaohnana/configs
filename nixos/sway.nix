@@ -12,6 +12,8 @@
       mako
       wdisplays
       wmenu
+      swayidle
+      swaylock
     ];
     wrapperFeatures = {
       base = true;

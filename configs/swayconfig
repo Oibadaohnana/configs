@@ -41,6 +41,7 @@ exec swaymsg output HDMI-A-1 disable
 output DP-11 mode 2560x1440@143.999Hz
 output DP-11 position 1128 0
 output eDP-1 position 0 0
+output eDP-1 scale 1.5
 #swaymsg -t get_outputs
 
 #Worpsace assignments:
@@ -51,12 +52,11 @@ exec systemctl --user import-environment
 #SoundStuff:
 bindsym F9 exec pactl set-source-mute 57 toggle
 #note: find output by pactl list short sources
-
-    
-#exec swayidle -w \
-#        timeout 300 'swaylock -f -c 000000' \
-#        timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
-#        before-sleep 'swaylock -f -c 000000'
+exec swayidle -w \
+    timeout 500 'swaylock -f -c 000000' \
+    timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
+    before-sleep 'swaylock -f -c 000000'
+            
 input "Logitech USB Receiver" {
     accel_profile "flat"
     pointer_accel 0
