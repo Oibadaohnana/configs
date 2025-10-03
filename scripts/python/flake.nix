@@ -21,6 +21,7 @@
           matplotlib
           pyyaml
           notify2
+          click
         ]);
       in {
         devShells.default = pkgs.mkShell {

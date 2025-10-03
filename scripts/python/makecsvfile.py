@@ -1,7 +1,13 @@
 import csv
 import os
+import click
 
-def make_csv_file(filename, data, header=None):
+
+def make_csv_file(filename, data):
+    with open(filename, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+    return()
     
 
 
