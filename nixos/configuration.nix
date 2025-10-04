@@ -112,6 +112,7 @@
     discord
     brightnessctl
     wlsunset
+    unityhub
   ];
 
 

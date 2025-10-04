@@ -3,7 +3,7 @@
 
   inputs = {
     # Pin nixpkgs to nixos-24.05 release branch (Sept 2024) → Tcl 8.6
-    nixpkgs.url = "github:NixOS/nixpkgs/release-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
   };
 

@@ -2,3 +2,4 @@ alias buildsys="sudo nixos-rebuild switch --flake /home/benji/nixcfg/nixos/#benj
 alias onesync="onedrive --synchronize --verbose"
 alias geoguessr="electron /home/benji/nixcfg/scripts/webwindow.js"
 alias tmr="nix develop /home/benji/nixcfg/scripts/python/ -c /home/benji/nixcfg/scripts/python/timer.py"
+alias nxsh="nix-shell ~/nixcfg/shells/"
