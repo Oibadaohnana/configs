@@ -71,6 +71,22 @@
     description = "Benjamin Wüst";
     extraGroups = [ "networkmanager" "wheel" ];
   };
+  programs.thunar = {
+    enable = true; # This tells NixOS "Hey bro, install thunar"
+    
+    # This tells NixOS "Install these packages AS PART OF thunar, so thunar will have permissions to access to their files and binaries
+    plugins = with pkgs.xfce; [
+      thunar-volman
+      thunar-archive-plugin
+      thunar-media-tags-plugin
+    ];
+  };
+  
+  programs.vscode = {
+    enable = true;
+    package = pkgs.vscode;
+    extensions = with pkgs.vscode-extensions; [ ms-dotnettools.csharp ];
+    };   
 
   nixpkgs.config.allowUnfree = true;
   environment.systemPackages = with pkgs; [
@@ -97,7 +113,6 @@
     xwayland
     mumble
     libnotify
-    python3
     uv
     beyond-all-reason
     nodejs_24
@@ -105,7 +120,29 @@
     discord
     brightnessctl
     wlsunset
+    (python3.withPackages (ps: with ps; [
+      python-telegram-bot
+      matplotlib
+      pyyaml
+      notify2
+      click
+    ]))
+    mono
+    dotnet-sdk
+    omnisharp-roslyn
+    dotnet-sdk_8
+    dotnet-runtime_8
+    dotnetCorePackages.dotnet_8.sdk
+    dotnetCorePackages.dotnet_9.sdk
+    vscode-extensions.ms-dotnettools.csharp
+    vscode-extensions.ms-dotnettools.csdevkit
+    (pkgs.writeShellScriptBin "vscode-dotnet" ''
+      export DOTNET_ROOT=${pkgs.dotnet-sdk_8}
+      export PATH=$DOTNET_ROOT/bin:$PATH
+      exec code "$@"
+    '')
   ];
+
 
   hardware.graphics = {
     enable = true;
