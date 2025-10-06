@@ -77,7 +77,7 @@ input type:keyboard {
     # Start a terminal
     bindsym $mod+Return exec $term
     bindsym F1 exec firefox
-    bindsym F2 exec firefox --new-tab about:blank
+    bindsym $mod+F2 exec firefox --new-tab about:blank
     bindsym $mod+F1 exec pavucontrol
     bindsym $mod+F3 exec blueman-manager
     bindsym $mod+Shift+p exec systemctl poweroff

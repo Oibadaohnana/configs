@@ -6,6 +6,9 @@
       python313Packages.pyyaml
       python313Packages.notify2
       python313Packages.click
+      python313Packages.scipy
+      python313Packages.tkinter
+      ruff
       
       #Rust stuff here:
       rustup
