@@ -30,6 +30,8 @@ exec swaymsg output HDMI-A-1 disable
 #laptop:
 output DP-11 mode 2560x1440@143.999Hz
 output DP-11 position 1128 0
+output DP-10 mode 2560x1440@143.999Hz
+#output DP-10 position 1128 0
 output eDP-1 position 0 0
 output eDP-1 scale 1.75
 #swaymsg -t get_outputs
@@ -53,7 +55,15 @@ exec swayidle -w \
 input "Logitech USB Receiver" {
     accel_profile "flat"
     pointer_accel 0
-}
+    }
+input "Logitech G403 HERO Gaming Mouse Keyboard" {
+    accel_profile "flat"
+    pointer_accel 0
+    }
+input "Logitech G403 HERO Gaming Mouse" {
+    accel_profile "flat"
+    pointer_accel 0
+    }
 input type:touchpad {
     dwt enabled
     tap enabled
@@ -242,6 +252,8 @@ client.urgent           #FF0000 #FF0000 #FFFFFF #FFFFFF #FF0000
 exec_always waybar -c ~/nixcfg/configs/waybarconfig/config -s ~/nixcfg/configs/waybarconfig/style.css
 exec_always mako
 exec_always wlsunset -l 50.59 -L 8.69 -t 3600 -T 6500
+exec_always ~/nixcfg/scripts/wallpaper.sh
+
 
 
 # bar {
