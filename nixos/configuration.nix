@@ -17,6 +17,17 @@
   services.onedrive.enable = true;
   systemd.user.services.onedrive.enable = false;
   systemd.user.services."onedrive-launcher".enable = false;
+
+  #Phone Mount
+  services.gvfs.enable = true;
+  services.udisks2.enable = true;
+  services.usbmuxd.enable = true;
+
+  programs.adb.enable = true;
+
+  #Firmware Updater
+  services.fwupd.enable = true;
+  
   
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -69,17 +80,18 @@
   users.users.benji = {
     isNormalUser = true;
     description = "Benjamin Wüst";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "plugdev" "adbusers" ];
   };
-  programs.thunar = {
+  /* programs.thunar = {
     enable = true;
     plugins = with pkgs.xfce; [
-      thunar-volman
-      thunar-archive-plugin
+      
+      
       thunar-media-tags-plugin
     ];
-  };
+  }; */
   
+
   nixpkgs.config.allowUnfree = true;
   environment.systemPackages = with pkgs; [
     pulseaudio
@@ -99,6 +111,9 @@
     libreoffice
     pavucontrol
     xfce.thunar
+    xfce.thunar-volman
+    xfce.thunar-archive-plugin
+    xfce.xfconf
     bluetuith
     gvfs
     libappindicator
@@ -112,7 +127,8 @@
     discord
     brightnessctl
     wlsunset
-    unityhub
+    libmtp
+    simple-mtpfs
   ];
 
 

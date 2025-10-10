@@ -16,7 +16,8 @@
         ./vscode.nix
         #./emacs.nix
         ./sway.nix
+
       ];
     };
-  };
+  };  
 }
