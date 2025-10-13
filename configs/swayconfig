@@ -42,7 +42,7 @@ assign [app_id="spotify"] 5
 exec systemctl --user import-environment
 
 #SoundStuff:
-bindsym F9 exec pactl set-source-mute 57 toggle
+
 
 #bindsym F9 exec pactl set-source-mute 1171 toggle
 
@@ -231,6 +231,8 @@ mode "resize" {
     bindsym --locked XF86AudioLowerVolume exec pactl set-sink-volume \@DEFAULT_SINK@ -5%
     bindsym --locked XF86AudioRaiseVolume exec pactl set-sink-volume \@DEFAULT_SINK@ +5%
     bindsym --locked XF86AudioMicMute exec     #pactl set-source-mute \@DEFAULT_SOURCE@ toggle
+    bindsym F9 exec bash /home/benji/nixcfg/scripts/mic_mute_state_notify.sh
+    #pactl set-source-mute 57 toggle
     # Special keys to adjust brightness via brightnessctl
     bindsym --locked XF86MonBrightnessDown exec brightnessctl set 2.5%-
     bindsym --locked XF86MonBrightnessUp exec brightnessctl set 2.5%+
