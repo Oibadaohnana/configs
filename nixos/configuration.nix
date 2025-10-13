@@ -108,7 +108,7 @@
     vlc
     nomacs
     gamescope
-    libreoffice
+    libreoffice-fresh
     pavucontrol
     xfce.thunar
     xfce.thunar-volman
