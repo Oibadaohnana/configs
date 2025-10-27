@@ -129,6 +129,7 @@
     wlsunset
     libmtp
     simple-mtpfs
+    thunderbird
   ];
 
 
