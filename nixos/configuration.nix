@@ -130,6 +130,7 @@
     libmtp
     simple-mtpfs
     thunderbird
+    kdePackages.okular
   ];
 
 
