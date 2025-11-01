@@ -74,7 +74,7 @@
     };
   };
   };
-  
+  programs.gamemode.enable = true;
   services.pipewire.wireplumber.enable = true;
   services.blueman.enable = true;
   hardware.bluetooth = {
@@ -93,7 +93,7 @@
   users.users.benji = {
     isNormalUser = true;
     description = "Benjamin Wüst";
-    extraGroups = [ "networkmanager" "wheel" "plugdev" "adbusers" ];
+    extraGroups = [ "networkmanager" "wheel" "plugdev" "adbusers" "gamemode"];
   };
   /* programs.thunar = {
     enable = true;
