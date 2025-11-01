@@ -27,7 +27,9 @@
 
   #Firmware Updater
   services.fwupd.enable = true;
-  
+
+  #programs.zsh.enable = true;
+  #users.users.benji.shell = pkgs.zsh;
   
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -61,7 +63,18 @@
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
+    extraConfig.pipewire = {
+    "bluez-monitor" = {
+      "properties" = {
+        # Prevents PipeWire from auto-switching to headset (HSP/HFP) mode
+        "bluez5.auto-switch-to-hsp" = false;
+        # Optional: disables HFP completely so it never even shows up
+        "bluez5.headset-roles" = "[ hsp-hs hsp-ag hfp-hf hfp-ag ]";
+      };
+    };
   };
+  };
+  
   services.pipewire.wireplumber.enable = true;
   services.blueman.enable = true;
   hardware.bluetooth = {
