@@ -128,7 +128,6 @@
     firefox-bin
     git
     firefox
-    kitty
     fd
     spotify
     steam
