@@ -161,6 +161,7 @@
     thunderbird
     kdePackages.okular
     signal-desktop-bin
+    kitty
   ];
 
 
