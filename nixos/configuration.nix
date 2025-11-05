@@ -28,8 +28,24 @@
   #Firmware Updater
   services.fwupd.enable = true;
 
-  #programs.zsh.enable = true;
-  #users.users.benji.shell = pkgs.zsh;
+  programs.zsh = {
+    enable = true;
+    enableCompletion = true;
+    autosuggestions.enable = true;
+    syntaxHighlighting.enable = true;
+
+    shellAliases = {
+      ll = "ls -l";
+      edit = "sudo -e";
+      update = "sudo nixos-rebuild switch";
+    };
+
+    histSize = 10000;
+    histFile = "$HOME/.zsh_history";
+    setOptions = [
+      "HIST_IGNORE_ALL_DUPS"
+    ];
+  };
   
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
@@ -69,10 +85,10 @@
         # Prevents PipeWire from auto-switching to headset (HSP/HFP) mode
         "bluez5.auto-switch-to-hsp" = false;
         # Optional: disables HFP completely so it never even shows up
-        "bluez5.headset-roles" = "[ hsp-hs hsp-ag hfp-hf hfp-ag ]";
+        "bluez5.headset-roles" = "[ none ]";
+        };
       };
-    };
-  };
+    }; 
   };
   programs.gamemode.enable = true;
   services.pipewire.wireplumber.enable = true;
@@ -93,6 +109,7 @@
   users.users.benji = {
     isNormalUser = true;
     description = "Benjamin Wüst";
+    shell = pkgs.zsh;
     extraGroups = [ "networkmanager" "wheel" "plugdev" "adbusers" "gamemode"];
   };
   /* programs.thunar = {
