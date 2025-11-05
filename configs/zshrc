@@ -3,3 +3,17 @@ alias onesync="onedrive --synchronize --verbose"
 alias geoguessr="electron /home/benji/nixcfg/scripts/webwindow.js"
 alias tmr='nix-shell ~/nixcfg/shells/ --run "python ./nixcfg/scripts/python/timer.py"'
 alias nxsh="nix-shell ~/nixcfg/shells/"
+# Lines configured by zsh-newuser-install
+HISTFILE=~/.histfile
+HISTSIZE=10000
+SAVEHIST=10000
+setopt autocd
+unsetopt beep
+bindkey -e
+# End of lines configured by zsh-newuser-install
+# The following lines were added by compinstall
+zstyle :compinstall filename '/home/benji/.zshrc'
+
+autoload -Uz compinit
+compinit
+# End of lines added by compinstall
