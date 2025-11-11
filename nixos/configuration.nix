@@ -163,6 +163,7 @@
     signal-desktop-bin
     kitty
     btop
+    obs-studio
   ];
 
   hardware.graphics = {
