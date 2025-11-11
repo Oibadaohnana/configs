@@ -134,7 +134,7 @@
     networkmanager
     vim
     telegram-desktop
-    vlc
+    mpv
     nomacs
     gamescope
     libreoffice-fresh
@@ -162,8 +162,8 @@
     kdePackages.okular
     signal-desktop-bin
     kitty
+    btop
   ];
-
 
   hardware.graphics = {
     enable = true;
@@ -175,6 +175,7 @@
       vulkan-tools
       wayland
       mesa
+      mesa.opencl
       vaapiVdpau
       libvdpau-va-gl
     ];
