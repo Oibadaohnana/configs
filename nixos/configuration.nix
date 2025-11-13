@@ -130,6 +130,7 @@
     vim
     telegram-desktop
     mpv
+    vlc
     nomacs
     gamescope
     libreoffice-fresh
