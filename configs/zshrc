@@ -3,6 +3,7 @@ alias onesync="onedrive --synchronize --verbose"
 alias geoguessr="electron /home/benji/nixcfg/scripts/webwindow.js"
 alias tmr='nix-shell ~/nixcfg/shells/ --run "python ./nixcfg/scripts/python/timer.py"'
 alias nxsh="nix-shell ~/nixcfg/shells/"
+alias cleansys="nix-collect-garbage --delete-older-than 7d"
 # Lines configured by zsh-newuser-install
 HISTFILE=~/.histfile
 HISTSIZE=10000
