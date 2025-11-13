@@ -49,6 +49,10 @@
   
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  
+  services.dbus.enable = true;
+  xdg.portal.enable = true;
+  xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
 
   networking.hostName = "Bdawg";
   networking.networkmanager.enable = true;
@@ -112,16 +116,7 @@
     shell = pkgs.zsh;
     extraGroups = [ "networkmanager" "wheel" "plugdev" "adbusers" "gamemode"];
   };
-  /* programs.thunar = {
-    enable = true;
-    plugins = with pkgs.xfce; [
-      
-      
-      thunar-media-tags-plugin
-    ];
-  }; */
   
-
   nixpkgs.config.allowUnfree = true;
   environment.systemPackages = with pkgs; [
     pulseaudio
@@ -180,6 +175,11 @@
       vaapiVdpau
       libvdpau-va-gl
     ];
+  };
+  environment.sessionVariables = {
+    QT_QPA_PLATFORM = "wayland";
+    XDG_CURRENT_DESKTOP = "KDE";
+    XDG_SESSION_TYPE = "wayland";
   };
   system.stateVersion = "25.05";
 }
