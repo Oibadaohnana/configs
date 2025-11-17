@@ -33,7 +33,6 @@
     enableCompletion = true;
     autosuggestions.enable = true;
     syntaxHighlighting.enable = true;
-
     shellAliases = {
       ll = "ls -l";
       edit = "sudo -e";
@@ -131,7 +130,6 @@
     telegram-desktop
     mpv
     vlc
-    nomacs
     gamescope
     libreoffice-fresh
     pavucontrol
@@ -155,11 +153,12 @@
     libmtp
     simple-mtpfs
     thunderbird
-    kdePackages.okular
     signal-desktop-bin
     kitty
     btop
     obs-studio
+    unzip
+    syncthing
   ];
 
   hardware.graphics = {
@@ -179,8 +178,11 @@
   };
   environment.sessionVariables = {
     QT_QPA_PLATFORM = "wayland";
-    XDG_CURRENT_DESKTOP = "KDE";
+    QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
+    XDG_CURRENT_DESKTOP = "sway";
     XDG_SESSION_TYPE = "wayland";
+    NIXOS_OZONE_WL = "1";
+    ELECTRON_OZONE_PLATFORM_HINT = "wayland";
   };
   system.stateVersion = "25.05";
 }
