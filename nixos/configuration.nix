@@ -159,6 +159,7 @@
     obs-studio
     unzip
     syncthing
+    blender
   ];
 
   hardware.graphics = {
