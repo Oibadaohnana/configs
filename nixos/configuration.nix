@@ -160,6 +160,7 @@
     unzip
     syncthing
     blender
+    bibata-cursors
   ];
 
   hardware.graphics = {
