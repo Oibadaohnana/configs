@@ -47,7 +47,7 @@ exec systemctl --user import-environment
 
 
 #bindsym F9 exec pactl set-source-mute 1171 toggle
-seat * xcursor_theme Bibata-Modern-Ice 24
+seat * xcursor_theme Bibata-Modern-Classic 24
 
 #note: find output by pactl list short sources
 exec swayidle -w \
