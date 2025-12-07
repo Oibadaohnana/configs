@@ -174,7 +174,7 @@
       wayland
       mesa
       mesa.opencl
-      vaapiVdpau
+      libva-vdpau-driver
       libvdpau-va-gl
     ];
   };
