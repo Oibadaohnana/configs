@@ -41,6 +41,7 @@ output eDP-1 scale 1.5
 #Worpsace assignments:
 assign [app_id="firefox"] 2
 assign [app_id="spotify"] 5
+assign [app_id="steam"] 4
 exec systemctl --user import-environment
 
 #SoundStuff:

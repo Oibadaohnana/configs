@@ -161,6 +161,7 @@
     syncthing
     blender
     bibata-cursors
+    numbat
   ];
 
   hardware.graphics = {
