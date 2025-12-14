@@ -9,9 +9,27 @@ alias cleanboot="sudo nixos-rebuild boot --flake /home/benji/nixcfg/nixos#benji"
 HISTFILE=~/.histfile
 HISTSIZE=10000
 SAVEHIST=10000
+
+setopt HIST_IGNORE_ALL_DUPS     # remove older duplicate commands
+setopt HIST_FIND_NO_DUPS        # prevent duplicates when searching history
+setopt HIST_REDUCE_BLANKS
+setopt SHARE_HISTORY            # share history between sessions
+setopt EXTENDED_HISTORY
 setopt autocd
+
 unsetopt beep
 bindkey -e
+bindkey ";5C" forward-word
+bindkey ";5D" backward-word
+bindkey '^A' beginning-of-line
+bindkey '^E' end-of-line
+bindkey '^U' backward-kill-line
+bindkey '^K' kill-line
+bindkey '^W' backward-kill-word
+bindkey '^Y' yank
+bindkey '^P' up-history
+bindkey '^N' down-history
+bindkey '^L' clear-screen
 # End of lines configured by zsh-newuser-install
 # The following lines were added by compinstall
 zstyle :compinstall filename '/home/benji/.zshrc'
@@ -19,3 +37,32 @@ zstyle :compinstall filename '/home/benji/.zshrc'
 autoload -Uz compinit
 compinit
 # End of lines added by compinstall
+if command -v fzf >/dev/null 2>&1; then
+  # Use fzf-powered history search
+  bindkey '^R' fzf-history-widget
+
+  fzf-history-widget() {
+    local selected
+    selected=$(fc -l 1 | fzf --height 40% --reverse --tac | sed 's/^ *[0-9]* *//')
+    if [[ -n "$selected" ]]; then
+      BUFFER="$selected"
+      CURSOR=$#BUFFER
+    fi
+    zle redisplay
+  }
+  zle -N fzf-history-widget
+else
+  # -------------------------------
+  # Pure zsh backwards search
+  # (readline-style incremental search)
+  # Press: Ctrl+R
+  # -------------------------------
+  bindkey '^R' history-incremental-search-backward
+fi
+keybinds() {
+  echo ""
+  echo "=== Active Zsh Keybindings ==="
+  echo ""
+  bindkey | sort
+  echo ""
+}
