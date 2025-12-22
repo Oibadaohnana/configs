@@ -78,21 +78,28 @@
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-    extraConfig.pipewire = {
+  enable = true;
+  alsa.enable = true;
+  alsa.support32Bit = true;
+  pulse.enable = true;
+
+  # PipeWire engine config
+  extraConfig.pipewire = {
+    "10-no-ducking" = {
+      "context.properties" = {
+        "media.role.policy" = false;
+      };
+    };
+
     "bluez-monitor" = {
       "properties" = {
-        # Prevents PipeWire from auto-switching to headset (HSP/HFP) mode
         "bluez5.auto-switch-to-hsp" = false;
-        # Optional: disables HFP completely so it never even shows up
         "bluez5.headset-roles" = "[ none ]";
-        };
       };
-    }; 
+    };
   };
+};
+
   programs.gamemode.enable = true;
   services.pipewire.wireplumber.enable = true;
   services.blueman.enable = true;
