@@ -13,9 +13,8 @@
       modules = [
         ./configuration.nix
         ./hardware-configuration.nix
-        ./vscode.nix
         ./sway.nix
-
+        ./vscode.nix
       ];
     };
   };
