@@ -93,19 +93,32 @@
     enable = true;
     enable32Bit = true;
     extraPackages = with pkgs; [
-      mesa
-      wayland
+      vulkan-loader
+      vulkan-validation-layers
+      vulkan-extension-layer
       vulkan-tools
+      mesa
+      mesa.opencl
+      libva-vdpau-driver
+      libvdpau-va-gl
     ];
   };
-
-  # Set Wayland environment variables for Qt/Electron apps
   environment.sessionVariables = {
+    NIXOS_OZONE_WL = "1";
+    ELECTRON_OZONE_PLATFORM_HINT = "wayland";
+  };
+  xdg.portal.enable = true;
+
+  xdg.portal.extraPortals = [
+    pkgs.kdePackages.xdg-desktop-portal-kde
+  ];
+  # Set Wayland environment variables for Qt/Electron apps
+  /* environment.sessionVariables = {
     QT_QPA_PLATFORM = "wayland";
     XDG_SESSION_TYPE = "wayland";
     XDG_CURRENT_DESKTOP = "KDE";
     ELECTRON_OZONE_PLATFORM_HINT = "wayland";
-  };
+  }; */
 
   # System basics
   time.timeZone = "Europe/Berlin";
