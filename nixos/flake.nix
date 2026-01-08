@@ -7,14 +7,24 @@
   };
 
   outputs = { self, nixpkgs, flake-utils,... }: {
-    nixosConfigurations."benji" = nixpkgs.lib.nixosSystem {
+    nixosConfigurations."benji-desktop" = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
 
       modules = [
         ./configuration.nix
-        ./hardware-configuration.nix
-        ./sway.nix
         ./vscode.nix
+        ./hardware/desktop.nix
+        { networking.hostName = "benji-desktop"; }
+      ];
+    };
+    nixosConfigurations."benji-framework" = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+
+      modules = [
+        ./configuration.nix
+        ./vscode.nix
+        ./hardware/framework.nix
+        { networking.hostName = "benji-framework"; }
       ];
     };
   };

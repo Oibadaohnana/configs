@@ -1,4 +1,4 @@
-alias buildsys="sudo nixos-rebuild switch --flake /home/benji/nixcfg/nixos/#benji"
+alias buildsys="sudo nixos-rebuild switch --flake /home/benji/nixcfg/nixos"
 alias onesync="onedrive --synchronize --verbose"
 alias geoguessr="electron /home/benji/nixcfg/scripts/webwindow.js"
 alias tmr='nix-shell ~/nixcfg/shells/ --run "python ./nixcfg/scripts/python/timer.py"'

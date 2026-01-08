@@ -20,13 +20,6 @@
     fsType = "vfat";
     options = [ "fmask=0077" "dmask=0077" ];
   };
-  fileSystems."/home/benji/exthdd1" = {
-    device = "/dev/disk/by-uuid/CEEB-687B";
-    fsType = "exfat";
-    options = [ "rw" "uid=1000" "gid=100" "umask=022" "x-systemd.automount" "nofail" ];
-  };
-
-
  
   swapDevices = [ ];
 
