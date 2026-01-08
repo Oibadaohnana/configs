@@ -13,6 +13,7 @@
       modules = [
         ./configuration.nix
         ./vscode.nix
+        ./garbage_collect.nix
         ./hardware/desktop.nix
         { networking.hostName = "benji-desktop"; }
       ];
@@ -23,6 +24,7 @@
       modules = [
         ./configuration.nix
         ./vscode.nix
+        ./garbage_collect.nix
         ./hardware/framework.nix
         { networking.hostName = "benji-framework"; }
       ];
