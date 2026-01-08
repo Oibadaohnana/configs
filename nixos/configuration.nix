@@ -60,6 +60,7 @@
     syncthing
     blender
     numbat
+    pavucontrol
   ];
 
 
@@ -94,8 +95,6 @@
     enable32Bit = true;
     extraPackages = with pkgs; [
       vulkan-loader
-      vulkan-validation-layers
-      vulkan-extension-layer
       vulkan-tools
       mesa
       mesa.opencl
@@ -103,7 +102,7 @@
       libvdpau-va-gl
     ];
   };
-  services.openssh.enable = true;
+
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";
     ELECTRON_OZONE_PLATFORM_HINT = "wayland";
