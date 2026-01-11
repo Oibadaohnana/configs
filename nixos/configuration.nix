@@ -5,13 +5,20 @@
   services.desktopManager.plasma6.enable = true;
   services.displayManager.sddm.enable = true;
   services.displayManager.sddm.wayland.enable = true;
-
-    
   # Enable experimental features (optional)
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
   nixpkgs.config.allowUnfree = true;
 
+  services.power-profiles-daemon.enable = true;
+
+    services.logind.settings = {
+      Login = {
+        IdleAction = "ignore";
+        IdleActionSec = "0";
+      };
+    };
+  services.upower.enable = true;
   programs.zsh = {
     enable = true;
     enableCompletion = true;
@@ -89,18 +96,9 @@
     Policy.AutoEnable = true;
   };
 
-  # Graphics (Intel/AMD)
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
-    extraPackages = with pkgs; [
-      vulkan-loader
-      vulkan-tools
-      mesa
-      mesa.opencl
-      libva-vdpau-driver
-      libvdpau-va-gl
-    ];
   };
 
   environment.sessionVariables = {

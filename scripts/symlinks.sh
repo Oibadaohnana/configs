@@ -34,4 +34,3 @@ make_symlink configs/makoconfig .config/mako/config
 make_symlink configs/hyprland .config/hypr/hyprland
 make_symlink configs/kitty.conf .config/kitty/kitty.conf
 
-
