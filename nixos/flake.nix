@@ -15,6 +15,7 @@
         ./vscode.nix
         ./garbage_collect.nix
         ./hardware/desktop.nix
+        ./vm.nix
         { networking.hostName = "benji-desktop"; }
       ];
     };
@@ -26,6 +27,7 @@
         ./vscode.nix
         ./garbage_collect.nix
         ./hardware/framework.nix
+        ./vm.nix
         { networking.hostName = "benji-framework"; }
       ];
     };

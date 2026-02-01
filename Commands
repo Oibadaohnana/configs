@@ -43,3 +43,153 @@ sudo chown -R benji:users /home/benji/nixcfg/.git
 dotnet new console -n <Project NAME>
 dotnet build
 dotnet run
+
+######NEW PC########
+on the pc:
+
+adjust the labels in hardware/pc.nix!
+
+to do so you can list them in /dev/disk/by-uuid or just copy them from the (probably?) working config thats on your desktop in /etc/nixos/hardware-configuration.nix
+
+then build ONCE without using buildsys but by using 
+
+sudo nixos-rebuild switch --flake /home/benji/nixcfg/nixos#benji-desktop (User-System -> declared in harware.nix)
+
+
+after that, the buildsys alias should work since you dont need to add the #benji-desktop anymore.
+
+
+#####################################GIT INITIALISATION###################################
+{
+Well do **three things**:
+
+1. Generate an SSH key
+2. Add it to GitHub
+3. Clone your private repo into `~/nixcfg`
+
+---
+
+# 1️⃣ Generate a modern SSH key
+
+Run:
+
+```bash
+ssh-keygen -t ed25519 -C "your-email@example.com"
+```
+
+When asked:
+
+```
+Enter file in which to save the key:
+```
+
+→ press **Enter** (accepts `~/.ssh/id_ed25519`)
+
+```
+Enter passphrase:
+```
+
+→ either set one (recommended) or press Enter for none
+
+Now start the ssh agent:
+
+```bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+```
+
+---
+
+# 2️⃣ Add the key to GitHub
+
+Copy your public key:
+
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
+
+It will look like:
+
+```
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... your-email@example.com
+```
+
+Copy the **entire line**.
+
+Now go to GitHub:
+
+👉 [https://github.com/settings/ssh/new](https://github.com/settings/ssh/new)
+
+Fill in:
+
+* **Title**: `my-nix-machine`
+* **Key**: paste the key
+
+Click **Add SSH key**
+
+---
+
+# 3️⃣ Test GitHub SSH
+
+Run:
+
+```bash
+ssh -T git@github.com
+```
+
+You should see:
+
+```
+Hi Oibadaohnana! Youve successfully authenticated...
+```
+
+If you see that, SSH is correctly set up.
+
+---
+
+# 4️⃣ Clone your private nixcfg repo
+
+Now you can use SSH:
+
+```bash
+git clone git@github.com:Oibadaohnana/configs.git ~/nixcfg
+```
+
+Enter passphrase if asked.
+
+---
+
+# 5️⃣ Activate your Nix config
+
+```bash
+cd ~/nixcfg
+nix flake show
+home-manager switch --flake .
+```
+
+(or use the specific home name if it prints one).
+
+---
+
+From now on:
+
+* `git pull` and `git push` work
+* No passwords
+* Nix flakes can fetch private inputs
+* This is the **correct** setup for a NixOS or Home-Manager system 🔐
+
+---
+
+If anything fails, paste the exact error — SSH errors are very diagnostic and easy to fix.
+};
+#############################################################################################
+
+## Plasma Setup ##
+
+Import Shortcuts nixcfg (Keyboard -> Shortcuts -> Import)
+
+set Desktops
+Settings -> Window Management -> Virtual Desktops -> add
+rightclick 1|2|3|.. in Taskbar to add Numbers in Popupsettings
+
+##################
