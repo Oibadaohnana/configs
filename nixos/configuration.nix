@@ -36,6 +36,9 @@
       "HIST_IGNORE_ALL_DUPS"
     ];
   };
+
+  # Enable GameMode daemon + CLI wrapper for Steam launch options.
+  programs.gamemode.enable = true;
   
 
   # System packages
@@ -68,6 +71,7 @@
     blender
     numbat
     pavucontrol
+    gamemode
   ];
 
 
@@ -161,5 +165,4 @@
 
   
 }
-
 
