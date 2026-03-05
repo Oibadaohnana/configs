@@ -3,6 +3,9 @@
 {
   # Enable Plasma 6
   services.desktopManager.plasma6.enable = true;
+  environment.plasma6.excludePackages = with pkgs.kdePackages; [
+    kate
+  ];
   services.displayManager.sddm.enable = true;
   services.displayManager.sddm.wayland.enable = true;
   # Enable experimental features (optional)
@@ -68,6 +71,7 @@
     btop
     obs-studio
     syncthing
+    onedrive
     blender
     numbat
     pavucontrol
@@ -165,4 +169,3 @@
 
   
 }
-
