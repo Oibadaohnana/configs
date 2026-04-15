@@ -9,6 +9,7 @@
       python313Packages.click 
       python313Packages.scipy
       python313Packages.tkinter
+      python313Packages.pandas
       ruff
       
       #Rust stuff here:

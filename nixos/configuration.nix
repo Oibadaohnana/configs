@@ -72,6 +72,7 @@
     numbat
     pavucontrol
     gamemode
+    onedrive
   ];
 
 
@@ -79,7 +80,6 @@
   services.gvfs.enable = true;
   services.udisks2.enable = true;
   services.usbmuxd.enable = true;
-  programs.adb.enable = true;
 
   # Audio configuration: PipeWire + WirePlumber
   services.pulseaudio.enable = false;
@@ -165,4 +165,3 @@
 
   
 }
-
