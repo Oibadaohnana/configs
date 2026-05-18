@@ -66,7 +66,7 @@
     electron
     discord
     thunderbird
-    signal-desktop-bin
+    signal-desktop
     kitty
     btop
     obs-studio
@@ -77,8 +77,14 @@
     pavucontrol
     gamemode
     onedrive
+    hplip
+    unrar
   ];
 
+  programs.appimage = {
+  enable = true;
+  binfmt = true;
+  };
 
   # Enable external storage, SD cards, and phone support
   services.gvfs.enable = true;
@@ -143,12 +149,16 @@
   };
   console.keyMap = "de";
 
-  services.printing.enable = true;
-    services.avahi = {
-    enable = true;
-    nssmdns4 = true;
-    openFirewall = true;
-  };
+  services.printing = {
+  enable = true;
+  drivers = [ pkgs.hplip ];
+};
+
+services.avahi = {
+  enable = true;
+  nssmdns4 = true;
+  openFirewall = true;
+};
 
   networking.networkmanager.enable = true;
 
