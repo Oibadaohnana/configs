@@ -10,6 +10,7 @@
   services.displayManager.sddm.wayland.enable = true;
   # Enable experimental features (optional)
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  services.xserver.videoDrivers = ["amdgpu"];
 
   nixpkgs.config.allowUnfree = true;
 
@@ -42,7 +43,7 @@
 
   # Enable GameMode daemon + CLI wrapper for Steam launch options.
   programs.gamemode.enable = true;
-  
+  programs.steam.enable = true;
 
   # System packages
   environment.systemPackages = with pkgs; [
@@ -54,11 +55,9 @@
     git
     fd
     spotify
-    steam
     telegram-desktop
     mpv
     vlc
-    gamescope
     libreoffice-fresh
     mumble
     beyond-all-reason
@@ -79,6 +78,10 @@
     onedrive
     hplip
     unrar
+    claude-code
+    reaper
+    p7zip
+    qpwgraph
   ];
 
   programs.appimage = {
