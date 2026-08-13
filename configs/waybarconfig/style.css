@@ -62,11 +62,16 @@ button:hover {
 #workspaces button:hover {
     background: rgba(100, 100, 100, 0.2);
 }
+/* Empty desktops are hidden entirely (see persistent-workspaces removal in
+   config), so any button shown here that isn't active/visible is occupied. */
+#workspaces button:not(.active):not(.visible) {
+    background-color: #3a3a3a;
+}
 #workspaces button.visible {
     background-color: #23292e; /* Different, dimmer color for visible but unfocused */
     /* box-shadow: inset 0 -3px #a0a0a0; */
 }
-#workspaces button.focused {
+#workspaces button.active {
     background-color: #64727D;
     /* box-shadow: inset 0 -3px #ffffff; */
 }

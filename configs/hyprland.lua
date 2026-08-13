@@ -14,7 +14,14 @@ local menu = "rofi -show drun"
 ----------------------------------------
 -- Desktop
 hl.monitor({ output = "DP-3", mode = "2560x1440@180", position = "0x0", scale = 1.25 })
-hl.monitor({ output = "HDMI-A-1", disabled = true })
+
+-- Secondary display always auto-enables at a fixed 720p, not its native
+-- resolution. Named rules take precedence over the wildcard rule below.
+hl.monitor({ output = "HDMI-A-1", mode = "1280x720@60", position = "auto", scale = 1 })
+
+-- Any other/unlisted external display auto-enables at its preferred
+-- resolution whenever it's plugged in.
+hl.monitor({ output = "", mode = "preferred", position = "auto", scale = "auto" })
 
 -- Workspace 4 always lives on the secondary screen
 hl.workspace_rule({ workspace = "4", monitor = "HDMI-A-1" })
@@ -60,7 +67,7 @@ hl.config({
         gaps_out = 0,
         border_size = 1,
         col = {
-            active_border = "rgba(ff8800aa)",
+            active_border = "rgba(222222ff)",
             inactive_border = "rgba(222222ff)",
         },
         layout = "dwindle",
@@ -139,11 +146,21 @@ hl.bind(mod .. " + F2",     hl.dsp.exec_cmd("firefox"))
 hl.bind(mod .. " + F1",     hl.dsp.exec_cmd("pavucontrol"))
 hl.bind(mod .. " + F3",     hl.dsp.exec_cmd("blueman-manager"))
 hl.bind(mod .. " + F4",     hl.dsp.exec_cmd("wdisplays"))
+-- Meta+P = Open the display layout/editing tool
+hl.bind(mod .. " + P",      hl.dsp.exec_cmd("wdisplays"))
 hl.bind(mod .. " + D",      hl.dsp.exec_cmd(menu))
 -- Meta+V = Show Clipboard (matches Plasma)
 hl.bind(mod .. " + V",      hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))
 -- Meta+End = Toggle gaming display (matches Plasma)
-hl.bind(mod .. " + END",    hl.dsp.exec_cmd("hyprctl keyword monitor HDMI-A-1,1280x720@60,auto,1"))
+-- `hyprctl keyword` can't touch monitors under the lua config parser anymore,
+-- so this now calls hl.monitor() directly, and actually toggles both ways.
+hl.bind(mod .. " + END", function()
+    if hl.get_monitor("HDMI-A-1") then
+        hl.monitor({ output = "HDMI-A-1", disabled = true })
+    else
+        hl.monitor({ output = "HDMI-A-1", mode = "1280x720@60", position = "auto", scale = 1, disabled = false })
+    end
+end)
 
 ----------------------------------------
 -- Session (matches Plasma)
@@ -190,9 +207,11 @@ hl.bind(mod .. " + ALT + down",  hl.dsp.focus({ direction = "d" }))
 ----------------------------------------
 -- Move windows
 ----------------------------------------
--- Meta+Shift+Left/Right = Move to Prev/Next Screen (matches Plasma)
-hl.bind(mod .. " + SHIFT + left",  hl.dsp.window.move({ monitor = "-1", follow = true }))
-hl.bind(mod .. " + SHIFT + right", hl.dsp.window.move({ monitor = "+1", follow = true }))
+-- Meta+Shift+Arrows = Move within tiling layout on the current desktop only
+hl.bind(mod .. " + SHIFT + left",  hl.dsp.window.move({ direction = "l" }))
+hl.bind(mod .. " + SHIFT + right", hl.dsp.window.move({ direction = "r" }))
+hl.bind(mod .. " + SHIFT + up",    hl.dsp.window.move({ direction = "u" }))
+hl.bind(mod .. " + SHIFT + down",  hl.dsp.window.move({ direction = "d" }))
 -- Move within tiling layout (vim-style)
 hl.bind(mod .. " + SHIFT + H", hl.dsp.window.move({ direction = "l" }))
 hl.bind(mod .. " + SHIFT + J", hl.dsp.window.move({ direction = "d" }))

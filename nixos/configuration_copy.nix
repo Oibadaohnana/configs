@@ -1,9 +1,13 @@
 { config, pkgs, ... }:
 
 {
+  # Enable Plasma 6
+  services.desktopManager.plasma6.enable = true;
+  environment.plasma6.excludePackages = with pkgs.kdePackages; [
+    kate
+  ];
   services.displayManager.sddm.enable = true;
   services.displayManager.sddm.wayland.enable = true;
-  services.displayManager.sddm.theme = "catppuccin-mocha-mauve";
   # Enable experimental features (optional)
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   services.xserver.videoDrivers = ["amdgpu"];
@@ -43,16 +47,7 @@
 
   # System packages
   environment.systemPackages = with pkgs; [
-    (catppuccin-sddm.override {
-      flavor = "mocha";
-      font = "Noto Sans";
-      fontSize = "9";
-      background = "";
-      loginBackground = false;
-    })
     firefox
-    adwaita-icon-theme
-    kdePackages.dolphin
     kdePackages.kcalc
     kdePackages.kcharselect
     wayland-utils
@@ -126,10 +121,19 @@
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";
     ELECTRON_OZONE_PLATFORM_HINT = "wayland";
-    XCURSOR_THEME = "Adwaita";
-    XCURSOR_SIZE = "24";
   };
   xdg.portal.enable = true;
+
+  xdg.portal.extraPortals = [
+    pkgs.kdePackages.xdg-desktop-portal-kde
+  ];
+  # Set Wayland environment variables for Qt/Electron apps
+  /* environment.sessionVariables = {
+    QT_QPA_PLATFORM = "wayland";
+    XDG_SESSION_TYPE = "wayland";
+    XDG_CURRENT_DESKTOP = "KDE";
+    ELECTRON_OZONE_PLATFORM_HINT = "wayland";
+  }; */
 
   # System basics
   time.timeZone = "Europe/Berlin";
