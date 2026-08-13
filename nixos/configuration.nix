@@ -4,6 +4,7 @@
   services.displayManager.sddm.enable = true;
   services.displayManager.sddm.wayland.enable = true;
   services.displayManager.sddm.theme = "catppuccin-mocha-mauve";
+  services.displayManager.defaultSession = "hyprland";
   # Enable experimental features (optional)
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
   services.xserver.videoDrivers = ["amdgpu"];

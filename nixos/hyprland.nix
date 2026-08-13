@@ -2,6 +2,7 @@
 
 {
   programs.hyprland.enable = true;
+  programs.hyprland.withUWSM = false;
 
   xdg.portal.extraPortals = [
     pkgs.xdg-desktop-portal-hyprland
