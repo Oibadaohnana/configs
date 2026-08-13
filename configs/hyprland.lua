@@ -50,11 +50,8 @@ hl.config({
         },
     },
 
-    -- AMD's hardware cursor plane has a fixed max texture size; a large custom
-    -- cursor (e.g. Dota 2's 200% cursor) exceeds it and gets clipped instead of
-    -- scaled. Forcing software cursor rendering avoids that plane entirely.
     cursor = {
-        no_hardware_cursors = true,
+        no_hardware_cursors = false,
     },
 })
 
