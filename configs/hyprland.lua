@@ -168,6 +168,8 @@ hl.bind(mod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind("CTRL + ALT + DELETE", hl.dsp.exec_cmd("wlogout"))
 -- Meta+Shift+P = Shut Down
 hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("systemctl poweroff"))
+-- Meta+Shift+S = Sleep (lock then suspend)
+hl.bind(mod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprlock & systemctl suspend"))
 
 ----------------------------------------
 -- Windows (matches Plasma)
