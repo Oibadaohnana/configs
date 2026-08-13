@@ -12,6 +12,7 @@
 
       modules = [
         ./configuration.nix
+        ./hyprland.nix
         ./vscode.nix
         ./garbage_collect.nix
         ./hardware/desktop.nix
@@ -24,6 +25,7 @@
 
       modules = [
         ./configuration.nix
+        ./hyprland.nix
         ./vscode.nix
         ./garbage_collect.nix
         ./hardware/framework.nix

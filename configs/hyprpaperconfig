@@ -1,0 +1,3 @@
+preload = ~/nixcfg/configs/wallpapers/hyprland-cheatsheet.png
+wallpaper = ,~/nixcfg/configs/wallpapers/hyprland-cheatsheet.png
+splash = false

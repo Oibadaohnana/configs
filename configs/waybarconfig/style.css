@@ -88,8 +88,10 @@ button:hover {
 #backlight,
 #network,
 #pulseaudio,
+#bluetooth,
 #wireplumber,
 #custom-media,
+#custom-dolphin,
 #tray,
 #mode,
 #idle_inhibitor,
@@ -196,12 +198,22 @@ label:focus {
 }
 
 #pulseaudio {
-    background-color: #f1c40f;
-    color: #000000;
+    background-color: #b8860b;
+    color: #ffffff;
 }
 
 #pulseaudio.muted {
     background-color: #90b1b1;
+    color: #2a5c45;
+}
+
+#bluetooth {
+    background-color: #2980b9;
+    color: #ffffff;
+}
+
+#custom-dolphin {
+    background-color: #66cc99;
     color: #2a5c45;
 }
 
