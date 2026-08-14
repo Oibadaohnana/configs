@@ -41,8 +41,18 @@ setopt autocd
 
 unsetopt beep
 bindkey -e
-bindkey ";5C" forward-word
-bindkey ";5D" backward-word
+# Ctrl+Left/Right = jump by word (was binding the literal string ";5C"/
+# ";5D" instead of the actual escape sequence kitty sends — never fired)
+bindkey '^[[1;5C' forward-word
+bindkey '^[[1;5D' backward-word
+# Ctrl+Backspace/Delete = delete whole word (kitty sends plain DEL for
+# ctrl+backspace like regular backspace, so kitty.conf remaps it to send
+# ^W instead, which is bound below; ctrl+delete's escape sequence already
+# distinguishes itself from plain delete, no terminal remap needed)
+bindkey '^[[3;5~' kill-word
+# Ctrl+Home/End = jump to start/end of line (mirrors ^A/^E)
+bindkey '^[[1;5H' beginning-of-line
+bindkey '^[[1;5F' end-of-line
 bindkey '^A' beginning-of-line
 bindkey '^E' end-of-line
 bindkey '^U' backward-kill-line
@@ -52,6 +62,23 @@ bindkey '^Y' yank
 bindkey '^P' up-history
 bindkey '^N' down-history
 bindkey '^L' clear-screen
+# Ctrl+Shift+Up/Down = select the whole line, landing the cursor at the
+# end (Up) or beginning (Down); selection is shown via region highlight
+zle_highlight=('region:standout')
+select-line-to-end() {
+  MARK=0
+  REGION_ACTIVE=1
+  zle end-of-line
+}
+zle -N select-line-to-end
+select-line-to-beginning() {
+  MARK=$#BUFFER
+  REGION_ACTIVE=1
+  zle beginning-of-line
+}
+zle -N select-line-to-beginning
+bindkey '^[[1;6A' select-line-to-end
+bindkey '^[[1;6B' select-line-to-beginning
 # End of lines configured by zsh-newuser-install
 # The following lines were added by compinstall
 zstyle :compinstall filename '/home/benji/.zshrc'
