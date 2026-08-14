@@ -191,6 +191,8 @@ hl.bind(mod .. " + PRIOR", hl.dsp.window.fullscreen({ mode = "maximized", action
 hl.bind(mod .. " + SHIFT + SPACE", hl.dsp.window.float({ action = "toggle" }))
 -- Cycle windows
 hl.bind(mod .. " + SPACE", hl.dsp.window.cycle_next())
+-- Toggle dwindle split orientation (vertical/horizontal)
+hl.bind(mod .. " + H", hl.dsp.exec_cmd("hyprctl dispatch layoutmsg togglesplit"))
 -- Reload config
 hl.bind(mod .. " + SHIFT + C", hl.dsp.exec_cmd("hyprctl reload"))
 -- Exit session
