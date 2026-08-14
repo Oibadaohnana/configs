@@ -33,5 +33,6 @@ make_symlink configs/waybarconfig/style.css .config/waybar/style.css
 make_symlink configs/makoconfig .config/mako/config
 make_symlink configs/hyprland.lua .config/hypr/hyprland.lua
 make_symlink configs/hyprpaperconfig .config/hypr/hyprpaper.conf
+make_symlink configs/hypridleconfig .config/hypr/hypridle.conf
 make_symlink configs/kitty.conf .config/kitty/kitty.conf
 

@@ -11,6 +11,7 @@
 
   environment.systemPackages = with pkgs; [
     hyprlock
+    hypridle
     wlogout
     hyprpaper
     rofi
