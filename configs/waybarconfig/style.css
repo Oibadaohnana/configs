@@ -53,8 +53,10 @@ button:hover {
     background-color: #a37800;
 }
 
+/* Buttons carry "{id} {windows}" now, so they need a little more breathing
+   room than a bare number did. */
 #workspaces button {
-    padding: 0 5px;
+    padding: 0 8px;
     background-color: transparent;
     color: #ffffff;
 }
@@ -194,12 +196,16 @@ label:focus {
     background-color: #90b1b1;
 }
 
+/* Dark ground so the lit bars read white and the dimmed ones read grey.
+   Bluetooth next door is already #2980b9, so this one stays neutral.
+   Monospace keeps the four block glyphs on a consistent baseline/width. */
 #network {
-    background-color: #2980b9;
+    background-color: #2d3436;
+    font-family: "DejaVu Sans Mono", monospace;
 }
 
 #network.disconnected {
-    background-color: #f53c3c;
+    background-color: #6b2020;
 }
 
 #pulseaudio {

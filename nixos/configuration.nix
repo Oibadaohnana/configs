@@ -1,9 +1,12 @@
 { config, pkgs, ... }:
 
 {
-  services.displayManager.sddm.enable = true;
-  services.displayManager.sddm.wayland.enable = true;
-  services.displayManager.sddm.theme = "catppuccin-mocha-mauve";
+  # GDM instead of SDDM: SDDM's wayland greeter runs under a bare weston kiosk
+  # shell, which draws no cursor because libwayland-cursor only looks in
+  # /usr/share/icons and friends -- paths that don't exist on NixOS. GDM's
+  # greeter is mutter, which resolves its own cursor theme and handles the
+  # touchpad through libinput directly.
+  services.displayManager.gdm.enable = true;
   services.displayManager.defaultSession = "hyprland";
   # Enable experimental features (optional)
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
@@ -44,13 +47,6 @@
 
   # System packages
   environment.systemPackages = with pkgs; [
-    (catppuccin-sddm.override {
-      flavor = "mocha";
-      font = "Noto Sans";
-      fontSize = "9";
-      background = "";
-      loginBackground = false;
-    })
     firefox
     adwaita-icon-theme
     kdePackages.dolphin

@@ -53,10 +53,6 @@ hl.config({
     cursor = {
         no_hardware_cursors = true,
     },
-
-    xwayland = {
-        force_zero_scaling = true,
-    },
 })
 
 ----------------------------------------
@@ -134,7 +130,7 @@ hl.window_rule({
 hl.on("hyprland.start", function()
     hl.exec_cmd("waybar -c ~/nixcfg/configs/waybarconfig/config -s ~/nixcfg/configs/waybarconfig/style.css")
     hl.exec_cmd("mako")
-    hl.exec_cmd("wlsunset -l 50.59 -L 8.69 -t 3000 -T 6500")
+    -- hl.exec_cmd("wlsunset -l 50.59 -L 8.69 -t 3000 -T 6500")
     hl.exec_cmd("hyprpaper")
     hl.exec_cmd("wl-paste --watch cliphist store")
     hl.exec_cmd("hypridle")

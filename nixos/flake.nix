@@ -25,6 +25,7 @@
 
       modules = [
         ./configuration.nix
+        ./plasma.nix
         ./hyprland.nix
         ./vscode.nix
         ./garbage_collect.nix
