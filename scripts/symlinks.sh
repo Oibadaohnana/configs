@@ -35,6 +35,16 @@ make_symlink configs/hyprland.lua .config/hypr/hyprland.lua
 make_symlink configs/hyprpaperconfig .config/hypr/hyprpaper.conf
 make_symlink configs/hypridleconfig .config/hypr/hypridle.conf
 make_symlink configs/kitty.conf .config/kitty/kitty.conf
+make_symlink configs/mimeapps.list .config/mimeapps.list
+# "simple" is micro's 16-colour scheme: it emits plain ANSI codes instead of
+# hardcoded RGB, so highlighting is drawn with the color0-15 palette from
+# kitty.conf. Every other scheme ships its own fixed colours and ignores it.
+make_symlink configs/micro/settings.json .config/micro/settings.json
+# Terminal-style line editing, mirroring the zsh bindings above. Only the keys
+# micro gets wrong are listed: Ctrl+Left/Right (word motion) and Ctrl+W
+# (delete word back, which kitty sends for ctrl+backspace) already match.
+# JSON allows no comments, hence the explanation living here.
+make_symlink configs/micro/bindings.json .config/micro/bindings.json
 
 # Not a symlink: blueman stores plugin state in dconf, so no file in this repo
 # can stand in for it. The "!" prefix is blueman's disable marker -- killing

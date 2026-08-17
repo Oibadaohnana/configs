@@ -14,7 +14,6 @@
         ./configuration.nix
         ./fonts.nix
         ./hyprland.nix
-        ./vscode.nix
         ./garbage_collect.nix
         ./hardware/desktop.nix
         ./vm.nix
@@ -29,7 +28,6 @@
         ./fonts.nix
         ./plasma.nix
         ./hyprland.nix
-        ./vscode.nix
         ./garbage_collect.nix
         ./hardware/framework.nix
         ./vm.nix

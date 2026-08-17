@@ -49,9 +49,17 @@
   environment.systemPackages = with pkgs; [
     firefox
     adwaita-icon-theme
+    # Terminal editor. Nano-style keys (ctrl+s save, ctrl+q quit, ctrl+z undo)
+    # but with syntax highlighting and mouse support. Set as EDITOR below.
+    micro
     kdePackages.dolphin
     kdePackages.kcalc
     kdePackages.kcharselect
+    # What QT_QPA_PLATFORMTHEME = "kde" above actually loads. plasma.nix pulls
+    # these in on benji-framework via plasma6, but benji-desktop imports
+    # dolphin without Plasma, so name them here to keep both hosts readable.
+    kdePackages.plasma-integration
+    kdePackages.breeze
     wayland-utils
     wl-clipboard
     git
@@ -125,6 +133,17 @@
     ELECTRON_OZONE_PLATFORM_HINT = "wayland";
     XCURSOR_THEME = "Adwaita";
     XCURSOR_SIZE = "24";
+    # Under Hyprland there is no Plasma session to hand Qt apps a color scheme,
+    # so Dolphin and friends fall back to Qt's built-in light palette: black
+    # text on the dark Breeze scheme already sitting in ~/.config/kdeglobals,
+    # which is unreadable. Pointing Qt at the KDE platform theme
+    # (plasma-integration) makes it read kdeglobals again.
+    QT_QPA_PLATFORMTHEME = "kde";
+    # What git, systemctl edit, crontab and friends open. VISUAL as well as
+    # EDITOR: tools that distinguish them treat VISUAL as the full-screen one,
+    # and falling back to a line editor here would be a downgrade.
+    EDITOR = "micro";
+    VISUAL = "micro";
   };
   xdg.portal.enable = true;
 

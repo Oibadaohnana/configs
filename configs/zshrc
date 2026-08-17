@@ -5,6 +5,7 @@ alias tmr='nix-shell ~/nixcfg/shells/ --run "python ./nixcfg/scripts/python/time
 alias nxsh="nix-shell ~/nixcfg/shells/"
 alias cleansys="nix-collect-garbage --delete-older-than 7d"
 alias cleanboot="sudo nixos-rebuild boot --flake /home/benji/nixcfg/nixos#benji"
+alias mi="micro"
 
 # -------------------------------
 # Colors

@@ -1,0 +1,9 @@
+{
+    "Ctrl-a": "SelectAll",
+    "Ctrl-e": "EndOfLine",
+    "Ctrl-k": "SelectToEndOfLine,Delete",
+    "Ctrl-u": "SelectToStartOfLine,Delete",
+    "Ctrl-w": "DeleteWordLeft",
+    "CtrlDelete": "DeleteWordRight",
+    "CtrlDown": "CursorDown,CursorDown,CursorDown,CursorDown,CursorDown"
+}
