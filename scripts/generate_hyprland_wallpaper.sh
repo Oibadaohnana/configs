@@ -106,6 +106,7 @@ add_section 1 "WINDOWS" \
     "SUPER + F"               "Fullscreen (or SUPER+PgUp)" \
     "SUPER + Shift + Space"   "Toggle floating" \
     "SUPER + Space"           "Cycle windows" \
+    "SUPER + H"               "Toggle split orientation" \
     "SUPER + Shift + C"       "Reload Hyprland config" \
     "SUPER + Shift + E"       "Exit session"
 
