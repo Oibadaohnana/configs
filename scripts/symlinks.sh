@@ -36,3 +36,12 @@ make_symlink configs/hyprpaperconfig .config/hypr/hyprpaper.conf
 make_symlink configs/hypridleconfig .config/hypr/hypridle.conf
 make_symlink configs/kitty.conf .config/kitty/kitty.conf
 
+# Not a symlink: blueman stores plugin state in dconf, so no file in this repo
+# can stand in for it. The "!" prefix is blueman's disable marker -- killing
+# StatusIcon drops the duplicate bluetooth tray icon (the waybar bluetooth
+# module already shows it) while leaving the applet's pairing prompts and
+# auto-connect alone.
+if command -v dconf >/dev/null; then
+    dconf write /org/blueman/general/plugin-list "['!StatusIcon']"
+fi
+

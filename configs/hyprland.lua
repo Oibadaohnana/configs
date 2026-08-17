@@ -134,6 +134,10 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("hyprpaper")
     hl.exec_cmd("wl-paste --watch cliphist store")
     hl.exec_cmd("hypridle")
+    -- Registers the BlueZ pairing/authorization agent. Without it, devices
+    -- reconnecting at login are rejected outright ("Authentication attempt
+    -- without agent") with no way to approve them.
+    hl.exec_cmd("blueman-applet")
 end)
 
 ----------------------------------------
@@ -142,7 +146,7 @@ end)
 hl.bind(mod .. " + RETURN", hl.dsp.exec_cmd(term))
 hl.bind(mod .. " + F2",     hl.dsp.exec_cmd("firefox"))
 hl.bind(mod .. " + F1",     hl.dsp.exec_cmd("pavucontrol"))
-hl.bind(mod .. " + F3",     hl.dsp.exec_cmd("blueman-manager"))
+hl.bind(mod .. " + F3",     hl.dsp.exec_cmd("~/nixcfg/scripts/focus_or_launch.sh blueman-manager blueman-manager"))
 hl.bind(mod .. " + F4",     hl.dsp.exec_cmd("wdisplays"))
 -- Meta+P = Open the display layout/editing tool
 hl.bind(mod .. " + P",      hl.dsp.exec_cmd("wdisplays"))

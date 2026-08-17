@@ -1,6 +1,10 @@
 * {
-    /* `otf-font-awesome` is required to be installed for icons */
-    font-family: FontAwesome, Roboto, Helvetica, Arial, sans-serif;
+    /* Icons come from Symbols Nerd Font (installed via nixos/fonts.nix). It
+       ships glyphs only, no text face, so it sits after the text font and is
+       reached purely as a fallback for the private-use codepoints below.
+       Noto Sans is what bare `sans-serif` already resolved to here, so naming
+       it explicitly keeps the text looking exactly as it did. */
+    font-family: "Noto Sans", "Symbols Nerd Font", sans-serif;
     font-size: 13px;
 }
 
@@ -50,7 +54,7 @@ button:hover {
 
 /* you can set a style on hover for any module like this */
 #pulseaudio:hover {
-    background-color: #a37800;
+    background-color: #85692e;
 }
 
 /* Buttons carry "{id} {windows}" now, so they need a little more breathing
@@ -99,6 +103,7 @@ button:hover {
 #wireplumber,
 #custom-media,
 #custom-dolphin,
+#custom-audiosink,
 #tray,
 #mode,
 #idle_inhibitor,
@@ -124,30 +129,39 @@ button:hover {
     margin-right: 0;
 }
 
+/* ------------------------------------------------------------------
+   modules-right palette.
+   The stock waybar colors are near-full saturation, which on a black bar
+   reads as a row of glowing tiles. These are the same hues pulled down to
+   a common lightness (~20-28%) so the modules stay tellable apart while
+   sitting quietly against the background. Text is light throughout, so
+   check contrast if you brighten any background back up.
+   ------------------------------------------------------------------ */
+
 #clock {
-    background-color: #64727D;
+    background-color: #454f57;
 }
 
 #battery {
-    background-color: #ffffff;
-    color: #000000;
+    background-color: #3d4245;
+    color: #e8e8e8;
 }
 
 #battery.charging, #battery.plugged {
-    color: #ffffff;
-    background-color: #26A65B;
+    color: #e8e8e8;
+    background-color: #2f6048;
 }
 
 @keyframes blink {
     to {
-        background-color: #ffffff;
-        color: #000000;
+        background-color: #8f3a3a;
+        color: #ffffff;
     }
 }
 
 /* Using steps() instead of linear as a timing function to limit cpu usage */
 #battery.critical:not(.charging) {
-    background-color: #f53c3c;
+    background-color: #6e2626;
     color: #ffffff;
     animation-name: blink;
     animation-duration: 0.5s;
@@ -208,24 +222,30 @@ label:focus {
     background-color: #6b2020;
 }
 
+/* Output selector, painted identically to #pulseaudio so the two read as one
+   volume unit: this tile picks the device, that one shows the level.
+   The script still emits .bluetooth / .hdmi / .analog classes, deliberately
+   left unstyled -- the icon alone says which output is active. Style them
+   here if you ever want the tile tinted per device again. */
+#custom-audiosink,
 #pulseaudio {
-    background-color: #b8860b;
-    color: #ffffff;
+    background-color: #6b5424;
+    color: #e8e8e8;
 }
 
 #pulseaudio.muted {
-    background-color: #90b1b1;
-    color: #2a5c45;
+    background-color: #3a4446;
+    color: #9aa3a5;
 }
 
 #bluetooth {
-    background-color: #2980b9;
-    color: #ffffff;
+    background-color: #2f4a63;
+    color: #e8e8e8;
 }
 
 #custom-dolphin {
-    background-color: #66cc99;
-    color: #2a5c45;
+    background-color: #3a5f4c;
+    color: #e8e8e8;
 }
 
 #wireplumber {
@@ -259,8 +279,10 @@ label:focus {
     background-color: #eb4d4b;
 }
 
+/* Neutral rather than tinted: tray icons carry their own app colors, and a
+   hued ground fights with them. */
 #tray {
-    background-color: #2980b9;
+    background-color: #33393d;
 }
 
 #tray > .passive {

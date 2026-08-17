@@ -16,26 +16,31 @@
         "all-outputs": true,
         "format": "{id} {windows}",
         "format-window-separator": " ",
-        "window-rewrite-default": "?",
-        // Keys match "class<...>" / "title<...>" of each window on the
-        // workspace. No icon font is installed, so these are short text tags.
+        // The values below are Nerd Font glyphs (installed by nixos/fonts.nix).
+        // They live in the Unicode private use area, so they look like blanks
+        // in any editor lacking the font -- that is expected, not corruption.
+        // To identify one, run the line through `hexdump -C` and look the
+        // codepoint up on nerdfonts.com/cheat-sheet.
+        "window-rewrite-default": "",
+        // Keys match "class<...>" / "title<...>" of each window on the workspace.
         "window-rewrite": {
-            "class<firefox>": "FF",
-            "class<kitty>": "Term",
-            "class<code>": "Code",
-            "class<discord>": "Disc",
-            "class<org.kde.dolphin>": "Files",
-            "class<blender>": "Bldr",
-            "class<com.obsproject.Studio>": "OBS",
-            "class<REAPER>": "Reap",
-            "class<mumble>": "Mmbl",
-            "class<pavucontrol>": "Aud",
-            "class<.blueman-manager-wrapped>": "Blu",
-            "class<steam>": "Steam",
-            "class<libreoffice.*>": "Offc",
-            "class<org.pwmt.zathura>": "PDF",
-            "class<imv>": "Img",
-            "class<mpv>": "MPV"
+            "class<firefox>": "",
+            "class<kitty>": "",
+            "class<code>": "",
+            "class<discord>": "󰙯",
+            "class<org.kde.dolphin>": "",
+            "class<blender>": "",
+            "class<com.obsproject.Studio>": "",
+            "class<REAPER>": "",
+            "class<mumble>": "",
+            "class<pavucontrol>": "",
+            "class<.blueman-manager-wrapped>": "",
+            "class<steam>": "",
+            "class<steam_app_.*>": "",
+            "class<libreoffice.*>": "",
+            "class<org.pwmt.zathura>": "",
+            "class<imv>": "",
+            "class<mpv>": ""
         },
         "on-click": "activate"
     },
@@ -45,6 +50,7 @@
     "modules-right": [
         //"mpd",
         "custom/dolphin",
+        "custom/audiosink",
         "pulseaudio",
         "bluetooth",
         "network",
@@ -101,7 +107,7 @@
     },
     "clock": {
         // "timezone": "America/New_York",
-        "format": "{:%d.%m.%Y | %H:%M}",
+        "format": " {:%d.%m.%Y | %H:%M}",
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
         "on-click": "rofi -dmenu -l 0 -p 'Calendar' -theme-str '* {font: \"monospace 12\";}' -mesg \"$(cal -3)\""
     },
@@ -131,23 +137,22 @@
             "warning": 30,
             "critical": 15
         },
-        "format": "{capacity}%",
-        "format-full": "{capacity}%",
-        "format-charging": "{capacity}%",
-        "format-plugged": "{capacity}% ⚡",
-        "format-alt": "{time}",
-        // "format-good": "", // An empty format will hide the module
-        // "format-full": "",
-        "format-icons": ["", "", "", "", ""]
+        "format": "{icon} {capacity}%",
+        "format-full": "{icon} {capacity}%",
+        "format-charging": " {capacity}%",
+        "format-plugged": " {capacity}%",
+        "format-alt": "{icon} {time}",
+        "format-icons": ["", "", "", "", ""]
     },
     "battery#bat2": {
         "bat": "BAT2"
     },
 
-    // 4-bar wifi meter. No icon font is installed, so the bars are Unicode
-    // block elements (U+2581/2583/2585/2587) with the inactive ones dimmed
-    // via Pango markup. format-icons is indexed by signalStrength, so the
-    // five entries below are 0..4 lit bars.
+    // 4-bar wifi meter. Deliberately NOT a Nerd Font glyph: the icon fonts
+    // only offer a single fixed wifi symbol, so the bars are Unicode block
+    // elements (U+2581/2583/2585/2587) with the inactive ones dimmed via Pango
+    // markup. format-icons is indexed by signalStrength, so the five entries
+    // below are 0..4 lit bars.
     "network": {
         "interface": "wlp1s0",
         "interval": 5,
@@ -170,27 +175,46 @@
 
     "pulseaudio": {
         "scroll-step": 5, // %, can be a float
-        "format": "Aud",
-        "format-bluetooth": "Aud",
-        "format-bluetooth-muted": "Aud",
-        "format-muted": "Aud",
-        "format-source": "",
-        "format-source-muted": "",
+        "format": "{icon} {volume}%",
+        "format-bluetooth": "{icon}  {volume}%",
+        "format-bluetooth-muted": "  {volume}%",
+        "format-muted": " {volume}%",
+        "format-icons": {
+            "default": ["", "", ""]
+        },
+        "tooltip-format": "{desc}  {volume}%",
         "on-click": "pavucontrol"
     },
     "bluetooth": {
-        "format": "Blu",
-        "format-disabled": "Blu",
-        "format-off": "Blu",
-        "format-on": "Blu",
-        "format-connected": "Blu",
-        "on-click": "blueman-manager"
+        "format": "",
+        "format-disabled": "",
+        "format-off": "",
+        "format-on": "",
+        "format-connected": "",
+        "tooltip-format-connected": "{device_enumerate}",
+        "on-click": "~/nixcfg/scripts/focus_or_launch.sh blueman-manager blueman-manager"
     },
     "custom/dolphin": {
-        "format": "Fi",
+        "format": "",
         "on-click": "dolphin",
         "tooltip": true,
         "tooltip-format": "Files (Dolphin)"
+    },
+
+    // Which output the volume knob controls -- i.e. the default sink. Sits
+    // next to "pulseaudio" on purpose: that module shows the *level*, this one
+    // shows the *device*. The script streams JSON continuously (no interval),
+    // so the icon reacts the moment a sink changes or a headset connects.
+    // The icon itself comes from the script rather than format-icons, because
+    // waybar cannot pick one based on sink type.
+    "custom/audiosink": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/audio_sink.sh waybar",
+        "on-click": "~/nixcfg/scripts/audio_sink.sh menu",
+        "on-click-right": "~/nixcfg/scripts/audio_sink.sh next",
+        "on-scroll-up": "~/nixcfg/scripts/audio_sink.sh next",
+        "on-scroll-down": "~/nixcfg/scripts/audio_sink.sh next"
     },
     "custom/media": {
         "format": "{icon} {text}",
@@ -205,7 +229,7 @@
         // "exec": "$HOME/.config/waybar/mediaplayer.py --player spotify 2> /dev/null" // Filter player based on name
     },
     "custom/power": {
-        "format" : "⏻ ",
+        "format" : "",
 		"tooltip": false,
 		"menu": "on-click",
 		/* "menu-file": "$HOME/.config/waybar/power_menu.xml", // Menu file in resources folder */

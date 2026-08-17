@@ -12,6 +12,7 @@
 
       modules = [
         ./configuration.nix
+        ./fonts.nix
         ./hyprland.nix
         ./vscode.nix
         ./garbage_collect.nix
@@ -25,6 +26,7 @@
 
       modules = [
         ./configuration.nix
+        ./fonts.nix
         ./plasma.nix
         ./hyprland.nix
         ./vscode.nix
