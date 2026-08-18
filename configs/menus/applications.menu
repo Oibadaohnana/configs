@@ -1,0 +1,52 @@
+<!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN"
+ "http://www.freedesktop.org/standards/menu-spec/1.0/menu.dtd">
+<!--
+  Installed as /etc/xdg/menus/applications.menu by configuration.nix. Nothing
+  here draws a menu: the file exists so that KDE knows which applications are
+  installed at all.
+
+  kbuildsycoca6 builds the index KIO consults to answer "what opens this file",
+  and it enumerates applications by walking $XDG_MENU_PREFIX + "applications.menu".
+  Plasma exports that prefix and ships plasma-applications.menu; a Hyprland
+  session exports nothing, so the lookup falls back to this unprefixed name, and
+  with no such file installed the index came out holding zero applications.
+  Dolphin then had no handler for any MIME type and met every double-click with
+  an empty "Select the program you want to use" dialog, whatever mimeapps.list
+  said. (The micro-2.desktop and vlc-2.desktop files that were in
+  ~/.local/share/applications are leftovers from typing commands into it.)
+
+  Three things about the shape below, all learned by watching the application
+  count in ~/.cache/ksycoca6* and none of them reported as an error anywhere:
+
+  1. Do not write a double dash inside this comment. Two of them make the XML
+     malformed, the whole file is dropped, and the index silently comes out
+     empty again. That is a footgun worth the sentence it takes to record.
+  2. The obvious one liner, an Include of All at the top level, also yields zero
+     applications. Entries only get indexed once a child Menu with its own
+     Directory allocates them, hence the nesting.
+  3. The file has to sit in an XDG_CONFIG_DIRS entry. $XDG_CONFIG_HOME/menus is
+     not searched for the base menu, so ~/.config/menus/applications.menu does
+     nothing, and this cannot be a symlink from scripts/symlinks.sh like the
+     rest of the configs.
+
+  kde-main.directory and kf5-unknown.directory come from plasma-workspace and
+  are absent on benji-desktop. That only leaves the menus unnamed, which nothing
+  in this setup ever draws; allocation and indexing work regardless.
+-->
+<Menu>
+	<Name>Applications</Name>
+	<Directory>kde-main.directory</Directory>
+	<DefaultAppDirs/>
+	<DefaultDirectoryDirs/>
+	<DefaultLayout>
+		<Merge type="menus"/>
+		<Merge type="files"/>
+	</DefaultLayout>
+	<Menu>
+		<Name>All</Name>
+		<Directory>kf5-unknown.directory</Directory>
+		<Include>
+			<All/>
+		</Include>
+	</Menu>
+</Menu>

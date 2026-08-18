@@ -45,6 +45,24 @@ make_symlink configs/micro/settings.json .config/micro/settings.json
 # (delete word back, which kitty sends for ctrl+backspace) already match.
 # JSON allows no comments, hence the explanation living here.
 make_symlink configs/micro/bindings.json .config/micro/bindings.json
+# Shadows the micro.desktop from pkgs.micro -- same desktop-file ID, and
+# XDG_DATA_HOME beats XDG_DATA_DIRS, so Dolphin resolves this one and still
+# shows a single "Micro" entry in Open With. mimeapps.list names it as the
+# default for text/* so a double-click lands here. See the file for why it
+# spells out kitty instead of using Terminal=true.
+make_symlink configs/micro/micro.desktop .local/share/applications/micro.desktop
+
+# Not a symlink either: KDE keeps its own index of every .desktop file it knows
+# in ~/.cache/ksycoca6*, and micro.desktop above is invisible to Dolphin until
+# that index is rebuilt. Deleting rather than rebuilding in place, because
+# KSycoca treats an existing cache as valid even when it holds zero applications
+# and never repairs itself -- so a cache built before
+# /etc/xdg/menus/applications.menu was installed (see configuration.nix) would
+# otherwise stay broken forever.
+if command -v kbuildsycoca6 >/dev/null; then
+    rm -f "$HOME"/.cache/ksycoca6*
+    kbuildsycoca6 >/dev/null 2>&1
+fi
 
 # Not a symlink: blueman stores plugin state in dconf, so no file in this repo
 # can stand in for it. The "!" prefix is blueman's disable marker -- killing

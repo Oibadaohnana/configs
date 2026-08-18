@@ -1,0 +1,24 @@
+[Desktop Entry]
+Type=Application
+Name=Micro
+GenericName=Text Editor
+Comment=Edit text files in a terminal
+Icon=micro
+
+# Deliberately not "Exec=micro %F" + "Terminal=true" like the micro.desktop that
+# ships in pkgs.micro. Terminal=true makes the *launcher* supply the terminal:
+# Dolphin asks KIO, KIO reads kdeglobals [General] TerminalApplication, and with
+# that key unset it falls back to konsole -- which isn't installed here, so the
+# double-click did nothing at all. Naming kitty removes the guesswork.
+# %F (not %f) hands micro every selected file at once, one per tab.
+Exec=kitty micro %F
+Terminal=false
+StartupNotify=false
+
+Categories=Utility;TextEditor;Development;
+Keywords=text;editor;syntax;terminal;
+
+# Types micro should offer to open. Subtypes of text/plain (nix, markdown,
+# python, shell, ...) are inherited, so this list only needs text/plain plus the
+# text-shaped application/* and text/* types that sit outside that tree.
+MimeType=text/plain;text/csv;text/css;text/html;text/javascript;text/markdown;text/x-diff;text/x-patch;text/x-log;text/yaml;application/json;application/javascript;application/sql;application/toml;application/xml;application/x-cmake;application/x-desktop;application/x-perl;application/x-php;application/x-shellscript;application/x-yaml;

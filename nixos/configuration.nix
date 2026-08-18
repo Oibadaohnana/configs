@@ -123,6 +123,19 @@
     Policy.AutoEnable = true;
   };
 
+  # Keep Bluetooth headsets pinned to A2DP (AAC/SBC-XQ, stereo 48kHz).
+  # Classic Bluetooth can't do A2DP playback and the mic at once, so any app
+  # that opens the headset mic drags the card onto HSP/HFP -- mono 16kHz.
+  # Dota 2 (SDL) grabs the default source at launch even with voice chat unused,
+  # which is what was wrecking game audio. Trade-off: the headset mic no longer
+  # works system-wide. Re-enable it for a call with:
+  #   wpctl set-profile <card-id> headset-head-unit
+  services.pipewire.wireplumber.extraConfig."51-bluez-no-autoswitch" = {
+    "wireplumber.settings" = {
+      "bluetooth.autoswitch-to-headset-profile" = false;
+    };
+  };
+
   hardware.graphics = {
     enable = true;
     enable32Bit = true;
@@ -146,6 +159,15 @@
     VISUAL = "micro";
   };
   xdg.portal.enable = true;
+
+  # Same family of problem as QT_QPA_PLATFORMTHEME above: a KDE app in a session
+  # that isn't Plasma. Without this file KDE's application index comes out empty
+  # and Dolphin cannot open anything by double-click -- the file itself explains
+  # the mechanism. It goes through environment.etc rather than symlinks.sh
+  # because only XDG_CONFIG_DIRS entries are searched for the base menu, and
+  # /etc/xdg is the writable-by-Nix one of those.
+  environment.etc."xdg/menus/applications.menu".source =
+    ../configs/menus/applications.menu;
 
   # System basics
   time.timeZone = "Europe/Berlin";
@@ -176,6 +198,11 @@ services.avahi = {
 };
 
   networking.networkmanager.enable = true;
+
+  # Disable WiFi powersave: the MT7922 sleeps between packets, which adds
+  # ~3ms latency and 4x jitter (measured 1.9ms/1.3 awake vs 5.2ms/5.2 asleep).
+  # NM's own default enables it, so this must be set explicitly.
+  networking.networkmanager.wifi.powersave = false;
 
   # User setup
   users.users.benji = {
