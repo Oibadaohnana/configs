@@ -13,7 +13,7 @@ local menu = "rofi -show drun"
 -- Monitors
 ----------------------------------------
 -- Desktop
-hl.monitor({ output = "DP-3", mode = "2560x1440@180", position = "0x0", scale = 1.25 })
+hl.monitor({ output = "DP-3", mode = "2560x1440@180", position = "0x0", scale = 2 })
 
 -- Secondary display always auto-enables at a fixed 720p, not its native
 -- resolution. Named rules take precedence over the wildcard rule below.
@@ -51,7 +51,7 @@ hl.config({
     },
 
     cursor = {
-        no_hardware_cursors = true,
+        no_hardware_cursors = false,
     },
 })
 
@@ -68,6 +68,11 @@ hl.config({
             inactive_border = "rgba(222222ff)",
         },
         layout = "dwindle",
+
+        -- Master switch for tearing. Nothing tears on its own: only windows
+        -- carrying an `immediate` rule do, and only while fullscreen and alone
+        -- on screen. Trades a visible tear line for lower input latency.
+        allow_tearing = true,
     },
 
     decoration = {
@@ -83,6 +88,10 @@ hl.config({
 
     misc = {
         background_color = 0xFF000000,
+        -- Adaptive sync. 3 = fullscreen_game: VRR engages only when the
+        -- fullscreen app reports game content, so the desktop keeps a fixed
+        -- refresh and only games get the variable one.
+        vrr = 3,
         disable_hyprland_logo = true,
         disable_splash_rendering = true,
         force_default_wallpaper = 0,
@@ -99,6 +108,13 @@ hl.config({
 
     dwindle = {
         preserve_split = true,
+    },
+
+    -- Hands a fullscreen window's buffer straight to the display controller,
+    -- skipping Hyprland's composite pass entirely. Off by default (0).
+    -- 2 = auto, which scans out when it can and falls back when it can't.
+    render = {
+        direct_scanout = 2,
     },
 
     -- XWayland (Steam, Proton games, etc.) doesn't support fractional scaling.
@@ -122,6 +138,8 @@ hl.window_rule({
     match = { initial_class = "^steam_app_\\d+$" },
 
     fullscreen = true,
+    -- Tear rather than wait for vblank: lowest input latency in-game.
+    immediate  = true,
 })
 
 ----------------------------------------
@@ -187,6 +205,8 @@ hl.bind(mod .. " + CTRL + ESCAPE", hl.dsp.exec_cmd("hyprctl kill"))
 -- Meta+F / Meta+PgUp = Maximize
 hl.bind(mod .. " + F",     hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
 hl.bind(mod .. " + PRIOR", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
+-- Meta+Alt+F = true fullscreen (covers waybar; Meta+F only maximizes)
+hl.bind(mod .. " + ALT + F", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
 -- Toggle floating
 hl.bind(mod .. " + SHIFT + SPACE", hl.dsp.window.float({ action = "toggle" }))
 -- Cycle windows
