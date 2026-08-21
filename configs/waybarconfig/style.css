@@ -104,6 +104,7 @@ button:hover {
 #custom-media,
 #custom-dolphin,
 #custom-audiosink,
+#custom-monitors,
 #tray,
 #mode,
 #idle_inhibitor,
@@ -246,6 +247,20 @@ label:focus {
 #custom-dolphin {
     background-color: #3a5f4c;
     color: #e8e8e8;
+}
+
+/* Display switcher, in a muted violet so it reads as its own control instead
+   of joining the blue bluetooth tile or the olive audio pair beside it.
+   .partial means at least one connected output is currently switched off,
+   .all means every one of them is on -- the count in the tile already says
+   which, so the class only dims the text rather than repainting the tile. */
+#custom-monitors {
+    background-color: #4a3a5f;
+    color: #e8e8e8;
+}
+
+#custom-monitors.partial {
+    color: #b0a8bb;
 }
 
 #wireplumber {

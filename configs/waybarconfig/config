@@ -53,6 +53,7 @@
         "custom/audiosink",
         "pulseaudio",
         "bluetooth",
+        "custom/monitors",
         "network",
         "battery",
         "battery#bat2",
@@ -199,6 +200,27 @@
         "on-click": "dolphin",
         "tooltip": true,
         "tooltip-format": "Files (Dolphin)"
+    },
+
+    // Which displays are switched on. The tile counts how many of the connected
+    // outputs are active; clicking it opens a rofi list for turning them on and
+    // off, and that choice is remembered across logins -- see
+    // scripts/monitors.sh, which records it, and the "Saved monitor on/off
+    // state" section of hyprland.lua, which restores it. Right-click opens
+    // wdisplays for arranging them.
+    //
+    // Polled slowly rather than continuously, because displays change rarely.
+    // Whatever does change them -- this menu, Meta+End, a cable being plugged
+    // in -- sends RTMIN+8, so the tile updates at once instead of waiting out
+    // the interval.
+    "custom/monitors": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/monitors.sh waybar",
+        "interval": 30,
+        "signal": 8,
+        "on-click": "~/nixcfg/scripts/monitors.sh menu",
+        "on-click-right": "wdisplays"
     },
 
     // Which output the volume knob controls -- i.e. the default sink. Sits

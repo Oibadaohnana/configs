@@ -33,6 +33,66 @@ hl.workspace_rule({ workspace = "4", monitor = "HDMI-A-1" })
 -- hl.monitor({ output = "eDP-1", mode = "preferred",     position = "0x0",    scale = 1.5 })
 
 ----------------------------------------
+-- Saved monitor on/off state
+----------------------------------------
+-- ~/nixcfg/scripts/monitors.sh records which outputs were switched off, one
+-- name per line, and this reads them back so the choice survives a logout.
+-- Read from Lua rather than shelled out to, so a saved-off output never
+-- flashes on before being switched off again.
+--
+-- The file deliberately lives outside this repo: it is per-machine state, and
+-- the desktop and the framework have different output names.
+local disabled_monitors_file =
+    (os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state"))
+    .. "/hypr/disabled-monitors"
+
+local function saved_disabled_outputs()
+    local outputs = {}
+    local f = io.open(disabled_monitors_file, "r")
+    if not f then return outputs end
+    for line in f:lines() do
+        local output = line:match("^%s*(.-)%s*$")
+        if output ~= "" and output:sub(1, 1) ~= "#" then
+            outputs[#outputs + 1] = output
+        end
+    end
+    f:close()
+    return outputs
+end
+
+-- hl.get_monitor() returns nil for an output that is disabled or absent, so
+-- #hl.get_monitors() counts the *enabled* ones. Never switch off the last of
+-- them: a stale entry here (the laptop panel saved as off, then booted
+-- undocked) would otherwise leave a black screen with no way back.
+--
+-- Every saved output is re-checked on each call, not just a newly added one,
+-- because at login the monitors arrive one at a time: the first one cannot be
+-- switched off while it is alone, and only once a second arrives does the
+-- saved "off" for the first become safe to apply.
+local function apply_saved_monitor_state()
+    for _, output in ipairs(saved_disabled_outputs()) do
+        if hl.get_monitor(output) and #hl.get_monitors() > 1 then
+            hl.monitor({ output = output, disabled = true })
+        end
+    end
+end
+
+apply_saved_monitor_state()
+
+-- A monitor plugged in later is auto-enabled by the wildcard rule above, which
+-- would undo a saved "off", so re-apply whenever one appears. Both events also
+-- poke waybar, whose custom/monitors tile would otherwise sit stale until its
+-- next poll. The signal number matches WAYBAR_SIGNAL in monitors.sh.
+hl.on("monitor.added", function()
+    apply_saved_monitor_state()
+    hl.exec_cmd("pkill -RTMIN+8 waybar")
+end)
+
+hl.on("monitor.removed", function()
+    hl.exec_cmd("pkill -RTMIN+8 waybar")
+end)
+
+----------------------------------------
 -- Input
 ----------------------------------------
 hl.config({
@@ -172,15 +232,13 @@ hl.bind(mod .. " + D",      hl.dsp.exec_cmd(menu))
 -- Meta+V = Show Clipboard (matches Plasma)
 hl.bind(mod .. " + V",      hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))
 -- Meta+End = Toggle gaming display (matches Plasma)
--- `hyprctl keyword` can't touch monitors under the lua config parser anymore,
--- so this now calls hl.monitor() directly, and actually toggles both ways.
-hl.bind(mod .. " + END", function()
-    if hl.get_monitor("HDMI-A-1") then
-        hl.monitor({ output = "HDMI-A-1", disabled = true })
-    else
-        hl.monitor({ output = "HDMI-A-1", mode = "1280x720@60", position = "auto", scale = 1, disabled = false })
-    end
-end)
+-- Routed through monitors.sh rather than calling hl.monitor() here, so the
+-- choice lands in the saved state and survives a logout like any other display
+-- toggle. Switching it back on only clears the "disabled" flag -- the named
+-- HDMI-A-1 rule above supplies the 720p mode and scale again by itself.
+hl.bind(mod .. " + END", hl.dsp.exec_cmd("~/nixcfg/scripts/monitors.sh toggle HDMI-A-1"))
+-- Meta+M = Pick which displays are on (same menu as the waybar tile)
+hl.bind(mod .. " + M", hl.dsp.exec_cmd("~/nixcfg/scripts/monitors.sh menu"))
 
 ----------------------------------------
 -- Session (matches Plasma)
