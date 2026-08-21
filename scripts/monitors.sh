@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-# Turns individual monitors on and off from a rofi list, and feeds waybar a
-# tile showing how many are currently active.
+# Turns individual monitors on and off from a rofi list, pins which of them
+# sits at each end of the row, and feeds waybar a tile showing how many are
+# currently active.
 #
 # Why not `hyprctl keyword monitor ...`: under the Lua config parser that
 # command is refused outright ("keyword can't work with non-legacy parsers"),
@@ -9,37 +10,51 @@
 # the same call hyprland.lua itself uses.
 #
 # Persistence: Hyprland has no memory of a switched-off output, and the
-# wildcard monitor rule in hyprland.lua re-enables anything it sees. So the
-# set of switched-off outputs is written to a state file that hyprland.lua
-# reads back when it loads and whenever a monitor appears. That file lives
-# outside the nixcfg repo on purpose -- it is per-machine state, and the
-# desktop and the framework have different output names.
+# wildcard monitor rule in hyprland.lua re-enables anything it sees. So both
+# the switched-off outputs and the end-of-row pins are written to state files
+# that hyprland.lua reads back when it loads and whenever a monitor appears.
+# Those files live outside the nixcfg repo on purpose -- they are per-machine
+# state, and the desktop and the framework have different output names.
 #
-# Worth knowing: switching an output off and back on can rearrange where the
-# screens sit relative to each other. That is the `position = "auto"` wildcard
-# rule in hyprland.lua doing its job -- "auto" places a monitor to the right of
-# whatever is already on, so the one that comes back last lands on the right,
-# regardless of where it used to be. Give an output an explicit position in
-# hyprland.lua if its place in the row should be fixed, or nudge it afterwards
-# with wdisplays (Meta+P, or right-click the waybar tile).
+# Pinning an end also settles where the screens sit: with nothing pinned, the
+# `position = "auto"` wildcard rule in hyprland.lua places each output to the
+# right of whatever is already on, so switching one off and back on can leave
+# the row in a different order than it started. Pin an end and this script
+# lays the whole row out explicitly instead, and that order then holds.
+#
+# Overlaps: Hyprland will happily stack two outputs on the same coordinates and
+# says nothing about it -- no log line, no warning -- so an overlap, once made,
+# just stays until something notices. cmd_layout therefore never lets one exist
+# even for an instant (see the two passes there), and repairs one it finds.
 #
 # Usage:
 #   monitors.sh waybar          JSON for the custom/monitors module
-#   monitors.sh menu            turn displays on/off from a rofi list
-#   monitors.sh toggle <name>   flip one output
+#   monitors.sh menu            turn displays on/off and pin their order
+#   monitors.sh toggle <name>   flip one output on/off
 #   monitors.sh on <name>       turn one output on
 #   monitors.sh off <name>      turn one output off
-#   monitors.sh apply           re-apply the saved state to a running session
-#   monitors.sh list            name<TAB>description<TAB>disabled<TAB>mode
+#   monitors.sh left <name>     pin one output to the left end (again = unpin)
+#   monitors.sh right <name>    pin one output to the right end (again = unpin)
+#   monitors.sh layout          re-pack the row, and repair any overlap
+#   monitors.sh overlap         print "yes" if any two outputs overlap
+#   monitors.sh apply           re-apply the saved on/off state
+#   monitors.sh list            one line per output, tab separated:
+#                               name desc disabled mode scale width height x y
 
 set -euo pipefail
 
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/hypr"
 STATE_FILE="$STATE_DIR/disabled-monitors"
+SIDES_FILE="$STATE_DIR/monitor-sides"
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp}"
 
 # Must match "signal" in the custom/monitors module in waybarconfig/config.
 WAYBAR_SIGNAL=8
+
+# Where outputs are stashed while the row is being rearranged. Far enough down
+# that a parked output cannot touch the row being built at y=0, whatever the
+# screens are.
+PARK_Y=100000
 
 # Nerd Font glyphs, written as \u escapes rather than literal characters: the
 # codepoints sit in the private use area, so a literal glyph is invisible in
@@ -48,23 +63,74 @@ WAYBAR_SIGNAL=8
 ICON_DISPLAY=$'\uf108'   # nf-fa-desktop
 ICON_LAPTOP=$'\uf109'    # nf-fa-laptop
 
-# name<TAB>description<TAB>disabled<TAB>mode, one monitor per line, in
-# hyprctl's own order. The "all" is what makes this work at all: without it
-# hyprctl omits disabled outputs entirely, so anything switched off would
-# disappear from the menu and could never be switched back on.
+# One line per monitor, tab separated, in hyprctl's own order:
+#   name  description  disabled  mode  scale  width  height  x  y
+#
+# The "all" is what makes this work at all: without it hyprctl omits disabled
+# outputs entirely, so anything switched off would disappear from the menu and
+# could never be switched back on.
+#
+# width/height are *logical* -- pixels divided by the scale, which is the unit
+# positions are expressed in and therefore the unit overlaps have to be judged
+# in. Computed in awk because the scale is often fractional and the rest of
+# this script is integer-only shell arithmetic.
 monitor_list() {
     hyprctl monitors all | awk '
-        function flush() {
-            if (name != "")
-                printf "%s\t%s\t%s\t%s\n", name, (desc == "" ? name : desc), dis, mode
+        function flush(   t) {
+            if (name == "") return
+            lw = (scale > 0) ? int(pw / scale + 0.5) : pw
+            lh = (scale > 0) ? int(ph / scale + 0.5) : ph
+            # Transforms 1/3/5/7 are the 90 and 270 degree rotations: a
+            # portrait monitor occupies its height horizontally, not its width.
+            if (tr % 2 == 1) { t = lw; lw = lh; lh = t }
+            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                name, (desc == "" ? name : desc), dis, mode, scale, lw, lh, px, py
         }
-        /^Monitor / { flush(); name = $2; desc = ""; dis = "false"; mode = ""; next }
-        # The current mode, e.g. "\t2560x1440@143.99001 at 0x0". Anchored on a
-        # leading digit so the "availableModes:" line cannot match it.
-        /^[ \t]+[0-9]+x[0-9]+@/ { if (mode == "") { split($1, m, "@"); mode = m[1] } next }
+        /^Monitor / {
+            flush()
+            name = $2; desc = ""; dis = "false"; mode = ""
+            scale = 1; tr = 0; pw = 0; ph = 0; px = 0; py = 0
+            next
+        }
+        # The current mode and origin, e.g. "\t2560x1440@143.99001 at 0x0".
+        # Anchored on a leading digit so "availableModes:" cannot match it.
+        /^[ \t]+[0-9]+x[0-9]+@/ {
+            if (mode == "") {
+                split($1, m, "@");  mode = m[1]
+                split(mode, wh, "x"); pw = wh[1]; ph = wh[2]
+                split($3, p, "x");    px = p[1];  py = p[2]
+            }
+            next
+        }
         /^[ \t]+description: / { sub(/^[ \t]+description: /, ""); desc = $0; next }
         /^[ \t]+disabled: /    { dis = $2; next }
+        /^[ \t]+scale: /       { scale = $2; next }
+        /^[ \t]+transform: /   { tr = $2; next }
         END { flush() }
+    '
+}
+
+# "yes" if any two enabled outputs share screen area. Two rectangles miss each
+# other when one ends before the other starts on either axis, so they intersect
+# only when neither axis separates them.
+has_overlap() {
+    monitor_list | awk -F'\t' '
+        $3 == "false" { n++; x[n] = $8; y[n] = $9; w[n] = $6; h[n] = $7 }
+        END {
+            for (i = 1; i <= n; i++)
+                for (j = i + 1; j <= n; j++)
+                    if (x[i] < x[j] + w[j] && x[j] < x[i] + w[i] &&
+                        y[i] < y[j] + h[j] && y[j] < y[i] + h[i]) { print "yes"; exit }
+        }
+    '
+}
+
+# The x coordinate just past the right-hand end of every enabled output, i.e. a
+# spot guaranteed to be clear of all of them.
+rightmost_edge() {
+    monitor_list | awk -F'\t' '
+        $3 == "false" { e = $8 + $6; if (e > max) max = e }
+        END { print (max > 0) ? max : 0 }
     '
 }
 
@@ -103,8 +169,106 @@ saved_remove() {
     mv "$STATE_FILE.tmp" "$STATE_FILE"
 }
 
+# ---------------------------------------------------------------------------
+# End-of-row pins: name<TAB>left or name<TAB>right, at most two lines.
+# ---------------------------------------------------------------------------
+
+side_of() {
+    local target=$1 name side
+    [[ -f $SIDES_FILE ]] || return 0
+    while IFS=$'\t' read -r name side; do
+        if [[ $name == "$target" ]]; then printf '%s' "$side"; return 0; fi
+    done <"$SIDES_FILE"
+}
+
+# Pinning is exclusive both ways: an end belongs to one output, and an output
+# sits at one end. So setting a pin drops whoever held that end before, and
+# drops any other end this output was holding. Rewriting the file wholesale is
+# simpler than editing in place, and it is never more than two lines long.
+# An empty $2 just clears the pin.
+side_set() {
+    local target=$1 want=$2 name side
+    mkdir -p "$STATE_DIR"
+    : >"$SIDES_FILE.tmp"
+    if [[ -f $SIDES_FILE ]]; then
+        while IFS=$'\t' read -r name side; do
+            [[ -n $name ]] || continue
+            if [[ $side == "$want" || $name == "$target" ]]; then continue; fi
+            printf '%s\t%s\n' "$name" "$side" >>"$SIDES_FILE.tmp"
+        done <"$SIDES_FILE"
+    fi
+    if [[ -n $want ]]; then printf '%s\t%s\n' "$target" "$want" >>"$SIDES_FILE.tmp"; fi
+    mv "$SIDES_FILE.tmp" "$SIDES_FILE"
+}
+
+# Lay the enabled outputs out in one row, left to right, edge to edge with
+# their tops aligned, so the cursor and windows cross between them without
+# falling into a gap or an overlap.
+#
+# Runs when an end has been pinned, and also whenever the outputs are actually
+# overlapping -- so a bad arrangement gets repaired even when nothing is
+# pinned. Otherwise it stays out of the way and positions remain whatever
+# hyprland.lua says, which on the desktop means the explicit DP-3 rule; a
+# script nobody asked to take charge should not quietly override that.
+cmd_layout() {
+    if [[ ! -s $SIDES_FILE && -z $(has_overlap) ]]; then return 0; fi
+
+    local name desc dis mode scale lw lh px py
+    local left="" middle="" right=""
+
+    while IFS=$'\t' read -r name desc dis mode scale lw lh px py; do
+        [[ $dis == false ]] || continue
+        case "$(side_of "$name")" in
+            left)  left+="$name $lw $lh"$'\n' ;;
+            right) right+="$name $lw $lh"$'\n' ;;
+            *)     middle+="$name $lw $lh"$'\n' ;;
+        esac
+    done < <(monitor_list)
+
+    local ordered
+    ordered=$(printf '%s%s%s' "$left" "$middle" "$right")
+    [[ -n $ordered ]] || return 0
+
+    # Two passes, both inside a single eval.
+    #
+    # Moving each output straight to its new place can put two of them on the
+    # same coordinates part-way through: two displays swapping ends is the
+    # plain case, where whichever moves first lands squarely on the other. That
+    # window is brief, but Hyprland neither refuses nor reports an overlap, so
+    # anything sampling the layout at that moment -- wdisplays, a client
+    # reacting to the output change -- sees a genuinely broken arrangement, and
+    # if the second pass never lands it stays broken.
+    #
+    # So the row is first parked well below the screen in a vertical stack.
+    # Stacked by height it cannot overlap itself, and at y=100000 it cannot
+    # reach the row being rebuilt at y=0. Every output is therefore out of the
+    # way before any of them is put down, and no intermediate state overlaps.
+    local lua="" y=$PARK_Y
+    while read -r name lw lh; do
+        [[ -n $name ]] || continue
+        lua+="hl.monitor({ output = \"$name\", position = \"0x${y}\" }) "
+        y=$((y + lh))
+    done <<<"$ordered"
+
+    local x=0
+    while read -r name lw lh; do
+        [[ -n $name ]] || continue
+        lua+="hl.monitor({ output = \"$name\", position = \"${x}x0\" }) "
+        x=$((x + lw))
+    done <<<"$ordered"
+
+    hyprctl eval "$lua" >/dev/null
+
+    # Hyprland stays silent about a bad layout, so check rather than assume.
+    sleep 0.3
+    if [[ -n $(has_overlap) ]]; then
+        notify "Displays overlap" "Could not arrange them cleanly -- try wdisplays."
+    fi
+    return 0
+}
+
 # waybar only re-runs this script every "interval" seconds; the signal makes a
-# toggle land on the bar at once instead of on the next poll.
+# change land on the bar at once instead of on the next poll.
 refresh_waybar() {
     pkill "-RTMIN+$WAYBAR_SIGNAL" waybar 2>/dev/null || true
 }
@@ -117,17 +281,17 @@ notify() {
 }
 
 enabled_count() {
-    local name desc dis mode n=0
-    while IFS=$'\t' read -r name desc dis mode; do
+    local name desc dis mode scale lw lh px py n=0
+    while IFS=$'\t' read -r name desc dis mode scale lw lh px py; do
         if [[ $dis == false ]]; then n=$((n + 1)); fi
     done < <(monitor_list)
     printf '%s' "$n"
 }
 
 describe() {
-    local target=$1 name desc dis mode
-    while IFS=$'\t' read -r name desc dis mode; do
-        [[ $name == "$target" ]] && { printf '%s' "$desc"; return; }
+    local target=$1 name desc dis mode scale lw lh px py
+    while IFS=$'\t' read -r name desc dis mode scale lw lh px py; do
+        if [[ $name == "$target" ]]; then printf '%s' "$desc"; return 0; fi
     done < <(monitor_list)
     printf '%s' "$target"
 }
@@ -140,14 +304,34 @@ set_monitor() {
     local name=$1 disabled=$2
     valid_name "$name" || { echo "Refusing odd output name: $name" >&2; return 1; }
 
-    if [[ $disabled == true ]]; then saved_add "$name"; else saved_remove "$name"; fi
-    hyprctl eval "hl.monitor({ output = \"$name\", disabled = $disabled })" >/dev/null
+    if [[ $disabled == true ]]; then
+        saved_add "$name"
+        hyprctl eval "hl.monitor({ output = \"$name\", disabled = true })" >/dev/null
+    else
+        saved_remove "$name"
+        # Hyprland brings an output back at the coordinates it last held, and by
+        # now something else may be sitting there: the row shuffles left every
+        # time a display is switched off, so the place this one used to occupy
+        # is often taken. It would then sit exactly on top of another display
+        # until the re-layout below catches up -- close to a second, which is
+        # long enough for anything inspecting the layout to see a broken one.
+        # Switching it on *at* a free spot, in the same call, closes that
+        # window; cmd_layout then moves it where the pins actually want it.
+        hyprctl eval "hl.monitor({ output = \"$name\", disabled = false, position = \"$(rightmost_edge)x0\" })" >/dev/null
+    fi
 
     if [[ $disabled == true ]]; then
         notify "$(icon_for "$name") Display off" "$(describe "$name")"
     else
         notify "$(icon_for "$name") Display on" "$(describe "$name")"
     fi
+
+    # Hyprland reports the new state a moment later, and the row has to be
+    # rebuilt around whichever outputs are left -- an output it auto-places on
+    # the way back in can land on top of another. monitor.removed does not fire
+    # for a disable, so this has to happen here rather than on an event.
+    sleep 0.3
+    cmd_layout
     refresh_waybar
 }
 
@@ -163,8 +347,8 @@ turn_off() {
 }
 
 cmd_toggle() {
-    local target=$1 name desc dis mode state=""
-    while IFS=$'\t' read -r name desc dis mode; do
+    local target=$1 name desc dis mode scale lw lh px py state=""
+    while IFS=$'\t' read -r name desc dis mode scale lw lh px py; do
         if [[ $name == "$target" ]]; then state=$dis; break; fi
     done < <(monitor_list)
 
@@ -176,46 +360,83 @@ cmd_toggle() {
     if [[ $state == false ]]; then turn_off "$target"; else set_monitor "$target" false; fi
 }
 
-# Stays open after each pick so several displays can be flipped in one go;
-# Esc closes it. rofi exits non-zero on Esc, hence the `|| return 0`.
+# Ticking the end an output already holds unpins it, so the same row toggles
+# both ways -- the same way the on/off row does.
+cmd_side() {
+    local name=$1 want=$2
+    valid_name "$name" || { echo "Refusing odd output name: $name" >&2; return 1; }
+
+    if [[ "$(side_of "$name")" == "$want" ]]; then
+        side_set "$name" ""
+        notify "$(icon_for "$name") Unpinned" "$(describe "$name")"
+    else
+        side_set "$name" "$want"
+        notify "$(icon_for "$name") Pinned $want" "$(describe "$name")"
+    fi
+    cmd_layout
+    refresh_waybar
+}
+
+# Three rows per display: the display itself, and one for each end of the row
+# it can be pinned to. Stays open after each pick so several can be changed in
+# one go; Esc closes it. rofi exits non-zero on Esc, hence the `|| return 0`.
 cmd_menu() {
-    local -a names=() rows=()
-    local name desc dis mode marker choice i menu
+    local -a rows=() actions=()
+    local name desc dis mode scale lw lh px py side marker choice i menu act arg1 arg2
 
     while :; do
-        names=(); rows=()
-        while IFS=$'\t' read -r name desc dis mode; do
-            names+=("$name")
+        rows=(); actions=()
+        while IFS=$'\t' read -r name desc dis mode scale lw lh px py; do
             [[ $dis == false ]] && marker="●" || marker="○"
             rows+=("$marker $(icon_for "$name")  $desc ($name)  $mode")
+            actions+=("toggle $name")
+
+            side=$(side_of "$name")
+            [[ $side == left ]] && marker="●" || marker="○"
+            rows+=("      $marker  leftmost")
+            actions+=("side $name left")
+
+            [[ $side == right ]] && marker="●" || marker="○"
+            rows+=("      $marker  rightmost")
+            actions+=("side $name right")
         done < <(monitor_list)
-        (( ${#names[@]} )) || return 0
+        (( ${#rows[@]} )) || return 0
 
         menu=""
         for i in "${!rows[@]}"; do menu+="${rows[i]}"$'\n'; done
 
         # -format i returns the row index, so two identical panels stay
-        # distinguishable.
+        # distinguishable, and the index maps straight onto the action list.
         choice=$(printf '%s' "$menu" | rofi -dmenu -i -p "Displays" -format i \
-            -mesg "Enter toggles a display, Esc when done") || return 0
+            -mesg "Enter toggles a row, Esc when done") || return 0
         [[ -n $choice ]] || return 0
 
-        cmd_toggle "${names[choice]}" || true
+        read -r act arg1 arg2 <<<"${actions[choice]}"
+        case "$act" in
+            toggle) cmd_toggle "$arg1" || true ;;
+            side)   cmd_side "$arg1" "$arg2" || true ;;
+        esac
         # Hyprland needs a moment before hyprctl reports the new state.
         sleep 0.4
     done
 }
 
 cmd_waybar() {
-    local name desc dis mode total=0 active=0 tooltip="" marker text class
-    while IFS=$'\t' read -r name desc dis mode; do
+    local name desc dis mode scale lw lh px py
+    local total=0 active=0 tooltip="" marker text class pin
+    while IFS=$'\t' read -r name desc dis mode scale lw lh px py; do
         total=$((total + 1))
         if [[ $dis == false ]]; then
             active=$((active + 1)); marker="● "
         else
             marker="○ "
         fi
-        tooltip+="$marker$(json_escape "$desc") ($(json_escape "$name")) $mode\\n"
+        case "$(side_of "$name")" in
+            left)  pin=" [left]" ;;
+            right) pin=" [right]" ;;
+            *)     pin="" ;;
+        esac
+        tooltip+="$marker$(json_escape "$desc") ($(json_escape "$name")) $mode$pin\\n"
     done < <(monitor_list)
 
     (( total )) || { printf '{"text":"","tooltip":"No displays"}\n'; return 0; }
@@ -226,6 +447,8 @@ cmd_waybar() {
     if (( active < total )); then class="partial"; else class="all"; fi
 
     tooltip="Displays: $active of $total active\\n\\n${tooltip%\\n}"
+    if [[ -n $(has_overlap) ]]; then tooltip+="\\n\\nWarning: displays overlap"; fi
+
     printf '{"text":"%s","tooltip":"%s","class":"%s"}\n' \
         "$(json_escape "$text")" "$tooltip" "$class"
 }
@@ -234,25 +457,31 @@ cmd_waybar() {
 # is for repairing a running session by hand. It keeps the same last-display
 # guard, so a stale state file can never black out the session.
 cmd_apply() {
-    [[ -f $STATE_FILE ]] || return 0
     local name
-    while read -r name; do
-        [[ -n $name && $name != \#* ]] || continue
-        turn_off "$name"
-    done <"$STATE_FILE"
+    if [[ -f $STATE_FILE ]]; then
+        while read -r name; do
+            [[ -n $name && $name != \#* ]] || continue
+            turn_off "$name"
+        done <"$STATE_FILE"
+    fi
+    cmd_layout
     refresh_waybar
 }
 
 case "${1:-}" in
-    waybar) cmd_waybar ;;
-    menu)   cmd_menu ;;
-    toggle) cmd_toggle "${2:?usage: $0 toggle <output>}" ;;
-    on)     set_monitor "${2:?usage: $0 on <output>}" false ;;
-    off)    turn_off "${2:?usage: $0 off <output>}" ;;
-    apply)  cmd_apply ;;
-    list)   monitor_list ;;
+    waybar)  cmd_waybar ;;
+    menu)    cmd_menu ;;
+    toggle)  cmd_toggle "${2:?usage: $0 toggle <output>}" ;;
+    on)      set_monitor "${2:?usage: $0 on <output>}" false ;;
+    off)     turn_off "${2:?usage: $0 off <output>}" ;;
+    left)    cmd_side "${2:?usage: $0 left <output>}" left ;;
+    right)   cmd_side "${2:?usage: $0 right <output>}" right ;;
+    layout)  cmd_layout ;;
+    overlap) has_overlap ;;
+    apply)   cmd_apply ;;
+    list)    monitor_list ;;
     *)
-        echo "Usage: $0 {waybar|menu|toggle <output>|on <output>|off <output>|apply|list}" >&2
+        echo "Usage: $0 {waybar|menu|toggle <o>|on <o>|off <o>|left <o>|right <o>|layout|overlap|apply|list}" >&2
         exit 1
         ;;
 esac

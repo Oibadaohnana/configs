@@ -83,13 +83,34 @@ apply_saved_monitor_state()
 -- would undo a saved "off", so re-apply whenever one appears. Both events also
 -- poke waybar, whose custom/monitors tile would otherwise sit stale until its
 -- next poll. The signal number matches WAYBAR_SIGNAL in monitors.sh.
+--
+-- The pinned left-to-right order is re-applied by the script rather than here:
+-- placing the outputs edge to edge means measuring the logical size of each
+-- one, which it already parses out of hyprctl. It also repairs an overlap even
+-- when nothing is pinned -- Hyprland stacks two outputs on the same spot
+-- without a word of complaint, so nothing else would ever notice.
+--
+-- The second of delay is not decoration: this event arrives before Hyprland
+-- has finished placing the new output, and re-packing the row against a
+-- half-settled layout is how an output ends up sitting on top of another.
 hl.on("monitor.added", function()
     apply_saved_monitor_state()
+    hl.exec_cmd("sleep 1 && ~/nixcfg/scripts/monitors.sh layout")
     hl.exec_cmd("pkill -RTMIN+8 waybar")
 end)
 
 hl.on("monitor.removed", function()
+    hl.exec_cmd("sleep 1 && ~/nixcfg/scripts/monitors.sh layout")
     hl.exec_cmd("pkill -RTMIN+8 waybar")
+end)
+
+-- Reloading the config re-runs the wildcard rule at the top of this file, and
+-- `position = "auto"` then re-packs the row in whatever order Hyprland fancies
+-- -- throwing away the pinned arrangement. Nothing else notices, because the
+-- result is a valid non-overlapping layout, just not the requested one. So put
+-- it back every time the config is re-read.
+hl.on("config.reloaded", function()
+    hl.exec_cmd("sleep 1 && ~/nixcfg/scripts/monitors.sh layout")
 end)
 
 ----------------------------------------
