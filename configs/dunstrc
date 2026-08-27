@@ -1,0 +1,73 @@
+# dunst -- the X11 stand-in for mako. Every setting here is the counterpart of
+# one in configs/makoconfig; mako is a layer-shell client and cannot run on X11.
+#
+# The one thing worth knowing: volume_notify.sh and monitors_x11.sh replace
+# their own notification in place by passing `notify-send -p -r <id>`, so the
+# OSD does not stack up a queue while a volume key is held. dunst honours the
+# replaces-id hint the same way mako does, so those scripts need no changes.
+
+[global]
+    # mako: font=Roboto 12
+    font = Roboto 12
+
+    # mako: width=300, height=100
+    width = 300
+    height = 100
+
+    # mako: margin=20
+    offset = 20x20
+
+    # mako: anchor=top-right
+    origin = top-right
+
+    # mako: border-size=2, border-radius=6
+    frame_width = 2
+    frame_color = "#89b4fa"
+    corner_radius = 6
+
+    # mako: max-visible=10
+    notification_limit = 10
+
+    # mako: layer=overlay has no dunst counterpart and needs none -- dunst
+    # windows are override-redirect, so they already sit above everything.
+
+    # Which monitor notifications appear on. mako follows the focused output;
+    # dunst needs telling.
+    follow = mouse
+
+    # volume_notify.sh sends "int:value:<n>" for the volume OSD, which mako
+    # draws as a progress bar. dunst calls it a progress bar too, and reads the
+    # same hint -- so the bar carries over untouched.
+    progress_bar = true
+    progress_bar_height = 10
+    progress_bar_frame_width = 1
+    progress_bar_min_width = 150
+    progress_bar_max_width = 300
+
+    markup = full
+    format = "<b>%s</b>\n%b"
+    show_indicators = false
+    # mako: ignore-timeout=false -- an app's own expiry time is respected.
+    ignore_newline = false
+    sort = true
+    idle_threshold = 0
+
+[urgency_low]
+    background = "#1e1e2e"
+    foreground = "#ffffff"
+    frame_color = "#89b4fa"
+    # mako: default-timeout=5000 (milliseconds); dunst counts in seconds.
+    timeout = 5
+
+[urgency_normal]
+    background = "#1e1e2e"
+    foreground = "#ffffff"
+    frame_color = "#89b4fa"
+    timeout = 5
+
+[urgency_critical]
+    background = "#1e1e2e"
+    foreground = "#ffffff"
+    frame_color = "#eb4d4b"
+    # Critical notifications stay until dismissed, as in mako.
+    timeout = 0

@@ -7,6 +7,9 @@ alias cleansys="nix-collect-garbage --delete-older-than 7d"
 alias cleanboot="sudo nixos-rebuild boot --flake /home/benji/nixcfg/nixos#benji"
 alias mi="micro"
 alias displ="~/nixcfg/scripts/monitors.sh"
+# Block suspend: lid, hypridle timeout, systemctl suspend
+alias sleepoff='systemd-run --user --unit=nosleep systemd-inhibit --what=sleep:handle-lid-switch:idle --who=sleepoff --why=sleepoff --mode=block sleep infinity'
+alias sleepon='systemctl --user stop nosleep'
 
 # -------------------------------
 # Colors

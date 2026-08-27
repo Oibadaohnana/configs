@@ -30,15 +30,8 @@
   networking.useDHCP = lib.mkDefault true;
   # networking.interfaces.wlp1s0.useDHCP = lib.mkDefault true;
 
-  # The Pixart i2c-HID touchpad (PIXA3854) raises ~140 interrupts/second even
-  # when nobody is touching it, and it is armed as a wakeup source by default.
-  # Under s2idle that means Meta+Shift+S suspends and the very next touchpad
-  # interrupt resumes the machine a fraction of a second later -- the wake lands
-  # on IRQ 7 (pinctrl_amd), the AMD GPIO controller the touchpad hangs off.
-  # Take the touchpad out of the wakeup set; the keyboard (i8042), power button
-  # (PNP0C0C) and lid (PNP0C0D) stay enabled, so there is still plenty to wake
-  # the laptop with. Matches "bind" as well as "add" because power/wakeup only
-  # shows up once i2c_hid_acpi has probed the device.
+  # Touchpad wakeup: weight on it (stacked laptop) instantly resumes s2idle via
+  # IRQ7 pinctrl_amd. Keyboard/power/lid still wake. bind: attr appears post-probe.
   services.udev.extraRules = ''
     ACTION=="add|bind", SUBSYSTEM=="i2c", ATTR{name}=="PIXA3854:00", ATTR{power/wakeup}="disabled"
   '';

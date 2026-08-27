@@ -1,0 +1,348 @@
+# i3 configuration -- an X11 port of configs/hyprland.lua.
+# Section order and bindings mirror that file one for one; where X11 cannot do
+# what Hyprland does, the comment says so rather than quietly dropping it.
+#
+# Launch:  i3 -c ~/nixcfg/configs/i3config   (or symlink to ~/.config/i3/config)
+
+########################################
+# Variables
+########################################
+set $mod     Mod4
+set $term    kitty
+set $menu    rofi -show drun
+set $scripts ~/nixcfg/scripts
+
+# Caps as a second Super, matching kb_options = "caps:super".
+exec_always --no-startup-id setxkbmap -layout de -option caps:super
+
+########################################
+# Monitors
+########################################
+# i3 does not set modes -- xrandr does, so the monitor block from hyprland.lua
+# lives in an exec_always instead of in this file's syntax. exec_always so a
+# config reload re-applies it, the way reloading hyprland.lua re-runs its
+# monitor rules.
+#
+# Output names differ from Wayland: configuration.nix sets videoDrivers =
+# ["amdgpu"], i.e. the xf86-video-amdgpu DDX, which spells connectors
+# "DisplayPort-2" / "HDMI-A-0" / "eDP" rather than the DRM names Hyprland uses
+# ("DP-3", "HDMI-A-1", "eDP-1"). Run `xrandr --query` on the host and put the
+# real names in. Both spellings are listed below where it costs nothing.
+#
+# scale = 2 on DP-3 has no per-output equivalent on X11: there is one DPI for
+# the whole server. Xft.dpi 192 is the 2x setting, and GDK_SCALE / QT_SCALE_FACTOR
+# in i3.nix carry it into GTK and Qt. A mixed-scale setup (framework: eDP-1 at
+# 1.5, externals at 1) cannot be reproduced -- pick the panel you actually look
+# at and accept the others being off.
+
+# Desktop
+exec_always --no-startup-id $scripts/monitors_x11.sh init
+
+# Laptop (uncomment when on framework, and comment out the line above)
+# exec_always --no-startup-id $scripts/monitors_x11.sh init-framework
+
+# 2x scaling, standing in for hyprland.lua's scale = 2 on DP-3.
+exec_always --no-startup-id echo "Xft.dpi: 192" | xrdb -merge
+
+# Workspace 4 always lives on the secondary screen. i3 takes a fallback list,
+# so both connector spellings can be named and whichever exists wins.
+workspace 4 output HDMI-A-1 HDMI-A-0 HDMI-1
+
+# Saved monitor on/off state. hyprland.lua reads the state file itself at load;
+# here monitors_x11.sh does it, and `watch` stands in for the monitor.added /
+# monitor.removed hooks -- X11 has no such event on the i3 IPC, so it polls the
+# connected-output set and re-applies + re-layouts when it changes.
+exec --no-startup-id $scripts/monitors_x11.sh watch
+
+########################################
+# Input
+########################################
+# accel_profile, natural_scroll, tap_to_click and middle_button_emulation are
+# libinput settings, and on X11 libinput is configured by the X server rather
+# than the WM -- see services.libinput in i3.nix.
+#
+# touchpad scroll_factor = 0.5 has no libinput/X11 equivalent. The nearest
+# thing is a lower pointer accel speed, which is not the same knob; left off.
+
+########################################
+# General / Appearance
+########################################
+# gaps_in = 0, gaps_out = 0
+gaps inner 0
+gaps outer 0
+
+# border_size = 1, rounding = 0
+default_border pixel 1
+default_floating_border pixel 1
+hide_edge_borders none
+
+# col.active_border / col.inactive_border = rgba(222222ff). Same colour for
+# both, as in hyprland.lua.
+#                       border   background text     indicator child_border
+client.focused          #222222  #222222    #ffffff  #222222   #222222
+client.focused_inactive #222222  #222222    #ffffff  #222222   #222222
+client.unfocused        #222222  #222222    #888888  #222222   #222222
+client.urgent           #eb4d4b  #eb4d4b    #ffffff  #eb4d4b   #eb4d4b
+client.background       #000000
+
+# misc.background_color = 0xFF000000
+exec_always --no-startup-id xsetroot -solid "#000000"
+
+font pango:Noto Sans 10
+
+# layout = "dwindle" with preserve_split = true. i3's default tiling already
+# splits inside the focused container and keeps that split until told
+# otherwise, which is the same behaviour.
+
+# decoration.blur, inactive_opacity = 0.9, general.allow_tearing and
+# render.direct_scanout are all compositor jobs -- picom does them here. See
+# configs/picom.conf.
+#
+# misc.vrr = 3 (fullscreen only) has no picom setting: on X11 it is an
+# amdgpu/Xorg option, set via deviceSection in i3.nix.
+#
+# xwayland.force_zero_scaling has no meaning here -- these are native X11
+# clients, so nothing is being upscaled in the first place.
+
+########################################
+# Window rules
+########################################
+# Steam games resize themselves to screen size instead of asking for
+# fullscreen, which leaves polybar on top of them. Force real fullscreen, the
+# same as the steam-games-fullscreen rule in hyprland.lua.
+#
+# Matches on `class` rather than Hyprland's initial_class: i3 has no
+# initial-class selector, and a Steam game does not rename its class after
+# mapping, so the match holds either way.
+for_window [class="^steam_app_[0-9]+$"] fullscreen enable
+
+########################################
+# Autostart
+########################################
+exec --no-startup-id $scripts/polybar_launch.sh
+exec --no-startup-id dunst
+# exec --no-startup-id redshift -l 50.59:8.69 -t 6500:3000
+# hyprpaper's job. --bg-fill matches the default "fill" mode.
+exec_always --no-startup-id feh --no-fehbg --bg-fill ~/nixcfg/configs/wallpapers/hyprland-cheatsheet.png
+# cliphist's job: a clipboard history daemon feeding rofi (see $mod+v).
+exec --no-startup-id greenclip daemon
+# picom does blur + inactive opacity + the tearing/scanout behaviour.
+exec --no-startup-id picom --config ~/nixcfg/configs/picom.conf
+# hypridle's job, split in two because X11 has no single daemon that does both:
+#   xss-lock  -- lock on screensaver, and hold the sleep lock so the screen is
+#                already locked before suspend (before_sleep_cmd), then force
+#                DPMS back on when waking (after_sleep_cmd).
+#   xautolock -- the 900 s idle -> suspend listener.
+exec --no-startup-id xss-lock --transfer-sleep-lock -- $scripts/i3lock_wrapper.sh
+exec --no-startup-id xautolock -time 15 -locker "systemctl suspend"
+# Registers the BlueZ pairing/authorization agent. Without it, devices
+# reconnecting at login are rejected outright ("Authentication attempt
+# without agent") with no way to approve them.
+exec --no-startup-id blueman-applet
+
+########################################
+# Apps
+########################################
+bindsym $mod+Return exec --no-startup-id $term
+bindsym $mod+F2     exec --no-startup-id firefox
+bindsym $mod+F1     exec --no-startup-id pavucontrol
+bindsym $mod+F3     exec --no-startup-id $scripts/focus_or_launch_x11.sh blueman-manager blueman-manager
+bindsym $mod+F4     exec --no-startup-id arandr
+# Meta+P = Open the display layout/editing tool (wdisplays' X11 counterpart)
+bindsym $mod+p      exec --no-startup-id arandr
+bindsym $mod+d      exec --no-startup-id $menu
+# Meta+V = Show Clipboard (matches Plasma)
+bindsym $mod+v      exec --no-startup-id rofi -modi "clipboard:greenclip print" -show clipboard -run-command '{cmd}'
+# Meta+End = Toggle gaming display (matches Plasma)
+# Routed through monitors_x11.sh rather than calling xrandr here, so the choice
+# lands in the saved state and survives a logout like any other display toggle.
+bindsym $mod+End    exec --no-startup-id $scripts/monitors_x11.sh toggle HDMI-A-1
+# Meta+M = Pick which displays are on (same menu as the polybar tile)
+bindsym $mod+m      exec --no-startup-id $scripts/monitors_x11.sh menu
+
+########################################
+# Session (matches Plasma)
+########################################
+# Meta+L = Lock Session
+bindsym $mod+l exec --no-startup-id $scripts/i3lock_wrapper.sh
+# Ctrl+Alt+Del = Logout menu (wlogout's X11 stand-in)
+bindsym Control+Mod1+Delete exec --no-startup-id $scripts/powermenu.sh
+# Meta+Shift+P = Shut Down
+bindsym $mod+Shift+p exec --no-startup-id systemctl poweroff
+# Meta+Shift+S = Sleep (lock then suspend)
+bindsym $mod+Shift+s exec --no-startup-id $scripts/i3lock_wrapper.sh & systemctl suspend
+
+########################################
+# Windows (matches Plasma)
+########################################
+# Meta+Alt+Q / Alt+F4 = Close Window
+bindsym $mod+Mod1+q kill
+bindsym Mod1+F4     kill
+# Meta+Ctrl+Esc = Kill Window (interactive click-to-kill)
+bindsym $mod+Control+Escape exec --no-startup-id xkill
+# Meta+F / Meta+PgUp = Maximize
+# i3 has no maximize -- `fullscreen` always covers the bar. The script fills
+# the workspace's usable area instead (i3 already excludes docks from it),
+# which is what Hyprland's "maximized" mode does.
+bindsym $mod+f     exec --no-startup-id $scripts/i3_maximize.sh
+bindsym $mod+Prior exec --no-startup-id $scripts/i3_maximize.sh
+# Meta+Alt+F = true fullscreen (covers polybar; Meta+F only maximizes)
+bindsym $mod+Mod1+f fullscreen toggle
+# Toggle floating
+bindsym $mod+Shift+space floating toggle
+# Cycle windows
+bindsym $mod+space exec --no-startup-id $scripts/i3_cycle.sh next
+# Toggle split orientation (vertical/horizontal)
+bindsym $mod+h split toggle
+# Reload config
+bindsym $mod+Shift+c reload
+# Exit session
+bindsym $mod+Shift+e exit
+
+########################################
+# Focus (Meta+Arrow and Meta+Alt+Arrow, matches Plasma)
+########################################
+bindsym $mod+Left  focus left
+bindsym $mod+Right focus right
+bindsym $mod+Up    focus up
+bindsym $mod+Down  focus down
+bindsym $mod+Mod1+Left  focus left
+bindsym $mod+Mod1+Right focus right
+bindsym $mod+Mod1+Up    focus up
+bindsym $mod+Mod1+Down  focus down
+
+########################################
+# Move windows
+########################################
+# Meta+Shift+Arrows = Move within tiling layout on the current desktop only
+bindsym $mod+Shift+Left  move left
+bindsym $mod+Shift+Right move right
+bindsym $mod+Shift+Up    move up
+bindsym $mod+Shift+Down  move down
+# Move within tiling layout (vim-style)
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+
+########################################
+# Workspaces (matches Plasma)
+########################################
+# Meta+1-9,0 = Switch to Desktop
+bindsym $mod+1 workspace number 1
+bindsym $mod+2 workspace number 2
+bindsym $mod+3 workspace number 3
+bindsym $mod+4 workspace number 4
+bindsym $mod+5 workspace number 5
+bindsym $mod+6 workspace number 6
+bindsym $mod+7 workspace number 7
+bindsym $mod+8 workspace number 8
+bindsym $mod+9 workspace number 9
+bindsym $mod+0 workspace number 10
+
+# Meta+Ctrl+Left/Right/Up/Down = Switch Desktop (matches Plasma)
+# Hyprland's +1/-1 steps the workspace *number*, existing or not; i3 can only
+# step through the ones that exist, so these walk the live list instead.
+bindsym $mod+Control+Left  workspace prev
+bindsym $mod+Control+Right workspace next
+bindsym $mod+Control+Up    workspace next
+bindsym $mod+Control+Down  workspace prev
+
+# Meta+Ctrl+Shift+Left/Right = Move Window to Desktop (matches Plasma), stay on current desktop
+bindsym $mod+Control+Shift+Left  move container to workspace prev
+bindsym $mod+Control+Shift+Right move container to workspace next
+
+# Meta+Shift+1-9,0 = Move Window to Numbered Desktop (bonus), stay on current desktop
+bindsym $mod+Shift+1 move container to workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3
+bindsym $mod+Shift+4 move container to workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5
+bindsym $mod+Shift+6 move container to workspace number 6
+bindsym $mod+Shift+7 move container to workspace number 7
+bindsym $mod+Shift+8 move container to workspace number 8
+bindsym $mod+Shift+9 move container to workspace number 9
+bindsym $mod+Shift+0 move container to workspace number 10
+
+########################################
+# Window switching / Alt-Tab (matches Plasma)
+########################################
+# Hyprland's cyclenext walks the windows of the active workspace, which is what
+# the script reproduces; i3 has no `focus next` of its own.
+bindsym Mod1+Tab       exec --no-startup-id $scripts/i3_cycle.sh next
+bindsym Mod1+Shift+Tab exec --no-startup-id $scripts/i3_cycle.sh prev
+bindsym $mod+Tab       exec --no-startup-id $scripts/i3_cycle.sh next
+bindsym $mod+Shift+Tab exec --no-startup-id $scripts/i3_cycle.sh prev
+
+########################################
+# Scratchpad
+########################################
+bindsym $mod+minus       move scratchpad
+bindsym $mod+Shift+minus scratchpad show
+
+########################################
+# Keyboard layout (matches Plasma Meta+Alt+K)
+# Note: Meta+Alt+L conflicts with lock (Meta+L) so using Meta+Alt+P for prev
+########################################
+bindsym $mod+Mod1+k exec --no-startup-id $scripts/i3_xkb.sh next
+bindsym $mod+Mod1+p exec --no-startup-id $scripts/i3_xkb.sh prev
+
+########################################
+# Resize mode (hyprland.lua's "resize" submap)
+########################################
+bindsym $mod+r mode "resize"
+
+mode "resize" {
+        bindsym h resize shrink width  10 px
+        bindsym j resize grow   height 10 px
+        bindsym k resize shrink height 10 px
+        bindsym l resize grow   width  10 px
+        bindsym Left  resize shrink width  10 px
+        bindsym Down  resize grow   height 10 px
+        bindsym Up    resize shrink height 10 px
+        bindsym Right resize grow   width  10 px
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+}
+
+########################################
+# Media / Volume / Brightness (matches Plasma)
+########################################
+# hyprland.lua marks these `locked = true` so they keep working on the lock
+# screen. X11 has no such flag -- i3lock grabs the keyboard outright, so none
+# of these fire while the session is locked.
+bindsym XF86AudioRaiseVolume exec --no-startup-id $scripts/volume_notify.sh up 5
+bindsym XF86AudioLowerVolume exec --no-startup-id $scripts/volume_notify.sh down 5
+bindsym XF86AudioMute        exec --no-startup-id $scripts/volume_notify.sh mute
+bindsym XF86AudioMicMute     exec --no-startup-id $scripts/volume_notify.sh mic-mute
+# F9 = Push-to-mute mic (mutes the default source, e.g. for Discord)
+bindsym F9                   exec --no-startup-id $scripts/volume_notify.sh mic-mute
+bindsym Shift+XF86AudioRaiseVolume exec --no-startup-id $scripts/volume_notify.sh up 1
+bindsym Shift+XF86AudioLowerVolume exec --no-startup-id $scripts/volume_notify.sh down 1
+bindsym XF86AudioPlay    exec --no-startup-id playerctl play-pause
+bindsym XF86AudioPause   exec --no-startup-id playerctl play-pause
+bindsym XF86AudioNext    exec --no-startup-id playerctl next
+bindsym XF86AudioPrev    exec --no-startup-id playerctl previous
+bindsym XF86AudioStop    exec --no-startup-id playerctl stop
+bindsym XF86AudioRewind  exec --no-startup-id playerctl position 5-
+bindsym XF86AudioForward exec --no-startup-id playerctl position 5+
+bindsym XF86MonBrightnessUp   exec --no-startup-id brightnessctl set 5%+
+bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 5%-
+bindsym Shift+XF86MonBrightnessUp   exec --no-startup-id brightnessctl set 1%+
+bindsym Shift+XF86MonBrightnessDown exec --no-startup-id brightnessctl set 1%-
+
+########################################
+# Screenshot (matches Plasma Spectacle)
+########################################
+bindsym $mod+Shift+Print exec --no-startup-id $scripts/screenshot_x11.sh
+bindsym F12              exec --no-startup-id $scripts/screenshot_x11.sh
+
+########################################
+# Mouse -- drag/resize windows
+########################################
+# Meta+LMB drags, Meta+RMB resizes -- the pair hyprland.lua binds to
+# mouse:272 / mouse:273.
+floating_modifier $mod
+# Hyprland's dragwindow also moves *tiled* windows around the layout; i3 needs
+# this said explicitly (i3 4.21+).
+tiling_drag modifier

@@ -34,12 +34,25 @@ make_symlink configs/makoconfig .config/mako/config
 make_symlink configs/hyprland.lua .config/hypr/hyprland.lua
 make_symlink configs/hyprpaperconfig .config/hypr/hyprpaper.conf
 make_symlink configs/hypridleconfig .config/hypr/hypridle.conf
+
+# X11/i3 session -- the counterparts of the Wayland session entries above.
+# Harmless while nixos/i3.nix is out of flake.nix: nothing reads them until an
+# i3 session actually starts.
+make_symlink configs/i3config .config/i3/config
+make_symlink configs/polybarconfig/config.ini .config/polybar/config.ini
+make_symlink configs/dunstrc .config/dunst/dunstrc
+# Default path for a bare `picom`. i3config passes --config explicitly, so this
+# only matters when starting it by hand to debug.
+make_symlink configs/picom.conf .config/picom.conf
+
 make_symlink configs/kitty.conf .config/kitty/kitty.conf
 make_symlink configs/mimeapps.list .config/mimeapps.list
-# "simple" is micro's 16-colour scheme: it emits plain ANSI codes instead of
-# hardcoded RGB, so highlighting is drawn with the color0-15 palette from
-# kitty.conf. Every other scheme ships its own fixed colours and ignores it.
+# Names the colorscheme below. Was "simple" (16-colour, drawn from kitty.conf's
+# color0-15); gruvbox-dark-hard carries its own RGB instead.
 make_symlink configs/micro/settings.json .config/micro/settings.json
+# Not built in -- micro ships gruvbox/gruvbox-tc, but only at medium contrast.
+# Needs MICRO_TRUECOLOR=1 (configuration.nix), else micro quantises to 256.
+make_symlink configs/micro/colorschemes/gruvbox-dark-hard.micro .config/micro/colorschemes/gruvbox-dark-hard.micro
 # Terminal-style line editing, mirroring the zsh bindings above. Only the keys
 # micro gets wrong are listed: Ctrl+Left/Right (word motion) and Ctrl+W
 # (delete word back, which kitty sends for ctrl+backspace) already match.

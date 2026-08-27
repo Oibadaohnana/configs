@@ -15,7 +15,7 @@
   nixpkgs.config.allowUnfree = true;
 
   services.power-profiles-daemon.enable = true;
-  
+	  
     services.logind.settings = {
       Login = {
         IdleAction = "ignore";
@@ -44,7 +44,8 @@
   # Enable GameMode daemon + CLI wrapper for Steam launch options.
   programs.gamemode.enable = true;
   programs.steam.enable = true;
-
+  
+  networking.firewall.allowedTCPPorts = [ 8787 ];	
   # System packages
   environment.systemPackages = with pkgs; [
     firefox
@@ -157,6 +158,9 @@
     # and falling back to a line editor here would be a downgrade.
     EDITOR = "micro";
     VISUAL = "micro";
+    # micro forces tcell down to 256 colours unless this is set, which would
+    # flatten the gruvbox-dark-hard scheme's RGB into near-identical greys.
+    MICRO_TRUECOLOR = "1";
   };
   xdg.portal.enable = true;
 

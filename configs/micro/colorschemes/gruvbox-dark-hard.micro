@@ -1,0 +1,62 @@
+# Gruvbox dark, hard contrast (bg0_h #1d2021). Truecolor -- needs
+# MICRO_TRUECOLOR=1, see configuration.nix.
+
+color-link default "#ebdbb2,#1d2021"
+
+# syntax
+color-link comment              "italic #928374,#1d2021"
+color-link statement            "#fb4934,#1d2021"
+color-link identifier           "#83a598,#1d2021"
+color-link identifier.class     "#8ec07c,#1d2021"
+color-link identifier.var       "#83a598,#1d2021"
+color-link identifier.macro     "#fe8019,#1d2021"
+color-link constant             "#d3869b,#1d2021"
+color-link constant.number      "#d3869b,#1d2021"
+color-link constant.bool        "bold #d3869b,#1d2021"
+color-link constant.bool.true   "bold #b8bb26,#1d2021"
+color-link constant.bool.false  "bold #fb4934,#1d2021"
+color-link constant.string      "#b8bb26,#1d2021"
+color-link constant.string.char "#b8bb26,#1d2021"
+color-link constant.string.url  "underline #8ec07c,#1d2021"
+color-link type                 "#fabd2f,#1d2021"
+color-link type.keyword         "#fe8019,#1d2021"
+color-link type.extended        "#fabd2f,#1d2021"
+color-link preproc              "#8ec07c,#1d2021"
+color-link preproc.shebang      "italic #928374,#1d2021"
+color-link special              "#fe8019,#1d2021"
+color-link symbol               "#fe8019,#1d2021"
+color-link symbol.operator      "#fe8019,#1d2021"
+color-link symbol.brackets      "#d5c4a1,#1d2021"
+color-link symbol.tag           "#83a598,#1d2021"
+color-link symbol.tag.extended  "#8ec07c,#1d2021"
+color-link underlined           "underline #83a598,#1d2021"
+color-link underlined.url       "underline #8ec07c,#1d2021"
+color-link error                "bold #fbf1c7,#cc241d"
+color-link todo                 "bold #1d2021,#fabd2f"
+color-link ignore               "default"
+
+# diffs
+color-link diff-added    "#b8bb26,#1d2021"
+color-link diff-modified "#fabd2f,#1d2021"
+color-link diff-deleted  "#fb4934,#1d2021"
+
+# Single colour on purpose -- micro reads these three as a background.
+color-link cursor-line   "#3c3836"
+color-link color-column  "#3c3836"
+color-link trailingws    "#fb4934"
+
+# ui chrome
+color-link statusline                   "#1d2021,#a89984"
+color-link tabbar                       "#1d2021,#a89984"
+color-link tab-error                    "bold #fbf1c7,#cc241d"
+color-link divider                      "#665c54,#1d2021"
+color-link line-number                  "#665c54,#1d2021"
+color-link current-line-number          "bold #fabd2f,#1d2021"
+color-link scrollbar                    "#504945,#1d2021"
+color-link line-number.scrollbar        "#504945,#1d2021"
+color-link current-line-number.scroller "#fabd2f,#1d2021"
+color-link gutter-error                 "#fb4934,#1d2021"
+color-link gutter-warning               "#fabd2f,#1d2021"
+color-link match-brace                  "bold #fbf1c7,#504945"
+color-link hlsearch                     "#1d2021,#fabd2f"
+color-link indent-char                   "#504945,#1d2021"
