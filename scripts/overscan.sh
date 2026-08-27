@@ -12,11 +12,9 @@
 #   * Checking what a TV would cut off, from a monitor that does not overscan.
 #     Everything outside the window is what would have been eaten.
 #
-# The amount belongs to the screen, not to the session: the TV in the corner
-# crops, the desk monitor does not. So it is stored per output, set once with
-# `set`, and the hotkey then applies whatever the window's own monitor asks
-# for. Configuring and applying are separate commands on purpose -- `set`
-# never touches a window.
+# The amount is set once with `set` and applies to every output; the hotkey
+# then applies it to whatever window is focused. Configuring and applying are
+# separate commands on purpose -- `set` never touches a window.
 #
 # PERCENT IS PER EDGE, not in total. `overscan.sh set 5` crops 5% off each of
 # the four sides and leaves the central 90% x 90%. That is the broadcast
@@ -31,11 +29,10 @@
 # waybar would be cut off too.
 #
 # Usage:
-#   overscan.sh set <percent> [output]   remember it for that screen, and do
-#                                        nothing else; defaults to the focused
-#                                        screen
-#   overscan.sh                          toggle the focused window, using its
-#                                        own monitor's remembered percentage
+#   overscan.sh set <percent>            remember it for every screen, and do
+#                                        nothing else
+#   overscan.sh                          toggle the focused window, using the
+#                                        remembered percentage
 #   overscan.sh <percent>                toggle at this percentage just once,
 #                                        without changing what is remembered
 #   overscan.sh off                      put the window back
@@ -55,10 +52,10 @@ FALLBACK_PERCENT=5
 STATE_DIR="${XDG_RUNTIME_DIR:-/tmp}/hypr-overscan"
 REPORT="$STATE_DIR/report"
 
-# The remembered percentages, one "OUTPUT<TAB>PERCENT" line per screen. Same
-# shape and same directory as monitors.sh's monitor-sides file, and outside
-# this repo for the same reason: it describes one machine's displays, not the
-# configuration both hosts share.
+# The remembered percentage: a single number, applied to every output. Same
+# directory as monitors.sh's monitor-sides file, and outside this repo for the
+# same reason: it describes one machine's displays, not the configuration both
+# hosts share.
 PREF_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/hypr"
 PREF_FILE="$PREF_DIR/overscan-percent"
 
@@ -93,38 +90,23 @@ valid_percent() {
 }
 
 # ---------------------------------------------------------------------------
-# set: remember a percentage for one screen. Deliberately the only command
-# that writes the preference, and deliberately the only one that touches no
-# window at all -- it is configuration, not an action.
+# set: remember the percentage. Deliberately the only command that writes the
+# preference, and deliberately the only one that touches no window at all --
+# it is configuration, not an action. Pure file I/O, so it works with the
+# compositor not even running.
 # ---------------------------------------------------------------------------
 if [[ ${1:-} == set ]]; then
-    pct=${2:?usage: $0 set <percent> [output]}
+    pct=${2:?usage: $0 set <percent>}
     valid_percent "$pct" || exit 1
 
-    output=${3:-}
-    if [[ -z $output ]]; then
-        output=$(hyprctl monitors | awk '/^Monitor /{ n = $2 } /focused: yes/{ print n; exit }')
-    fi
-    [[ -n $output ]] || { echo "Could not tell which screen is focused." >&2; exit 1; }
-    [[ $output =~ ^[A-Za-z0-9._-]+$ ]] || { echo "Refusing odd output name: $output" >&2; exit 1; }
-
     mkdir -p "$PREF_DIR"
-    # Rewritten wholesale rather than edited in place: it is one short line per
-    # screen. Malformed lines are dropped on the way past, which also clears
-    # out the single bare number this file held before it was per-screen.
+    # Through a temp file so an interrupted write cannot leave a half-written
+    # number for the Lua side to read back.
     tmp="$PREF_FILE.tmp"
-    : >"$tmp"
-    if [[ -f $PREF_FILE ]]; then
-        while IFS=$'\t' read -r mon val; do
-            [[ $mon == "$output" ]] && continue
-            [[ $mon =~ ^[A-Za-z0-9._-]+$ && $val =~ ^[0-9]+$ ]] || continue
-            printf '%s\t%s\n' "$mon" "$val" >>"$tmp"
-        done <"$PREF_FILE"
-    fi
-    printf '%s\t%s\n' "$output" "$pct" >>"$tmp"
+    printf '%s\n' "$pct" >"$tmp"
     mv "$tmp" "$PREF_FILE"
 
-    printf 'Overscan for %s set to %s%% per edge.\n' "$output" "$pct"
+    printf 'Overscan set to %s%% per edge, on every screen.\n' "$pct"
     printf 'Nothing moved -- press Meta+Alt+O on a window to apply it.\n'
     exit 0
 fi
@@ -133,7 +115,7 @@ case "${1:-}" in
     "")            mode=toggle ;;
     off|0)         mode=off; percent=0 ;;
     show)          mode=show; [[ -n ${2:-} ]] && { valid_percent "$2" || exit 1; percent=$2; } ;;
-    -h|--help)     sed -n '3,45p' "$0" | sed 's/^# \?//'; exit 0 ;;
+    -h|--help)     awk 'NR>2 && /^#/ { sub(/^# ?/, ""); print; next } NR>2 { exit }' "$0"; exit 0 ;;
     *)             valid_percent "$1" || exit 1; mode=toggle; percent=$1 ;;
 esac
 
@@ -154,9 +136,8 @@ rm -f "$REPORT"
 # and window objects, with no JSON to parse. (jq is not installed on either
 # host, and the compositor is the only thing that knows the logical geometry.)
 #
-# The preference file is read in here rather than in the shell because only
-# this side knows which monitor the target window is actually on -- which is
-# the whole point of storing the percentage per screen.
+# The preference file is read on this side so the fallback decision sits next
+# to the geometry it feeds, rather than being split across the two languages.
 lua="(function()
   local PERCENT, MODE = $percent, '$mode'
   local STATE, REPORT = '$STATE_DIR', '$REPORT'
@@ -168,16 +149,12 @@ lua="(function()
     if f then f:write(line .. '\n') f:close() end
   end
 
-  local function stored_for(name)
+  local function stored()
     local f = io.open(PREF_FILE, 'r')
     if not f then return nil end
-    local found
-    for line in f:lines() do
-      local mon, pct = line:match('^(%S+)\t(%d+)\$')
-      if mon == name then found = tonumber(pct) end
-    end
+    local line = f:read('*l')
     f:close()
-    return found
+    return line and tonumber(line:match('^%s*(%d+)%s*\$'))
   end
 
   -- A selector picks the window out of the list rather than going through a
@@ -223,11 +200,11 @@ lua="(function()
     os.remove(path)
   end
 
-  -- Which percentage applies: an explicit one from the command line, else
-  -- whatever this window's own screen has remembered, else the fallback.
+  -- Which percentage applies: an explicit one from the command line, else the
+  -- remembered one, else the fallback.
   local src = 'explicit'
   if PERCENT < 0 then
-    local s = stored_for(m.name)
+    local s = stored()
     if s then PERCENT, src = s, 'stored' else PERCENT, src = FALLBACK, 'fallback' end
   end
 
@@ -320,8 +297,8 @@ case "$state" in
         ;;
     show)
         case "$src" in
-            stored)   note="remembered for $monitor" ;;
-            fallback) note="nothing remembered for $monitor, using the $FALLBACK_PERCENT% fallback" ;;
+            stored)   note="remembered setting" ;;
+            fallback) note="nothing remembered, using the $FALLBACK_PERCENT% fallback" ;;
             *)        note="given on the command line" ;;
         esac
         printf 'Overscan %s%% per edge on %s (%s)\n' "$pct" "$monitor" "$class"
