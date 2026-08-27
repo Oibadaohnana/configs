@@ -286,6 +286,11 @@ hl.bind(mod .. " + F",     hl.dsp.window.fullscreen({ mode = "maximized", action
 hl.bind(mod .. " + PRIOR", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
 -- Meta+Alt+F = true fullscreen (covers waybar; Meta+F only maximizes)
 hl.bind(mod .. " + ALT + F", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
+-- Meta+Alt+O = fit the window to what an overscanning TV actually shows, for
+-- watching video on a set that crops the edges. Toggles, using whatever
+-- percentage that window's own screen has remembered -- set it once per
+-- screen with `overscan.sh set 3` in a terminal, which moves nothing itself.
+hl.bind(mod .. " + ALT + O", hl.dsp.exec_cmd("~/nixcfg/scripts/overscan.sh"))
 -- Toggle floating
 hl.bind(mod .. " + SHIFT + SPACE", hl.dsp.window.float({ action = "toggle" }))
 -- Cycle windows
