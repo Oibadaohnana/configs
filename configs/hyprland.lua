@@ -227,6 +227,10 @@ hl.window_rule({
 -- Autostart
 ----------------------------------------
 hl.on("hyprland.start", function()
+    -- withUWSM=false: nothing activates graphical-session.target, which
+    -- xdg-desktop-portal has as Requisite -- no portal, no OBS screen capture.
+    -- Env push first; hyprland backend is ConditionEnvironment=WAYLAND_DISPLAY.
+    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE && systemctl --user start nixos-fake-graphical-session.target")
     hl.exec_cmd("waybar -c ~/nixcfg/configs/waybarconfig/config -s ~/nixcfg/configs/waybarconfig/style.css")
     hl.exec_cmd("mako")
     -- hl.exec_cmd("wlsunset -l 50.59 -L 8.69 -t 3000 -T 6500")
