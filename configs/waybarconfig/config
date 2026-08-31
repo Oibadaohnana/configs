@@ -54,6 +54,8 @@
         "pulseaudio",
         "bluetooth",
         "custom/monitors",
+        "custom/sleep",
+        "memory",
         "network",
         "battery",
         "battery#bat2",
@@ -116,8 +118,24 @@
         "format": "{usage}% ",
         "tooltip": false
     },
+
+    // RAM still free, counting down. {avail} is MemAvailable -- what the kernel
+    // would actually hand to a new program -- so page cache does not read as
+    // "used up" the way {used} on its own would.
+    //
+    // 32 GB is installed, but firmware and the iGPU carve off a slice before
+    // the kernel sees any of it, so /proc/meminfo tops out near 27 GiB and that
+    // is what this counts against. states threshold on the *used* percentage,
+    // which is the same event from the other side: critical fires as the number
+    // shown here runs down to nothing.
     "memory": {
-        "format": "{}% "
+        "interval": 5,
+        "format": " {avail:0.1f}G",
+        "states": {
+            "warning": 85,
+            "critical": 95
+        },
+        "tooltip-format": "{avail:0.1f}G left\n{used:0.1f}G used of {total:0.1f}G ({percentage}%)"
     },
     "temperature": {
         // "thermal-zone": 2,
@@ -221,6 +239,22 @@
         "signal": 8,
         "on-click": "~/nixcfg/scripts/monitors.sh menu",
         "on-click-right": "wdisplays"
+    },
+
+    // Whether automatic sleep is blocked. Clicking takes a systemd inhibitor
+    // covering suspend, the lid switch and idle -- the same lock the sleepoff
+    // and sleepon aliases take, so the terminal and the tile always agree.
+    // Coffee cup means sleep is blocked, moon means it is allowed.
+    //
+    // Polled slowly, because nothing changes this but the click or those
+    // aliases -- and both send RTMIN+9, so the tile updates at once.
+    "custom/sleep": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/sleep_inhibit.sh waybar",
+        "interval": 30,
+        "signal": 9,
+        "on-click": "~/nixcfg/scripts/sleep_inhibit.sh toggle"
     },
 
     // Which output the volume knob controls -- i.e. the default sink. Sits

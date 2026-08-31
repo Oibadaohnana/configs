@@ -105,6 +105,7 @@ button:hover {
 #custom-dolphin,
 #custom-audiosink,
 #custom-monitors,
+#custom-sleep,
 #tray,
 #mode,
 #idle_inhibitor,
@@ -199,10 +200,6 @@ label:focus {
     color: #000000;
 }
 
-#memory {
-    background-color: #9b59b6;
-}
-
 #disk {
     background-color: #964B00;
 }
@@ -261,6 +258,40 @@ label:focus {
 
 #custom-monitors.partial {
     color: #b0a8bb;
+}
+
+/* Sleep blocker. Two states rather than one colour: allowed is the same quiet
+   grey as the tray, so the normal case disappears into the bar, and blocked
+   goes amber to say a mode is switched on -- this laptop will not suspend on
+   its own, and that is worth noticing. */
+#custom-sleep {
+    background-color: #33393d;
+    color: #9aa3a5;
+}
+
+#custom-sleep.blocked {
+    background-color: #5f4a3a;
+    color: #f0e0cc;
+}
+
+/* RAM left. Muted teal to sit apart from the two greys flanking it (sleep,
+   battery) without joining the green dolphin tile at the other end of the bar.
+   The two states are the exception to the "keep it quiet" rule above: they are
+   an alarm, so critical is deliberately brighter than anything else here --
+   memory running out is the one thing on this bar worth interrupting for. */
+#memory {
+    background-color: #2f5459;
+    color: #e8e8e8;
+}
+
+#memory.warning {
+    background-color: #8a4a1a;
+    color: #ffffff;
+}
+
+#memory.critical {
+    background-color: #8f2f2f;
+    color: #ffffff;
 }
 
 #wireplumber {
