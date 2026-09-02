@@ -1,0 +1,26 @@
+# micro ships no syntax for .txt, so Ctrl+B and Ctrl+U would leave their markers
+# unstyled in plain notes. Nothing else is highlighted here on purpose.
+filetype: plaintext
+
+detect:
+    # .txt, plus any name with no extension at all -- the notes in
+    # ~/projects/notes are named that way. This costs the built-in rules for
+    # extensionless files micro does know (Makefile, COMMIT_EDITMSG): user
+    # syntax is matched ahead of micro's own, so this one wins. Ctrl-e then
+    # "set filetype makefile" forces one back when it matters.
+    filename: "\\.(txt|text)$|(^|/)[^/.]+$"
+
+rules:
+      # A region, not a line pattern: micro matches patterns one line at a
+      # time, so a pair whose closing ** landed on the next line would never
+      # render. Opening ** must be followed by a non-space non-star, which
+      # keeps a "***" rule and a stray "** " from starting one.
+    - strong:
+        start: "\\*\\*[^ *]"
+        end: "\\*\\*"
+        rules: []
+    - strong: "(^|[[:space:]])__[^ ][^_]*__"
+    - underlined.tag:
+        start: "<u>"
+        end: "</u>"
+        rules: []

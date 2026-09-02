@@ -11,6 +11,13 @@ alias displ="~/nixcfg/scripts/monitors.sh"
 # custom/sleep tile takes -- via the script, so the tile follows along.
 alias sleepoff='~/nixcfg/scripts/sleep_inhibit.sh block'
 alias sleepon='~/nixcfg/scripts/sleep_inhibit.sh allow'
+# sshd is not started at boot -- open it only while someone needs to copy files.
+# Takes an optional span that auto-closes it again: sshon 2h
+alias sshon='~/nixcfg/scripts/ssh_toggle.sh on'
+alias sshoff='~/nixcfg/scripts/ssh_toggle.sh off'
+alias sshstat='~/nixcfg/scripts/ssh_toggle.sh status'
+
+alias physio='/home/benji/projects/physio_research/physio-search'
 
 # -------------------------------
 # Colors
@@ -68,6 +75,22 @@ bindkey '^Y' yank
 bindkey '^P' up-history
 bindkey '^N' down-history
 bindkey '^L' clear-screen
+# Ctrl+D = take the autosuggestion (what Right arrow does). Falls back to the
+# default: delete forward mid-line, log out on an empty line. Must sit in
+# IGNORE_WIDGETS -- the autosuggestions wrapper clears POSTDISPLAY before a
+# wrapped widget runs, so the check would never see a suggestion
+ZSH_AUTOSUGGEST_IGNORE_WIDGETS+=(accept-suggestion-or-delete)
+accept-suggestion-or-delete() {
+  if [[ -n $POSTDISPLAY ]]; then
+    zle autosuggest-accept
+  elif [[ -z $BUFFER ]]; then
+    exit
+  else
+    zle delete-char-or-list
+  fi
+}
+zle -N accept-suggestion-or-delete
+bindkey '^D' accept-suggestion-or-delete
 # Ctrl+Shift+Up/Down = select the whole line, landing the cursor at the
 # end (Up) or beginning (Down); selection is shown via region highlight
 zle_highlight=('region:standout')

@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   # GDM instead of SDDM: SDDM's wayland greeter runs under a bare weston kiosk
@@ -64,7 +64,6 @@
     wayland-utils
     wl-clipboard
     git
-    fd
     spotify
     telegram-desktop
     mpv
@@ -72,8 +71,6 @@
     libreoffice-fresh
     mumble
     beyond-all-reason
-    nodejs_24
-    electron
     discord
     thunderbird
     signal-desktop
@@ -82,7 +79,6 @@
     obs-studio
     syncthing
     onedrive
-    blender
     numbat
     pavucontrol
     gamemode
@@ -93,6 +89,7 @@
     reaper
     p7zip
     qpwgraph
+    kdePackages.kdenlive
   ];
 
   programs.appimage = {
@@ -121,7 +118,40 @@
   hardware.bluetooth.powerOnBoot = true;
   hardware.bluetooth.settings = {
     General.Experimental = true;
+    # re-pair reset speakers without a confirm prompt
+    General.JustWorksRepairing = "always";
     Policy.AutoEnable = true;
+  };
+
+  # Auto-trust paired devices. Untrusted -> bluetoothd asks an agent to
+  # authorize every service connect; pairing via bluetoothctl never sets it.
+  # bluez has no auto-trust setting, hence the watcher.
+  systemd.services.bluetooth-auto-trust = {
+    description = "Trust paired Bluetooth devices";
+    after = [ "bluetooth.service" ];
+    bindsTo = [ "bluetooth.service" ];
+    wantedBy = [ "bluetooth.target" ];
+    path = [ pkgs.bluez pkgs.dbus pkgs.gawk pkgs.gnugrep ];
+    serviceConfig = {
+      Restart = "always";
+      RestartSec = 5;
+    };
+    script = ''
+      trust_all() {
+        bluetoothctl devices Paired | awk '{print $2}' | while read -r mac; do
+          bluetoothctl info "$mac" | grep -q "Trusted: yes" || bluetoothctl trust "$mac"
+        done
+      }
+      trust_all
+      dbus-monitor --system \
+        "type='signal',interface='org.freedesktop.DBus.ObjectManager',member='InterfacesAdded'" \
+        "type='signal',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged',arg0='org.bluez.Device1'" \
+      | while read -r line; do
+          case "$line" in
+            *InterfacesAdded*|*Paired*) trust_all ;;
+          esac
+        done
+    '';
   };
 
   # Keep Bluetooth headsets pinned to A2DP (AAC/SBC-XQ, stereo 48kHz).
@@ -223,5 +253,21 @@ services.avahi = {
   # System version
   system.stateVersion = "25.05";
 
+  # sshd is defined but not started at boot -- the sshon/sshoff aliases bring it
+  # up and down. openFirewall keeps 22 open either way; with the listener down
+  # the port just refuses, so nothing to toggle there.
+  services.openssh = {
+    enable = true;
+    openFirewall = true;
+    settings = {
+      PasswordAuthentication = true;
+      KbdInteractiveAuthentication = false;
+      PermitRootLogin = "no";
+      AllowUsers = [ "benji" ];
+      MaxAuthTries = 3;
+      PerSourcePenalties = "crash:3600s authfail:3600s max:86400s";
+    };
+  };
+  systemd.services.sshd.wantedBy = lib.mkForce [ ];
   
 }

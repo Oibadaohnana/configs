@@ -13,6 +13,10 @@
     ],
 
     "hyprland/workspaces": {
+        // Not clickable: the module switches by sending "dispatch workspace N"
+        // over Hyprland IPC, which a Lua config parses as Lua and rejects.
+        // ext/workspaces clicks fine but has no {windows}, so the app icons
+        // below would be lost. Switch desktops with Super+1..9 instead.
         "all-outputs": true,
         "format": "{id} {windows}",
         "format-window-separator": " ",
@@ -41,15 +45,13 @@
             "class<org.pwmt.zathura>": "",
             "class<imv>": "",
             "class<mpv>": ""
-        },
-        "on-click": "activate"
+        }
     },
     "modules-center": [
         "hyprland/window"
     ],
     "modules-right": [
         //"mpd",
-        "custom/dolphin",
         "custom/audiosink",
         "pulseaudio",
         "bluetooth",
@@ -110,7 +112,7 @@
     },
     "clock": {
         // "timezone": "America/New_York",
-        "format": " {:%d.%m.%Y | %H:%M}",
+        "format": "{:%d.%m.%Y   <span weight='800'>%H:%M</span>}",
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
         "on-click": "rofi -dmenu -l 0 -p 'Calendar' -theme-str '* {font: \"monospace 12\";}' -mesg \"$(cal -3)\""
     },
@@ -153,13 +155,13 @@
     "battery": {
         "states": {
             // "good": 95,
-            "warning": 30,
+            "warning": 25,
             "critical": 15
         },
         "format": "{icon} {capacity}%",
         "format-full": "{icon} {capacity}%",
-        "format-charging": " {capacity}%",
-        "format-plugged": " {capacity}%",
+        "format-charging": " {icon} {capacity}%",
+        "format-plugged": " {icon} {capacity}%",
         "format-alt": "{icon} {time}",
         "format-icons": ["", "", "", "", ""]
     },
@@ -175,6 +177,11 @@
     "network": {
         "interface": "wlp1s0",
         "interval": 5,
+        // signalStrength/20 == lit bars, so <40 is one bar or none.
+        "states": {
+            "weak": 0,
+            "normal": 40
+        },
         "format-wifi": "{icon}",
         "format-ethernet": "LAN",
         "format-linked": "{icon}",
@@ -212,12 +219,6 @@
         "format-connected": "",
         "tooltip-format-connected": "{device_enumerate}",
         "on-click": "~/nixcfg/scripts/focus_or_launch.sh blueman-manager blueman-manager"
-    },
-    "custom/dolphin": {
-        "format": "",
-        "on-click": "dolphin",
-        "tooltip": true,
-        "tooltip-format": "Files (Dolphin)"
     },
 
     // Which displays are switched on. The tile counts how many of the connected

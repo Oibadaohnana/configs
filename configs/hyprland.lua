@@ -209,6 +209,15 @@ hl.config({
 ----------------------------------------
 -- Window rules
 ----------------------------------------
+-- Tearing for every window, not just games. Still only bites while a window is
+-- fullscreen and alone on its output: tiled windows never tear.
+hl.window_rule({
+    name  = "tearing-all",
+    match = { class = ".*" },
+
+    immediate = true,
+})
+
 -- Steam games often resize themselves to screen size instead of properly
 -- requesting fullscreen, so Hyprland treats them as a normal maximized window
 -- and respects waybar's reserved space, leaving the bar visible. Force real
@@ -219,8 +228,6 @@ hl.window_rule({
     match = { initial_class = "^steam_app_\\d+$" },
 
     fullscreen = true,
-    -- Tear rather than wait for vblank: lowest input latency in-game.
-    immediate  = true,
 })
 
 ----------------------------------------
@@ -300,7 +307,7 @@ hl.bind(mod .. " + SHIFT + SPACE", hl.dsp.window.float({ action = "toggle" }))
 -- Cycle windows
 hl.bind(mod .. " + SPACE", hl.dsp.window.cycle_next())
 -- Toggle dwindle split orientation (vertical/horizontal)
-hl.bind(mod .. " + H", hl.dsp.exec_cmd("hyprctl dispatch layoutmsg togglesplit"))
+hl.bind(mod .. " + H", hl.dsp.layout("togglesplit"))
 -- Reload config
 hl.bind(mod .. " + SHIFT + C", hl.dsp.exec_cmd("hyprctl reload"))
 -- Exit session

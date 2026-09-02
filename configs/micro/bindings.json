@@ -1,9 +1,13 @@
 {
     "Ctrl-a": "SelectAll",
+    "Ctrl-b": "lua:emphasis.bold",
     "Ctrl-e": "EndOfLine",
     "Ctrl-k": "SelectToEndOfLine,Delete",
-    "Ctrl-u": "SelectToStartOfLine,Delete",
+    "Ctrl-u": "lua:emphasis.underline",
     "Ctrl-w": "DeleteWordLeft",
     "CtrlDelete": "DeleteWordRight",
-    "CtrlDown": "CursorDown,CursorDown,CursorDown,CursorDown,CursorDown"
+    "CtrlDown": "CursorDown,CursorDown,CursorDown,CursorDown,CursorDown",
+    "CtrlUp": "CursorUp,CursorUp,CursorUp,CursorUp,CursorUp",
+    "Down": "lua:searchnav.down|CursorDown",
+    "Up": "lua:searchnav.up|CursorUp"
 }

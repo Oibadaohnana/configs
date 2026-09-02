@@ -27,7 +27,6 @@ function make_symlink {
 
 make_symlink configs/bashrc .bashrc
 make_symlink configs/zshrc .zshrc
-make_symlink configs/swayconfig .config/sway/config
 make_symlink configs/waybarconfig/config .config/waybar/config
 make_symlink configs/waybarconfig/style.css .config/waybar/style.css
 make_symlink configs/makoconfig .config/mako/config
@@ -58,6 +57,18 @@ make_symlink configs/micro/colorschemes/gruvbox-dark-hard.micro .config/micro/co
 # (delete word back, which kitty sends for ctrl+backspace) already match.
 # JSON allows no comments, hence the explanation living here.
 make_symlink configs/micro/bindings.json .config/micro/bindings.json
+# Down/Up walk search matches while a search is live, which micro cannot do on
+# its own. bindings.json chains "lua:searchnav.down|CursorDown", so the keys go
+# dead without this plugin.
+make_symlink configs/micro/plug/searchnav .config/micro/plug/searchnav
+# Ctrl+B / Ctrl+U wrap the selection -- or the word under the cursor -- in
+# **bold** / <u>underline</u>, and strip them again on a second press. Ctrl+U
+# no longer deletes to the start of the line.
+make_symlink configs/micro/plug/emphasis .config/micro/plug/emphasis
+# What renders those markers: micro's own markdown rules with **strong** split
+# off into a bold colour group, plus the .txt rules micro ships no syntax for.
+# A whole copy is needed -- micro replaces a syntax file rather than merging.
+make_symlink configs/micro/syntax .config/micro/syntax
 # Shadows the micro.desktop from pkgs.micro -- same desktop-file ID, and
 # XDG_DATA_HOME beats XDG_DATA_DIRS, so Dolphin resolves this one and still
 # shows a single "Micro" entry in Open With. mimeapps.list names it as the

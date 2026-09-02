@@ -32,8 +32,18 @@
 
   # Touchpad wakeup: weight on it (stacked laptop) instantly resumes s2idle via
   # IRQ7 pinctrl_amd. Keyboard/power/lid still wake. bind: attr appears post-probe.
+  # MT7922 BT (0e8d:e616): no USB autosuspend -- aggravates the resume wedge below.
   services.udev.extraRules = ''
     ACTION=="add|bind", SUBSYSTEM=="i2c", ATTR{name}=="PIXA3854:00", ATTR{power/wakeup}="disabled"
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0e8d", ATTR{idProduct}=="e616", TEST=="power/control", ATTR{power/control}="on"
+  '';
+
+  # MT7922 BT desyncs across s2idle: controller keeps a phantom ACL handle the
+  # host never sees, so profile connects fail EACCES until the firmware self-
+  # resets. Adapter power cycling won't clear it, only a btusb reload.
+  powerManagement.resumeCommands = ''
+    ${pkgs.kmod}/bin/modprobe -r btusb || true
+    ${pkgs.kmod}/bin/modprobe btusb
   '';
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";

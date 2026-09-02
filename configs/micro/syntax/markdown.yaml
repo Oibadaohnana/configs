@@ -1,0 +1,68 @@
+# micro's built-in markdown rules with two edits: **strong** gets its own group
+# so the colorscheme can render it bold, and <u></u> is highlighted. The whole
+# file has to be copied because micro replaces a syntax definition rather than
+# merging into it.
+filetype: markdown
+
+detect:
+    filename: "\\.(livemd|md|mkd|mkdn|markdown)$"
+
+rules:
+    # Tables (Github extension)
+    - type: ".*[ :]\\|[ :].*"
+
+      # quotes
+    - statement:  "^>.*"
+
+      # Emphasis
+    - type: "(^|[[:space:]])(_[^ ][^_]*_|\\*[^ ][^*]*\\*)"
+
+      # Strong emphasis -- Ctrl+B. A region, not a line pattern: micro matches
+      # patterns one line at a time, so a pair whose closing ** landed on the
+      # next line would never render. Opening ** must be followed by a non-space
+      # non-star, which keeps a "*** " rule and a stray "** " from starting one.
+    - strong:
+        start: "\\*\\*[^ *]"
+        end: "\\*\\*"
+        rules: []
+
+      # __bold__ stays a line pattern -- a region would swallow __dunder__ names
+    - strong: "(^|[[:space:]])__[^ ][^_]*__"
+
+      # Underline -- Ctrl+U, markdown has no syntax of its own for it
+    - underlined.tag:
+        start: "<u>"
+        end: "</u>"
+        rules: []
+
+      # strike-through
+    - type: "(^|[[:space:]])~~[^ ][^~]*~~"
+
+      # horizontal rules
+    - special: "^(---+|===+|___+|\\*\\*\\*+)\\s*$"
+
+      # headlines
+    - special:  "^#{1,6}.*"
+
+      # lists
+    - identifier:   "^[[:space:]]*[\\*+-] |^[[:space:]]*[0-9]+\\. "
+
+      # misc
+    - preproc:   "(\\(([CcRr]|[Tt][Mm])\\)|\\.{3}|(^|[[:space:]])\\-\\-($|[[:space:]]))"
+
+      # links
+    - constant: "\\[[^]]+\\]"
+    - constant: "\\[([^][]|\\[[^]]*\\])*\\]\\([^)]+\\)"
+
+      # images
+    - underlined: "!\\[[^][]*\\](\\([^)]+\\)|\\[[^]]+\\])"
+
+      # urls
+    - underlined: "https?://[^ )>]+"
+
+    - special: "^```$"
+
+    - special:
+        start: "`"
+        end: "`"
+        rules: []

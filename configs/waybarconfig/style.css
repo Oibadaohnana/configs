@@ -102,7 +102,6 @@ button:hover {
 #bluetooth,
 #wireplumber,
 #custom-media,
-#custom-dolphin,
 #custom-audiosink,
 #custom-monitors,
 #custom-sleep,
@@ -133,25 +132,37 @@ button:hover {
 
 /* ------------------------------------------------------------------
    modules-right palette.
-   The stock waybar colors are near-full saturation, which on a black bar
-   reads as a row of glowing tiles. These are the same hues pulled down to
-   a common lightness (~20-28%) so the modules stay tellable apart while
-   sitting quietly against the background. Text is light throughout, so
-   check contrast if you brighten any background back up.
+   Tiles are bare at rest: the bar's black is the ground and the glyphs carry
+   the meaning. Colour is kept for states worth noticing -- sleep blocked,
+   audio muted, network down, memory or battery in warning/critical. The tray
+   is the exception, kept grey so app icons sit on something.
+   Text is light throughout, so check contrast if you paint anything back in.
    ------------------------------------------------------------------ */
 
+/* Squarer, technical face for the one tile that is pure numbers. Tabular
+   digits too, so the width stops shifting every time a digit rolls over.
+   Weight is set in the format string instead of here, so it lands on the
+   time only and leaves the date regular. */
 #clock {
-    background-color: #454f57;
+    background-color: transparent;
+    font-family: "JetBrainsMono Nerd Font", monospace;
 }
 
 #battery {
-    background-color: #3d4245;
+    background-color: transparent;
     color: #e8e8e8;
 }
 
 #battery.charging, #battery.plugged {
     color: #e8e8e8;
-    background-color: #2f6048;
+    background-color: transparent;
+}
+
+/* Red from 25% down. Same red as critical below, minus the blink -- the colour
+   says "plug in soon", the blink is saved for the last 15%. */
+#battery.warning:not(.charging) {
+    background-color: #6e2626;
+    color: #ffffff;
 }
 
 @keyframes blink {
@@ -208,26 +219,31 @@ label:focus {
     background-color: #90b1b1;
 }
 
-/* Dark ground so the lit bars read white and the dimmed ones read grey.
-   Bluetooth next door is already #2980b9, so this one stays neutral.
+/* Bare: the bar's own black is the dark ground the lit bars need.
    Monospace keeps the four block glyphs on a consistent baseline/width. */
 #network {
-    background-color: #2d3436;
+    background-color: transparent;
     font-family: "DejaVu Sans Mono", monospace;
+}
+
+/* One lit bar or none. Amber, same as sleep blocked: worth noticing, not an
+   alarm. Sits above .disconnected so that red wins when the link drops. */
+#network.weak {
+    background-color: #5f4a3a;
 }
 
 #network.disconnected {
     background-color: #6b2020;
 }
 
-/* Output selector, painted identically to #pulseaudio so the two read as one
-   volume unit: this tile picks the device, that one shows the level.
+/* Output selector, bare like #pulseaudio so the two read as one volume
+   unit: this tile picks the device, that one shows the level.
    The script still emits .bluetooth / .hdmi / .analog classes, deliberately
    left unstyled -- the icon alone says which output is active. Style them
    here if you ever want the tile tinted per device again. */
 #custom-audiosink,
 #pulseaudio {
-    background-color: #6b5424;
+    background-color: transparent;
     color: #e8e8e8;
 }
 
@@ -237,22 +253,15 @@ label:focus {
 }
 
 #bluetooth {
-    background-color: #2f4a63;
+    background-color: transparent;
     color: #e8e8e8;
 }
 
-#custom-dolphin {
-    background-color: #3a5f4c;
-    color: #e8e8e8;
-}
-
-/* Display switcher, in a muted violet so it reads as its own control instead
-   of joining the blue bluetooth tile or the olive audio pair beside it.
-   .partial means at least one connected output is currently switched off,
-   .all means every one of them is on -- the count in the tile already says
-   which, so the class only dims the text rather than repainting the tile. */
+/* Display switcher. .partial means at least one connected output is currently
+   switched off, .all means every one of them is on -- the count in the tile
+   already says which, so the class only dims the text. */
 #custom-monitors {
-    background-color: #4a3a5f;
+    background-color: transparent;
     color: #e8e8e8;
 }
 
@@ -260,12 +269,11 @@ label:focus {
     color: #b0a8bb;
 }
 
-/* Sleep blocker. Two states rather than one colour: allowed is the same quiet
-   grey as the tray, so the normal case disappears into the bar, and blocked
-   goes amber to say a mode is switched on -- this laptop will not suspend on
-   its own, and that is worth noticing. */
+/* Sleep blocker. Allowed is bare, so the normal case disappears into the bar.
+   Blocked goes amber to say a mode is switched on -- this laptop will not
+   suspend on its own, and that is worth noticing. */
 #custom-sleep {
-    background-color: #33393d;
+    background-color: transparent;
     color: #9aa3a5;
 }
 
@@ -274,18 +282,17 @@ label:focus {
     color: #f0e0cc;
 }
 
-/* RAM left. Muted teal to sit apart from the two greys flanking it (sleep,
-   battery) without joining the green dolphin tile at the other end of the bar.
-   The two states are the exception to the "keep it quiet" rule above: they are
-   an alarm, so critical is deliberately brighter than anything else here --
-   memory running out is the one thing on this bar worth interrupting for. */
+/* RAM left. Bare at rest. The two states are the exception to the
+   "keep it quiet" rule above: they are an alarm. Both are red -- deep at 85%
+   used, brighter at 95% -- because memory running out is the one thing on
+   this bar worth interrupting for. */
 #memory {
-    background-color: #2f5459;
+    background-color: transparent;
     color: #e8e8e8;
 }
 
 #memory.warning {
-    background-color: #8a4a1a;
+    background-color: #6e2626;
     color: #ffffff;
 }
 
