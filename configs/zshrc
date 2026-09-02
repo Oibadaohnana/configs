@@ -17,6 +17,10 @@ alias sshon='~/nixcfg/scripts/ssh_toggle.sh on'
 alias sshoff='~/nixcfg/scripts/ssh_toggle.sh off'
 alias sshstat='~/nixcfg/scripts/ssh_toggle.sh status'
 
+# Walk every git repo below the current directory: add, commit with a
+# per-repo running index, push. SSH passphrase is asked once per run.
+alias gitgo='~/nixcfg/scripts/git-batch-push.sh --root "$PWD"'
+
 alias physio='/home/benji/projects/physio_research/physio-search'
 
 # -------------------------------
