@@ -26,6 +26,12 @@
   programs.zsh = {
     enable = true;
     enableCompletion = true;
+    # compinit moved into configs/zshrc so it can run cached (-C). This only
+    # drops the /etc/zshrc call -- enableCompletion still links share/zsh and
+    # pulls nix-zsh-completions, so fpath is unchanged.
+    enableGlobalCompInit = false;
+    # prompt suse costs ~7ms and configs/zshrc overrides PROMPT right after.
+    promptInit = "";
     autosuggestions.enable = true;
     syntaxHighlighting.enable = true;
     shellAliases = {
@@ -44,6 +50,13 @@
   # Enable GameMode daemon + CLI wrapper for Steam launch options.
   programs.gamemode.enable = true;
   programs.steam.enable = true;
+
+  # GParted alternative; module also registers kpmcore polkit helper.
+  programs.partition-manager.enable = true;
+
+  # Polkit auth agent -- Hyprland starts none, so privileged prompts fail.
+  systemd.packages = [ pkgs.hyprpolkitagent ];
+  systemd.user.services.hyprpolkitagent.wantedBy = [ "graphical-session.target" ];
   
   networking.firewall.allowedTCPPorts = [ 8787 ];	
   # System packages

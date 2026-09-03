@@ -23,6 +23,11 @@ alias gitgo='~/nixcfg/scripts/git-batch-push.sh --root "$PWD"'
 
 alias physio='/home/benji/projects/physio_research/physio-search'
 
+function ns() { 
+   	nix shell nixpkgs#$1
+}
+
+
 # -------------------------------
 # Colors
 # -------------------------------
@@ -115,9 +120,20 @@ bindkey '^[[1;6B' select-line-to-beginning
 # End of lines configured by zsh-newuser-install
 # The following lines were added by compinstall
 zstyle :compinstall filename '/home/benji/.zshrc'
-
+# compinit is ours now -- enableGlobalCompInit=false drops the /etc/zshrc one.
+# Full scan ~30ms, -C reuses the dump ~11ms; rescan once a day so newly
+# installed completions still land. Anon fn so EXTENDED_GLOB (needed by the
+# (#q) qualifier, and not set globally here) does not leak out.
 autoload -Uz compinit
-compinit
+() {
+  setopt local_options extended_glob
+  if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then
+    compinit
+    touch ~/.zcompdump   # compinit only rewrites on change; refresh so -C can hit
+  else
+    compinit -C
+  fi
+}
 # End of lines added by compinstall
 if command -v fzf >/dev/null 2>&1; then
   # Use fzf-powered history search

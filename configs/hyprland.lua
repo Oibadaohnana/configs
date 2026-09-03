@@ -6,7 +6,10 @@
 -- Variables
 ----------------------------------------
 local mod  = "SUPER"
-local term = "kitty"
+-- --single-instance: new windows come from the warm process. Cold start is
+-- ~190ms (linker + embedded python + fonts), warm is ~17ms. One process for
+-- every window, so a kitty crash takes them all down.
+local term = "kitty --single-instance"
 local menu = "rofi -show drun"
 
 ----------------------------------------
