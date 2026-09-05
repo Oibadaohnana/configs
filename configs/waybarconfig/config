@@ -57,6 +57,7 @@
         "bluetooth",
         "custom/monitors",
         "custom/sleep",
+        "custom/perfmode",
         "memory",
         "network",
         "battery",
@@ -256,6 +257,29 @@
         "interval": 30,
         "signal": 9,
         "on-click": "~/nixcfg/scripts/sleep_inhibit.sh toggle"
+    },
+
+    // How hard the machine is allowed to work. Hyprland has no performance
+    // mode of its own, so each mode is really two things at once: a
+    // power-profiles-daemon profile (clocks, power limits, fan curve) and a
+    // set of Hyprland render settings (blur, animations, transparency,
+    // tearing). Bolt is performance and the default, scales is balanced, leaf
+    // is power saver -- see scripts/perfmode.sh.
+    //
+    // Left-click cycles, right-click opens a rofi list, scroll steps either
+    // way. Polled slowly because only those change it, and each of them sends
+    // RTMIN+10, so the tile updates at once instead of waiting out the
+    // interval.
+    "custom/perfmode": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/perfmode.sh waybar",
+        "interval": 30,
+        "signal": 10,
+        "on-click": "~/nixcfg/scripts/perfmode.sh next",
+        "on-click-right": "~/nixcfg/scripts/perfmode.sh menu",
+        "on-scroll-up": "~/nixcfg/scripts/perfmode.sh prev",
+        "on-scroll-down": "~/nixcfg/scripts/perfmode.sh next"
     },
 
     // Which output the volume knob controls -- i.e. the default sink. Sits

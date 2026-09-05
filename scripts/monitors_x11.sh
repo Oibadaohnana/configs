@@ -19,8 +19,9 @@
 #
 # * No auto-enable, and no monitor.added event. Hyprland's wildcard monitor
 #   rule switched a newly plugged display on by itself and fired an event; X11
-#   does neither. `watch` covers both: it polls the connected-output set and,
-#   when it changes, enables anything new and re-applies the saved state.
+#   does neither. `watch` covers both: it polls the connected-output set and
+#   switches everything on when it changes -- see cmd_all for why everything,
+#   and not just the new arrival.
 #
 # * No per-output scale. X11 has one DPI for the whole server (see the Xft.dpi
 #   line in configs/i3config), so hyprland.lua's scale = 2 on DP-3 and 1.5 on
@@ -44,9 +45,11 @@
 #   monitors_x11.sh layout         re-pack the row, and repair any overlap
 #   monitors_x11.sh overlap        print "yes" if any two outputs overlap
 #   monitors_x11.sh apply          re-apply the saved on/off state
+#   monitors_x11.sh all            switch every connected display on
+#   monitors_x11.sh rescue         switch everything on if nothing is on
 #   monitors_x11.sh init           desktop monitor setup (hyprland.lua's rules)
 #   monitors_x11.sh init-framework laptop monitor setup
-#   monitors_x11.sh watch          re-apply on hotplug; stands in for monitor.added
+#   monitors_x11.sh watch          answer a hotplug; stands in for monitor.added
 #   monitors_x11.sh list           one line per output, tab separated:
 #                                  name desc disabled mode scale width height x y
 
@@ -204,6 +207,13 @@ saved_remove() {
     [[ -f $STATE_FILE ]] || return 0
     grep -vxF "$1" "$STATE_FILE" >"$STATE_FILE.tmp" || true
     mv "$STATE_FILE.tmp" "$STATE_FILE"
+}
+
+# Nothing is off any more. Called by cmd_all, because the off-list is the one
+# thing that would switch these straight back off at the next hotplug.
+saved_clear() {
+    [[ -f $STATE_FILE ]] || return 0
+    : >"$STATE_FILE"
 }
 
 # ---------------------------------------------------------------------------
@@ -393,6 +403,41 @@ turn_off() {
     set_monitor "$name" true
 }
 
+# Switch on every connected output, whatever the off-list says, and empty the
+# off-list: after this nothing is meant to be off.
+#
+# This is what a hotplug does, in place of the enable_new/cmd_apply pair that
+# used to answer one. Carrying an off-list across a change of desk is how a
+# session ends up with no screen at all -- unplug the external from a laptop
+# whose panel is switched off and there is nothing left to switch the panel
+# back on with.
+#
+# Each output is placed past the right-hand end of everything already on, one
+# at a time, so no two can land on the same spot; cmd_layout then re-packs the
+# row the way the pins want it.
+cmd_all() {
+    local name desc dis mode scale lw lh px py turned=""
+    while IFS=$'\t' read -r name desc dis mode scale lw lh px py; do
+        [[ $dis == true ]] || continue
+        valid_name "$name" || continue
+        enable_output "$name" || continue
+        turned+="$(icon_for "$name") $desc"$'\n'
+    done < <(monitor_list)
+
+    saved_clear
+
+    [[ -n $turned ]] || return 0
+    notify "$ICON_DISPLAY All displays on" "${turned%$'\n'}"
+    cmd_layout
+}
+
+# The way back out of a session with no screen. Nothing can be asked for from
+# there -- no menu, no polybar tile, no keybinding whose result could be seen.
+cmd_rescue() {
+    (( $(enabled_count) == 0 )) || return 0
+    cmd_all
+}
+
 cmd_toggle() {
     local target name desc dis mode scale lw lh px py state=""
     target=$(resolve_name "$1")
@@ -540,6 +585,7 @@ cmd_apply() {
         done <"$STATE_FILE"
     fi
     cmd_layout
+    cmd_rescue
 }
 
 state_of() {
@@ -608,8 +654,8 @@ cmd_watch() {
     while :; do
         now=$(xrandr --query | awk '/ connected/ { print $1 }' | sort | tr '\n' ' ')
         if [[ $now != "$last" && -n $last ]]; then
-            enable_new
-            cmd_apply
+            cmd_all
+            cmd_rescue
         fi
         last=$now
         sleep "$POLL_INTERVAL"
@@ -628,12 +674,14 @@ case "${1:-}" in
     layout)         cmd_layout ;;
     overlap)        has_overlap ;;
     apply)          cmd_apply ;;
+    all)            cmd_all ;;
+    rescue)         cmd_rescue ;;
     init)           cmd_init ;;
     init-framework) cmd_init_framework ;;
     watch)          cmd_watch ;;
     list)           monitor_list ;;
     *)
-        echo "Usage: $0 {polybar|waybar|menu|toggle <o>|on <o>|off <o>|left <o>|right <o>|layout|overlap|apply|init|init-framework|watch|list}" >&2
+        echo "Usage: $0 {polybar|waybar|menu|toggle <o>|on <o>|off <o>|left <o>|right <o>|layout|overlap|apply|all|rescue|init|init-framework|watch|list}" >&2
         exit 1
         ;;
 esac

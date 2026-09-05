@@ -105,6 +105,7 @@ button:hover {
 #custom-audiosink,
 #custom-monitors,
 #custom-sleep,
+#custom-perfmode,
 #tray,
 #mode,
 #idle_inhibitor,
@@ -161,7 +162,7 @@ button:hover {
 /* Red from 25% down. Same red as critical below, minus the blink -- the colour
    says "plug in soon", the blink is saved for the last 15%. */
 #battery.warning:not(.charging) {
-    background-color: #6e2626;
+    background-color: #ff0000;
     color: #ffffff;
 }
 
@@ -229,11 +230,11 @@ label:focus {
 /* One lit bar or none. Amber, same as sleep blocked: worth noticing, not an
    alarm. Sits above .disconnected so that red wins when the link drops. */
 #network.weak {
-    background-color: #5f4a3a;
+    background-color: #ff0000;
 }
 
 #network.disconnected {
-    background-color: #6b2020;
+    background-color: #ff0000;
 }
 
 /* Output selector, bare like #pulseaudio so the two read as one volume
@@ -282,6 +283,27 @@ label:focus {
     color: #f0e0cc;
 }
 
+/* Performance mode. Performance is the default, so it is the bare one -- the
+   normal case disappears into the bar and the bolt alone says where you are.
+   The other two are tinted because they mean something has been turned down:
+   grey for balanced, green for power saver. Deliberately muted rather than the
+   loud #2ecc71 the stock power-profiles-daemon rules above use -- this tile
+   reports a choice, it is not an alarm. */
+#custom-perfmode {
+    background-color: transparent;
+    color: #e8e8e8;
+}
+
+#custom-perfmode.balanced {
+    background-color: #35393d;
+    color: #c3cad0;
+}
+
+#custom-perfmode.power-saver {
+    background-color: #2f4535;
+    color: #bfe0c8;
+}
+
 /* RAM left. Bare at rest. The two states are the exception to the
    "keep it quiet" rule above: they are an alarm. Both are red -- deep at 85%
    used, brighter at 95% -- because memory running out is the one thing on
@@ -292,12 +314,12 @@ label:focus {
 }
 
 #memory.warning {
-    background-color: #6e2626;
+    background-color: #c4663b;
     color: #ffffff;
 }
 
 #memory.critical {
-    background-color: #8f2f2f;
+    background-color: #ff0000;
     color: #ffffff;
 }
 
@@ -329,7 +351,7 @@ label:focus {
 }
 
 #temperature.critical {
-    background-color: #eb4d4b;
+    background-color: #ff0000;
 }
 
 /* Neutral rather than tinted: tray icons carry their own app colors, and a

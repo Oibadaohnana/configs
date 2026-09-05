@@ -68,10 +68,10 @@ end
 -- them: a stale entry here (the laptop panel saved as off, then booted
 -- undocked) would otherwise leave a black screen with no way back.
 --
--- Every saved output is re-checked on each call, not just a newly added one,
--- because at login the monitors arrive one at a time: the first one cannot be
--- switched off while it is alone, and only once a second arrives does the
--- saved "off" for the first become safe to apply.
+-- Only the outputs that already exist at this point are caught here, which is
+-- why it is not the whole of the login restore: the rest arrive over the next
+-- second or two, and monitors.sh answers those (see below). Doing the ones
+-- that are already here from Lua keeps them from flashing on first.
 local function apply_saved_monitor_state()
     for _, output in ipairs(saved_disabled_outputs()) do
         if hl.get_monitor(output) and #hl.get_monitors() > 1 then
@@ -82,10 +82,22 @@ end
 
 apply_saved_monitor_state()
 
--- A monitor plugged in later is auto-enabled by the wildcard rule above, which
--- would undo a saved "off", so re-apply whenever one appears. Both events also
--- poke waybar, whose custom/monitors tile would otherwise sit stale until its
--- next poll. The signal number matches WAYBAR_SIGNAL in monitors.sh.
+-- A display appearing or vanishing means the desk itself has changed, so every
+-- connected output is switched back on and the saved off-list is emptied.
+-- Carrying an off-list across such a change is how a session ends up with no
+-- screen at all: unplug the external from a laptop whose panel is switched off
+-- and there is nothing left to switch the panel back on with -- no menu, no
+-- waybar tile, no keybinding whose result could be seen.
+--
+-- `hotplug` rather than `all` because these events do not only mean a hotplug:
+-- switching an output on fires monitor.added too, and at login they fire as the
+-- outputs arrive one at a time. The script tells the three apart -- see
+-- cmd_hotplug -- and restores the saved off-list in the login case instead. It
+-- also ends every run by switching everything on if nothing at all is lit.
+--
+-- Both events also poke waybar, whose custom/monitors tile would otherwise sit
+-- stale until its next poll. The signal number matches WAYBAR_SIGNAL in
+-- monitors.sh.
 --
 -- The pinned left-to-right order is re-applied by the script rather than here:
 -- placing the outputs edge to edge means measuring the logical size of each
@@ -97,13 +109,12 @@ apply_saved_monitor_state()
 -- has finished placing the new output, and re-packing the row against a
 -- half-settled layout is how an output ends up sitting on top of another.
 hl.on("monitor.added", function()
-    apply_saved_monitor_state()
-    hl.exec_cmd("sleep 1 && ~/nixcfg/scripts/monitors.sh layout")
+    hl.exec_cmd("sleep 1 && ~/nixcfg/scripts/monitors.sh hotplug")
     hl.exec_cmd("pkill -RTMIN+8 waybar")
 end)
 
 hl.on("monitor.removed", function()
-    hl.exec_cmd("sleep 1 && ~/nixcfg/scripts/monitors.sh layout")
+    hl.exec_cmd("sleep 1 && ~/nixcfg/scripts/monitors.sh hotplug")
     hl.exec_cmd("pkill -RTMIN+8 waybar")
 end)
 
@@ -111,9 +122,10 @@ end)
 -- `position = "auto"` then re-packs the row in whatever order Hyprland fancies
 -- -- throwing away the pinned arrangement. Nothing else notices, because the
 -- result is a valid non-overlapping layout, just not the requested one. So put
--- it back every time the config is re-read.
+-- it back every time the config is re-read, and with it the saved off-list,
+-- which that same wildcard rule would otherwise undo.
 hl.on("config.reloaded", function()
-    hl.exec_cmd("sleep 1 && ~/nixcfg/scripts/monitors.sh layout")
+    hl.exec_cmd("sleep 1 && ~/nixcfg/scripts/monitors.sh apply")
 end)
 
 ----------------------------------------
@@ -140,6 +152,47 @@ hl.config({
 })
 
 ----------------------------------------
+-- Performance mode
+----------------------------------------
+-- Hyprland has no performance mode of its own, so ~/nixcfg/scripts/perfmode.sh
+-- invents one out of two halves: a power-profiles-daemon profile, and the
+-- render settings below. It records the pick in the same state directory
+-- monitors.sh uses, and this reads it back.
+--
+-- Read here rather than left to the script, for the same reason the monitor
+-- off-list is: a `hyprctl eval` fired from exec-once lands after the first
+-- frames, so the wrong settings would flash up first. It also survives
+-- Super+Shift+C -- a reload re-runs this file, where the script's eval would
+-- simply be thrown away.
+--
+-- The daemon half still needs the script, and is what exec-once calls it for:
+-- PPD forgets its profile across a reboot, and Lua cannot set it.
+--
+-- No saved file means performance, which is the point: full clocks, and none
+-- of the per-frame GPU work that blur, animations and window transparency ask
+-- for. Keep these three in step with the HYPR table in perfmode.sh.
+local perfmode_file =
+    (os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state"))
+    .. "/hypr/perfmode"
+
+local perfmodes = {
+    performance     = { blur = false, opacity = 1.0, animations = false, tearing = true  },
+    balanced        = { blur = true,  opacity = 0.9, animations = true,  tearing = true  },
+    ["power-saver"] = { blur = false, opacity = 1.0, animations = false, tearing = false },
+}
+
+-- Missing, empty or unrecognised all mean the same thing: nobody has picked.
+local function saved_perfmode()
+    local f = io.open(perfmode_file, "r")
+    if not f then return perfmodes.performance end
+    local name = (f:read("l") or ""):match("^%s*(.-)%s*$")
+    f:close()
+    return perfmodes[name] or perfmodes.performance
+end
+
+local perf = saved_perfmode()
+
+----------------------------------------
 -- General / Appearance
 ----------------------------------------
 hl.config({
@@ -156,15 +209,15 @@ hl.config({
         -- Master switch for tearing. Nothing tears on its own: only windows
         -- carrying an `immediate` rule do, and only while fullscreen and alone
         -- on screen. Trades a visible tear line for lower input latency.
-        allow_tearing = true,
+        allow_tearing = perf.tearing,
     },
 
     decoration = {
         rounding = 0,
         active_opacity = 1.0,
-        inactive_opacity = 0.9,
+        inactive_opacity = perf.opacity,
         blur = {
-            enabled = true,
+            enabled = perf.blur,
             size = 5,
             passes = 2,
         },
@@ -187,7 +240,7 @@ hl.config({
     },
 
     animations = {
-        enabled = false,
+        enabled = perf.animations,
     },
 
     dwindle = {
@@ -247,6 +300,11 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("hyprpaper")
     hl.exec_cmd("wl-paste --watch cliphist store")
     hl.exec_cmd("hypridle")
+    -- Puts the saved performance mode back on power-profiles-daemon, which
+    -- starts every boot on "balanced" no matter what was last picked. The
+    -- render half of the mode is already set above, straight out of the same
+    -- state file.
+    hl.exec_cmd("~/nixcfg/scripts/perfmode.sh apply")
     -- Registers the BlueZ pairing/authorization agent. Without it, devices
     -- reconnecting at login are rejected outright ("Authentication attempt
     -- without agent") with no way to approve them.
@@ -274,6 +332,12 @@ hl.bind(mod .. " + V",      hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliph
 hl.bind(mod .. " + END", hl.dsp.exec_cmd("~/nixcfg/scripts/monitors.sh toggle HDMI-A-1"))
 -- Meta+M = Pick which displays are on (same menu as the waybar tile)
 hl.bind(mod .. " + M", hl.dsp.exec_cmd("~/nixcfg/scripts/monitors.sh menu"))
+
+-- Meta+Shift+M = Switch every display on
+-- The way back when the desk is dark or a screen is missing and the menu is on
+-- one that cannot be seen. Deliberately a bare keybinding: it needs nothing on
+-- screen to work.
+hl.bind(mod .. " + SHIFT + M", hl.dsp.exec_cmd("~/nixcfg/scripts/monitors.sh all"))
 
 ----------------------------------------
 -- Session (matches Plasma)

@@ -160,6 +160,12 @@ bindsym $mod+End    exec --no-startup-id $scripts/monitors_x11.sh toggle HDMI-A-
 # Meta+M = Pick which displays are on (same menu as the polybar tile)
 bindsym $mod+m      exec --no-startup-id $scripts/monitors_x11.sh menu
 
+# Meta+Shift+M = Switch every display on
+# The way back when the desk is dark or a screen is missing and the menu is on
+# one that cannot be seen. Deliberately a bare keybinding: it needs nothing on
+# screen to work.
+bindsym $mod+Shift+m exec --no-startup-id $scripts/monitors_x11.sh all
+
 ########################################
 # Session (matches Plasma)
 ########################################

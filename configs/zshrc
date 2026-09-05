@@ -26,6 +26,9 @@ alias physio='/home/benji/projects/physio_research/physio-search'
 function ns() { 
    	nix shell nixpkgs#$1
 }
+function nd() { 
+   	nix develop $1
+}
 
 
 # -------------------------------

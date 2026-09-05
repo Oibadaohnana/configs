@@ -34,5 +34,15 @@
         { networking.hostName = "benji-framework"; }
       ];
     };
+    nixosConfigurations."server" = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+    
+          modules = [
+            ./server_configuration.nix
+            ./garbage_collect.nix
+            ./hardware/server.nix
+            { networking.hostName = "benji-server"; }
+          ];
+        };
   };
 } 

@@ -12,9 +12,16 @@
 # Persistence: Hyprland has no memory of a switched-off output, and the
 # wildcard monitor rule in hyprland.lua re-enables anything it sees. So both
 # the switched-off outputs and the end-of-row pins are written to state files
-# that hyprland.lua reads back when it loads and whenever a monitor appears.
+# that hyprland.lua reads back when it loads, and that cmd_hotplug re-applies
+# while the session is still starting up and its outputs are still arriving.
 # Those files live outside the nixcfg repo on purpose -- they are per-machine
 # state, and the desktop and the framework have different output names.
+#
+# A display appearing or vanishing overrides all of that: `hotplug` switches
+# every connected output back on and empties the off-list. Carrying an off-list
+# across a change of desk is how a session ends up with no screen at all --
+# unplug the external from a laptop whose panel is switched off and there is
+# nothing left to switch the panel back on with.
 #
 # Pinning an end also settles where the screens sit: with nothing pinned, the
 # `position = "auto"` wildcard rule in hyprland.lua places each output to the
@@ -38,6 +45,9 @@
 #   monitors.sh layout          re-pack the row, and repair any overlap
 #   monitors.sh overlap         print "yes" if any two outputs overlap
 #   monitors.sh apply           re-apply the saved on/off state
+#   monitors.sh all             switch every connected display on
+#   monitors.sh rescue          switch everything on if nothing is on
+#   monitors.sh hotplug         answer a display appearing or vanishing
 #   monitors.sh list            one line per output, tab separated:
 #                               name desc disabled mode scale width height x y
 
@@ -47,6 +57,20 @@ STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/hypr"
 STATE_FILE="$STATE_DIR/disabled-monitors"
 SIDES_FILE="$STATE_DIR/monitor-sides"
 RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp}"
+
+# Both per-session, hence XDG_RUNTIME_DIR: it is emptied at logout, so a fresh
+# session starts with no memory of the last one's screens.
+#   SEEN_FILE     the connected outputs as of the last hotplug, for telling a
+#                 real plug/unplug apart from this script's own switching.
+#   SESSION_FILE  created at the first monitor event; its age is how long this
+#                 session has been up (see cmd_hotplug).
+SEEN_FILE="$RUNTIME_DIR/monitors-seen"
+SESSION_FILE="$RUNTIME_DIR/monitors-session"
+
+# How long after the first monitor event a session still counts as starting up.
+# Outputs arrive one at a time then, so the connected set changes on its own
+# with nothing plugged in.
+SETTLE_SECONDS=10
 
 # Must match "signal" in the custom/monitors module in waybarconfig/config.
 WAYBAR_SIGNAL=8
@@ -90,6 +114,12 @@ monitor_list() {
             flush()
             name = $2; desc = ""; dis = "false"; mode = ""
             scale = 1; tr = 0; pw = 0; ph = 0; px = 0; py = 0
+            # Hyprland conjures a headless output when the last real one goes
+            # away. Nothing is on it and nothing can be plugged into it, so
+            # counting it as a display would hide exactly the situation
+            # cmd_rescue exists to get out of. Blanking the name drops it:
+            # flush() ignores a nameless record.
+            if (name ~ /^(HEADLESS|FALLBACK)/) name = ""
             next
         }
         # The current mode and origin, e.g. "\t2560x1440@143.99001 at 0x0".
@@ -167,6 +197,13 @@ saved_remove() {
     [[ -f $STATE_FILE ]] || return 0
     grep -vxF "$1" "$STATE_FILE" >"$STATE_FILE.tmp" || true
     mv "$STATE_FILE.tmp" "$STATE_FILE"
+}
+
+# Nothing is off any more. Called by cmd_all, because the off-list is the one
+# thing that would switch these straight back off at the next monitor event.
+saved_clear() {
+    [[ -f $STATE_FILE ]] || return 0
+    : >"$STATE_FILE"
 }
 
 # ---------------------------------------------------------------------------
@@ -346,6 +383,95 @@ turn_off() {
     set_monitor "$name" true
 }
 
+# Switch on every connected output, whatever the off-list says, and empty the
+# off-list: after this nothing is meant to be off.
+#
+# Each one is enabled past the right-hand end of everything already on, and the
+# widths accumulate, so no two land on the same spot even for the instant
+# before cmd_layout re-packs the row. hyprctl reports the last known mode of a
+# switched-off output, which is the one it comes back at, so those widths are
+# the real ones; the fallback is only for an output that has never been on.
+cmd_all() {
+    local name desc dis mode scale lw lh px py
+    local lua="" turned="" x
+    x=$(rightmost_edge)
+
+    while IFS=$'\t' read -r name desc dis mode scale lw lh px py; do
+        [[ $dis == true ]] || continue
+        valid_name "$name" || continue
+        (( lw > 0 )) || lw=1920
+        lua+="hl.monitor({ output = \"$name\", disabled = false, position = \"${x}x0\" }) "
+        x=$((x + lw))
+        turned+="$(icon_for "$name") $desc"$'\n'
+    done < <(monitor_list)
+
+    saved_clear
+
+    [[ -n $lua ]] || return 0
+    hyprctl eval "$lua" >/dev/null
+    notify "$ICON_DISPLAY All displays on" "${turned%$'\n'}"
+
+    # Hyprland reports the new state a moment later, and the row has to be
+    # rebuilt around the outputs that just joined it.
+    sleep 0.3
+    cmd_layout
+    refresh_waybar
+}
+
+# The way back out of a session with no screen. Nothing can be asked for from
+# there -- no menu, no waybar tile, no keybinding whose result could be seen --
+# so every path that could have been the last change ends here.
+#
+# Reachable without doing anything wrong: pull the external out of a laptop
+# whose panel is switched off and Hyprland is left with nothing lit.
+cmd_rescue() {
+    (( $(enabled_count) == 0 )) || return 0
+    cmd_all
+}
+
+# Answer a display appearing or vanishing.
+#
+# Which needs telling apart from this script's own switching, because enabling
+# an output makes Hyprland fire monitor.added exactly as plugging one in does.
+# Answering that by switching everything on would mean no display could ever be
+# turned on by itself -- the rest of them would follow it. The set of connected
+# outputs is what separates the two: a plug or an unplug changes it, switching
+# one on or off does not.
+#
+# A session that is still starting up is the exception. Its outputs arrive one
+# at a time, so the set grows on its own with nothing plugged in, and reading
+# that as a hotplug would empty the off-list at every login. The saved state is
+# applied instead, which is what restores it.
+cmd_hotplug() {
+    local now prev age
+    now=$(monitor_list | cut -f1 | sort | tr '\n' ' ')
+    prev=$(cat "$SEEN_FILE" 2>/dev/null || true)
+    printf '%s\n' "$now" >"$SEEN_FILE"
+    age=$(session_age)
+
+    if (( age < SETTLE_SECONDS )); then
+        cmd_apply
+    elif [[ $now != "$prev" ]]; then
+        cmd_all
+    else
+        cmd_layout
+    fi
+
+    cmd_rescue
+    refresh_waybar
+}
+
+# Seconds since the first monitor event of this session, and 0 on the event
+# that creates the marker.
+session_age() {
+    if [[ ! -f $SESSION_FILE ]]; then
+        : >"$SESSION_FILE"
+        printf '0'
+        return 0
+    fi
+    printf '%s' "$(( $(date +%s) - $(stat -c %Y "$SESSION_FILE") ))"
+}
+
 cmd_toggle() {
     local target=$1 name desc dis mode scale lw lh px py state=""
     while IFS=$'\t' read -r name desc dis mode scale lw lh px py; do
@@ -453,18 +579,33 @@ cmd_waybar() {
         "$(json_escape "$text")" "$tooltip" "$class"
 }
 
-# hyprland.lua applies the saved state itself when it loads; this entry point
-# is for repairing a running session by hand. It keeps the same last-display
-# guard, so a stale state file can never black out the session.
+# "true", "false" or empty for an output that is not connected.
+state_of() {
+    local target=$1 name desc dis mode scale lw lh px py
+    while IFS=$'\t' read -r name desc dis mode scale lw lh px py; do
+        if [[ $name == "$target" ]]; then printf '%s' "$dis"; return 0; fi
+    done < <(monitor_list)
+    printf ''
+}
+
+# Put the off-list back into effect: what cmd_hotplug does while a session is
+# starting up, and what to run by hand after something has switched everything
+# on. The last-display guard in turn_off still applies, so a stale off-list can
+# never black out the session, and cmd_rescue catches it if one somehow does.
 cmd_apply() {
     local name
     if [[ -f $STATE_FILE ]]; then
         while read -r name; do
             [[ -n $name && $name != \#* ]] || continue
+            # Only ones that are actually on: cmd_hotplug calls this for every
+            # output arriving at login, and turn_off on an already-off one
+            # would fire a notification each time round.
+            [[ "$(state_of "$name")" == false ]] || continue
             turn_off "$name"
         done <"$STATE_FILE"
     fi
     cmd_layout
+    cmd_rescue
     refresh_waybar
 }
 
@@ -479,9 +620,17 @@ case "${1:-}" in
     layout)  cmd_layout ;;
     overlap) has_overlap ;;
     apply)   cmd_apply ;;
+    all)     cmd_all ;;
+    rescue)  cmd_rescue ;;
+    # Serialised: cmd_all's own switching fires monitor.added, so a second copy
+    # of this arrives while the first is still working. Taking turns means the
+    # second one reads a settled monitor list and finds nothing left to do.
+    hotplug) exec 9>"$RUNTIME_DIR/monitors-hotplug.lock"
+             flock -w 20 9 || exit 0
+             cmd_hotplug ;;
     list)    monitor_list ;;
     *)
-        echo "Usage: $0 {waybar|menu|toggle <o>|on <o>|off <o>|left <o>|right <o>|layout|overlap|apply|list}" >&2
+        echo "Usage: $0 {waybar|menu|toggle <o>|on <o>|off <o>|left <o>|right <o>|layout|overlap|apply|all|rescue|hotplug|list}" >&2
         exit 1
         ;;
 esac
