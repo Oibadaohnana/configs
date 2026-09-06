@@ -4,6 +4,13 @@
   pkgs,
   ...
 }: {
+  # The server's own layers. Kept here, not in flake.nix, so adding a game
+  # touches the server config instead of the top-level flake.
+  imports = [
+    ./server/web.nix
+    ./server/games/robo-rally.nix
+  ];
+
   nix.settings.experimental-features = ["nix-command" "flakes"];
 
   nixpkgs.config.allowUnfree = true;
@@ -100,4 +107,14 @@
       PerSourcePenalties = "crash:3600s authfail:3600s max:86400s";
     };
   };
+
+  # Nix fetches the private robo_rally flake input over ssh at build time, and
+  # with --build-host that fetch happens here, as benji. System-wide so it does
+  # not depend on a hand-written ~/.ssh/config surviving a reinstall.
+  programs.ssh.extraConfig = ''
+    Host github.com
+      User git
+      IdentityFile /home/benji/.ssh/github_serverssh
+      IdentitiesOnly yes
+  '';
 }

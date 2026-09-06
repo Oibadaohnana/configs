@@ -1,0 +1,11 @@
+# nixcfg/configs/sshconfig -- symlinked to ~/.ssh/config
+
+# IdentitiesOnly everywhere: sshd on the server has MaxAuthTries=3 and
+# PerSourcePenalties authfail:3600s, so offering stray agent keys can lock
+# the IP out for an hour. Only ever offer the one key that host wants.
+
+Host server benji-server
+  HostName 45.129.182.102
+  User benji
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes

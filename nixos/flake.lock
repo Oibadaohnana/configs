@@ -34,10 +34,32 @@
         "type": "github"
       }
     },
+    "robo-rally": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788609065,
+        "narHash": "sha256-MEgiscz2FPzBPlLg+OMF2D8201nb4zLqF/WEC6OlJq4=",
+        "ref": "main",
+        "rev": "ce6624c719dcd01c7de56e38c0454294142eb74b",
+        "revCount": 5,
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/robo_rally"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/robo_rally"
+      }
+    },
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "robo-rally": "robo-rally"
       }
     },
     "systems": {
