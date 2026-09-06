@@ -41,11 +41,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1788609065,
-        "narHash": "sha256-MEgiscz2FPzBPlLg+OMF2D8201nb4zLqF/WEC6OlJq4=",
+        "lastModified": 1788684545,
+        "narHash": "sha256-UWtFOfp9yB7zx+j7ypV+7zgY2Vqgr12OSUyBJqusBIQ=",
         "ref": "main",
-        "rev": "ce6624c719dcd01c7de56e38c0454294142eb74b",
-        "revCount": 5,
+        "rev": "ab3d66bd61fc3d273a624c4e342e4cf81fb3b0d8",
+        "revCount": 6,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/robo_rally"
       },
