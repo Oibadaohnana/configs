@@ -1,3 +1,5 @@
 {
-    "colorscheme": "gruvbox-dark-hard"
+    "colorscheme": "gruvbox-dark-hard",
+    "softwrap": true,
+    "wordwrap": true
 }

@@ -8,7 +8,10 @@
   # touches the server config instead of the top-level flake.
   imports = [
     ./server/web.nix
-    ./server/games/robo-rally.nix
+    ./server/games/bobby-dangling.nix
+    ./server/games/worms-whup.nix
+    ./server/todo.nix
+    ./server/makinglist.nix
   ];
 
   nix.settings.experimental-features = ["nix-command" "flakes"];
@@ -108,7 +111,7 @@
     };
   };
 
-  # Nix fetches the private robo_rally flake input over ssh at build time, and
+  # Nix fetches the private bobby_dangling flake input over ssh at build time, and
   # with --build-host that fetch happens here, as benji. System-wide so it does
   # not depend on a hand-written ~/.ssh/config surviving a reinstall.
   programs.ssh.extraConfig = ''

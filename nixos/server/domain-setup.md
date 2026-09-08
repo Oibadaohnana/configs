@@ -1,5 +1,13 @@
 # Pointing a domain at benji-server
 
+> **zaggl.fun is not ours.** It belongs to a friend, who pointed
+> `bobby.zaggl.fun` at this box as a favour. Treat it as borrowed: do not add
+> records under it for new services, and do not assume a subdomain is available
+> just because the box would answer for it. Everything below is written for a
+> domain we actually control, which we do not have yet -- `example.com` in the
+> tables is a placeholder, not a stand-in for zaggl.fun.
+
+
 Server addresses:
 
 - IPv4 `45.129.182.102`
@@ -13,9 +21,9 @@ records take the bare address.
 
 nginx must answer on both address families before an AAAA record exists, or
 IPv6 visitors get a dead site and Let's Encrypt fails validation (it prefers
-AAAA). `server/games/robo-rally.nix` listens on `0.0.0.0` and `[::]`, so:
+AAAA). `server/games/bobby-dangling.nix` listens on `0.0.0.0` and `[::]`, so:
 
-    buildsysserver
+    bsyss
 
 Confirm v6 is live:
 
@@ -51,7 +59,7 @@ one exists add `0 issue "letsencrypt.org"`.
 
 ### Wildcard, once there is a second game
 
-Subdomains per game (`roborally.example.com`, `chess.example.com`) avoid
+Subdomains per game (`bobbydangling.example.com`, `chess.example.com`) avoid
 editing DNS for every new one:
 
 | Type | Name | Value                                  |

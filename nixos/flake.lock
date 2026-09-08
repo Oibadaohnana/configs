@@ -1,5 +1,26 @@
 {
   "nodes": {
+    "bobby-dangling": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788866452,
+        "narHash": "sha256-7XRKWQ2vqulKRlykFHoYF2zAT976959DCNWGxpEtvKc=",
+        "ref": "main",
+        "rev": "4b1e724b4da66b52c9c032f4003d79fb7b37d7d5",
+        "revCount": 15,
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/bobby_dangling"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/bobby_dangling"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -18,6 +39,27 @@
         "type": "github"
       }
     },
+    "makinglist": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788883366,
+        "narHash": "sha256-eu/3BER91QfVpAMcs8lDxskcSXwMCrbqewLagqUmMuY=",
+        "ref": "main",
+        "rev": "0099d68317bbff9341bc25abcbed961ce70eb595",
+        "revCount": 5,
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/makinglist"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/makinglist"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1786384358,
@@ -34,32 +76,35 @@
         "type": "github"
       }
     },
-    "robo-rally": {
+    "root": {
+      "inputs": {
+        "bobby-dangling": "bobby-dangling",
+        "flake-utils": "flake-utils",
+        "makinglist": "makinglist",
+        "nixpkgs": "nixpkgs",
+        "todo": "todo",
+        "worms-whup": "worms-whup"
+      }
+    },
+    "rust-overlay": {
       "inputs": {
         "nixpkgs": [
+          "worms-whup",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1788684545,
-        "narHash": "sha256-UWtFOfp9yB7zx+j7ypV+7zgY2Vqgr12OSUyBJqusBIQ=",
-        "ref": "main",
-        "rev": "ab3d66bd61fc3d273a624c4e342e4cf81fb3b0d8",
-        "revCount": 6,
-        "type": "git",
-        "url": "ssh://git@github.com/Oibadaohnana/robo_rally"
+        "lastModified": 1787627053,
+        "narHash": "sha256-QdVaU2WSCKsxZ0sBDIRnaaukp6Z5IMUE0gDEDoSRJd0=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "132a10336af9ae819bdf640c0dd1c789b12d7107",
+        "type": "github"
       },
       "original": {
-        "ref": "main",
-        "type": "git",
-        "url": "ssh://git@github.com/Oibadaohnana/robo_rally"
-      }
-    },
-    "root": {
-      "inputs": {
-        "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs",
-        "robo-rally": "robo-rally"
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
       }
     },
     "systems": {
@@ -75,6 +120,49 @@
         "owner": "nix-systems",
         "repo": "default",
         "type": "github"
+      }
+    },
+    "todo": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788866461,
+        "narHash": "sha256-BmcP/P1sTHkr9c4z0/6aY4aClNmo6hqYQ5s9AXpWOJI=",
+        "ref": "main",
+        "rev": "6c5186316fbfcb3750b559a793b0094e1681f5b8",
+        "revCount": 3,
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/todo"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/todo"
+      }
+    },
+    "worms-whup": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "rust-overlay": "rust-overlay"
+      },
+      "locked": {
+        "lastModified": 1788866473,
+        "narHash": "sha256-4YWvPw5ySKZxJeR4HC0IuuAe8wyTmG57Kfom2Nvp9Oo=",
+        "ref": "main",
+        "rev": "829bdb0232e61c3576609ca312c102a4249d84cb",
+        "revCount": 14,
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/worms_whup"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/worms_whup"
       }
     }
   },

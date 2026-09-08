@@ -1,7 +1,22 @@
-alias buildsys="sudo nixos-rebuild switch --flake /home/benji/nixcfg/nixos"
-alias buildsysserver="nixos-rebuild switch --flake /home/benji/nixcfg/nixos#server --build-host benji@45.129.182.102 --target-host benji@45.129.182.102 --ask-sudo-password"
-# roboupdate: bump robo-rally pin to current main. deploy separately with buildsysserver
-alias roboupdate="nix flake update robo-rally --flake /home/benji/nixcfg/nixos"
+alias bsys="sudo nixos-rebuild switch --flake /home/benji/nixcfg/nixos"
+alias bsyss="nixos-rebuild switch --flake /home/benji/nixcfg/nixos#server --build-host benji@45.129.182.102 --target-host benji@45.129.182.102 --ask-sudo-password"
+# Same deploy, built here instead of on the server -- local build, closure
+# copied over ssh. Use when the server is too slow or short on RAM/disk.
+alias bsyssl="nixos-rebuild switch --flake /home/benji/nixcfg/nixos#server --target-host benji@45.129.182.102 --ask-sudo-password"
+# ship: the three steps in one run -- gitgo, bump any game input whose branch
+# moved, then bsyssl. Flags: --dry-run, --yes, --no-git/--no-update/--no-deploy.
+alias ship='~/nixcfg/scripts/server-ship.sh'
+# bobbyupdate: bump bobby-dangling pin to current main. deploy separately with bsyss
+alias bobbyupdate="nix flake update bobby-dangling --flake /home/benji/nixcfg/nixos"
+# wormsupdate: bump the worms_whup pin to current main. Same two steps as
+# bobbyupdate -- this moves the pin, bsyss deploys it.
+alias wormsupdate="nix flake update worms-whup --flake /home/benji/nixcfg/nixos"
+# todoupdate: bump the todo pin to current main. Same two steps again --
+# this moves the pin, bsyss deploys it.
+alias todoupdate="nix flake update todo --flake /home/benji/nixcfg/nixos"
+# makinglistupdate: bump the makinglist pin to current main. Same two steps
+# again -- this moves the pin, bsyss deploys it.
+alias makinglistupdate="nix flake update makinglist --flake /home/benji/nixcfg/nixos"
 alias onesync="onedrive --synchronize --verbose"
 alias geoguessr="electron /home/benji/nixcfg/scripts/webwindow.js"
 alias tmr='nix-shell ~/nixcfg/shells/ --run "python ./nixcfg/scripts/python/timer.py"'

@@ -1,16 +1,16 @@
-# Robo Rally. The upstream server serves the built client AND the game
+# Bobby Dangling. The upstream server serves the built client AND the game
 # WebSocket on one port (apps/server/src/main.ts), so nginx just proxies one
 # upstream -- no static/ws split.
 {
   pkgs,
-  robo-rally,
+  bobby-dangling,
   ...
 }: let
-  rr = robo-rally.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  bd = bobby-dangling.packages.${pkgs.stdenv.hostPlatform.system}.default;
   port = "8787";
 in {
-  systemd.services.robo-rally = {
-    description = "Robo Rally game server";
+  systemd.services.bobby-dangling = {
+    description = "Bobby Dangling game server";
     wantedBy = ["multi-user.target"];
     wants = ["network-online.target"];
     after = ["network-online.target"];
@@ -20,17 +20,17 @@ in {
       # 0.0.0.0, which would expose 8787 past the vhost.
       HOST = "127.0.0.1";
       PORT = port;
-      CLIENT_DIR = "${rr}/share/robo-rally/web";
+      CLIENT_DIR = "${bd}/share/bobby-dangling/web";
       NODE_ENV = "production";
       # RR_OPEN unset = no browser tab; headless box has none to open.
     };
 
     serviceConfig = {
-      ExecStart = "${rr}/bin/robo-rally-server";
+      ExecStart = "${bd}/bin/bobby-dangling-server";
       Restart = "on-failure";
-      # No account to create or clean up; state lands in /var/lib/robo-rally.
+      # No account to create or clean up; state lands in /var/lib/bobby-dangling.
       DynamicUser = true;
-      StateDirectory = "robo-rally";
+      StateDirectory = "bobby-dangling";
 
       # Parses untrusted input from the open internet -- lock it down.
       NoNewPrivileges = true;
@@ -50,7 +50,7 @@ in {
   # No explicit listen list: forceSSL filters it to ssl entries, so a
   # port-80-only list would leave the vhost bound to nothing. The module
   # default already covers 0.0.0.0 and [::0] on both 80 and 443.
-  services.nginx.virtualHosts."robo.zaggl.fun" = {
+  services.nginx.virtualHosts."bobby.zaggl.fun" = {
     default = true;
     enableACME = true;
     forceSSL = true;
