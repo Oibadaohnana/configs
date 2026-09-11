@@ -45,14 +45,21 @@ in {
     };
   };
 
-  # serverName comes from the attribute name. enableACME orders the cert and
-  # wires the .well-known challenge; forceSSL adds the :80 -> :443 redirect.
-  # No explicit listen list: forceSSL filters it to ssl entries, so a
-  # port-80-only list would leave the vhost bound to nothing. The module
-  # default already covers 0.0.0.0 and [::0] on both 80 and 443.
-  services.nginx.virtualHosts."bobby.zaggl.fun" = {
-    default = true;
-    enableACME = true;
+  # serverName comes from the attribute name; the wildcard DNS record already
+  # answers for it and the wildcard cert already covers it, so a new game needs
+  # neither a DNS edit nor a cert order. useACMEHost points at that one cert in
+  # ../web.nix -- enableACME would order a separate one, and the two options
+  # are mutually exclusive.
+  #
+  # forceSSL adds the :80 -> :443 redirect. No explicit listen list: forceSSL
+  # filters it to ssl entries, so a port-80-only list would leave the vhost
+  # bound to nothing. The module default already covers 0.0.0.0 and [::0] on
+  # both 80 and 443.
+  #
+  # Not `default = true` any more -- the landing page in ../landing.nix takes
+  # that, so unmatched subdomains land somewhere that explains itself.
+  services.nginx.virtualHosts."bobby.baggly.de" = {
+    useACMEHost = "baggly.de";
     forceSSL = true;
     locations."/" = {
       proxyPass = "http://127.0.0.1:${port}";

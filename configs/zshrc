@@ -2,7 +2,7 @@ alias bsys="sudo nixos-rebuild switch --flake /home/benji/nixcfg/nixos"
 alias bsyss="nixos-rebuild switch --flake /home/benji/nixcfg/nixos#server --build-host benji@45.129.182.102 --target-host benji@45.129.182.102 --ask-sudo-password"
 # Same deploy, built here instead of on the server -- local build, closure
 # copied over ssh. Use when the server is too slow or short on RAM/disk.
-alias bsyssl="nixos-rebuild switch --flake /home/benji/nixcfg/nixos#server --target-host benji@45.129.182.102 --ask-sudo-password"
+alias bsyssl="nixos-rebuild switch --cores 0 --flake /home/benji/nixcfg/nixos#server --target-host benji@45.129.182.102 --ask-sudo-password"
 # ship: the three steps in one run -- gitgo, bump any game input whose branch
 # moved, then bsyssl. Flags: --dry-run, --yes, --no-git/--no-update/--no-deploy.
 alias ship='~/nixcfg/scripts/server-ship.sh'
@@ -183,5 +183,32 @@ keybinds() {
   echo "=== Active Zsh Keybindings ==="
   echo ""
   bindkey | sort
+  echo ""
+}
+
+# Same for aliases: name, what it runs, and the note written above it in this
+# file. "aliashelp word" narrows to a matching name, command or note.
+aliashelp() {
+  local -A notes
+  local line buf='' c name
+  while IFS= read -r line; do
+    case $line in
+      '#'*)      c=${${line#\#}## }
+                 [[ -z ${c//[-=]/} ]] || buf+="${buf:+ }$c" ;;
+      'alias '*) name=${${line#alias }%%=*}; notes[$name]=$buf; buf='' ;;
+      *)         buf='' ;;
+    esac
+  done < ${ZDOTDIR:-$HOME}/.zshrc
+
+  echo ""
+  echo "=== Active Zsh Aliases ==="
+  echo ""
+  local n v note
+  for n in ${(ko)aliases}; do
+    v=${aliases[$n]} note=${notes[$n]-}
+    [[ -n ${1-} && "$n $v $note" != *$1* ]] && continue
+    printf '\e[1m%-14s\e[0m %s\n' "$n" "$v"
+    [[ -n $note ]] && printf '               \e[2m%s\e[0m\n' "$note"
+  done
   echo ""
 }

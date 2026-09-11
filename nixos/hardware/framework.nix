@@ -21,6 +21,15 @@
     options = [ "fmask=0077" "dmask=0077" ];
   };
  
+  # "B" expansion card. nofail: boot doesn't wait on it when the card is out;
+  # the device unit still pulls the mount in on hotplug. x-gvfs-show: keeps it
+  # listed in Dolphin.
+  fileSystems."/mnt/B" = {
+    device = "/dev/disk/by-uuid/194166a0-468a-4dff-a938-b790a22100fc";
+    fsType = "ext4";
+    options = [ "nofail" "nosuid" "nodev" "x-gvfs-show" ];
+  };
+
   swapDevices = [ ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking

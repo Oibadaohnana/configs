@@ -7,11 +7,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1788866452,
-        "narHash": "sha256-7XRKWQ2vqulKRlykFHoYF2zAT976959DCNWGxpEtvKc=",
+        "lastModified": 1789119755,
+        "narHash": "sha256-H1iBdtEgqs1SP/dIy0lBxaHjdzkhyzAEDkMXG5F69HU=",
         "ref": "main",
-        "rev": "4b1e724b4da66b52c9c032f4003d79fb7b37d7d5",
-        "revCount": 15,
+        "rev": "9cf4df040f8fb5af4eccdff677606bf826c60585",
+        "revCount": 21,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/bobby_dangling"
       },
@@ -82,6 +82,7 @@
         "flake-utils": "flake-utils",
         "makinglist": "makinglist",
         "nixpkgs": "nixpkgs",
+        "sops-nix": "sops-nix",
         "todo": "todo",
         "worms-whup": "worms-whup"
       }
@@ -104,6 +105,26 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "sops-nix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788914643,
+        "narHash": "sha256-4GuMPW90JSxXWDPUB9M+1m7fYbe3H0apOd86/zBQ2Kw=",
+        "owner": "Mic92",
+        "repo": "sops-nix",
+        "rev": "13616fff713a9f94055c66f15687ebdc17a335df",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Mic92",
+        "repo": "sops-nix",
         "type": "github"
       }
     },

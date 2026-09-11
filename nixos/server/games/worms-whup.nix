@@ -23,13 +23,10 @@ in {
 
     environment = {
       # Bound publicly rather than on loopback, which is the one place this
-      # differs from bobby-dangling and is temporary: the game is a native
-      # client talking WebSocket to a bare address, because there is no domain
-      # on the box yet and so no certificate to put in front of it. When
-      # babbel.zaggl.fun exists, this becomes 127.0.0.1, the vhost below is
-      # uncommented, and the client's `net.server` setting becomes
-      # `wss://babbel.zaggl.fun` -- the protocol itself does not change, which
-      # is why it was WebSocket from the start.
+      # differs from bobby-dangling: the game is a native client talking
+      # WebSocket to a bare address, and shipped copies have that address
+      # compiled in. The domain and cert exist now -- see the vhost below for
+      # why the move still waits on a client release.
       HOST = "0.0.0.0";
       PORT = port;
     };
@@ -62,13 +59,17 @@ in {
   # vhost below: once nginx is in front, 443 is the only port anybody needs.
   networking.firewall.allowedTCPPorts = [8788];
 
-  # Waiting on a domain. When babbel.zaggl.fun points at this box -- see
-  # ../domain-setup.md for the records -- uncomment this, set HOST back to
-  # 127.0.0.1 above, and drop the firewall line. `proxyWebsockets` is the whole
-  # of what the relay needs from nginx; there is no static half to split off.
+  # Left as it is on purpose. baggly.de has a wildcard record and a wildcard
+  # cert, so the name would resolve and be covered already -- but flipping this
+  # is not only a server change: the shipped client has `net.server` baked in,
+  # so the relay has to keep answering on the bare address until every copy out
+  # there has been updated. Uncomment this, set HOST back to 127.0.0.1, drop
+  # the firewall line, and point the client at `wss://whup.baggly.de` in the
+  # same release. `proxyWebsockets` is the whole of what the relay needs from
+  # nginx; there is no static half to split off.
   #
-  # services.nginx.virtualHosts."babbel.zaggl.fun" = {
-  #   enableACME = true;
+  # services.nginx.virtualHosts."whup.baggly.de" = {
+  #   useACMEHost = "baggly.de";
   #   forceSSL = true;
   #   locations."/" = {
   #     proxyPass = "http://127.0.0.1:${port}";

@@ -7,7 +7,9 @@
   # The server's own layers. Kept here, not in flake.nix, so adding a game
   # touches the server config instead of the top-level flake.
   imports = [
+    ./server/secrets.nix
     ./server/web.nix
+    ./server/landing.nix
     ./server/games/bobby-dangling.nix
     ./server/games/worms-whup.nix
     ./server/todo.nix
@@ -15,6 +17,9 @@
   ];
 
   nix.settings.experimental-features = ["nix-command" "flakes"];
+  # bsyssl pushes paths built on the laptop -- the daemon takes unsigned paths
+  # only from a trusted user. benji already has sudo here, so nothing new.
+  nix.settings.trusted-users = ["root" "benji"];
 
   nixpkgs.config.allowUnfree = true;
 

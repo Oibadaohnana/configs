@@ -184,6 +184,7 @@ if (( DO_DEPLOY )); then
     header "bsyssl — build here, switch $TARGET"
     if confirm "build the server closure locally and deploy it?" y; then
         run nixos-rebuild switch \
+            --cores 0 \
             --flake "$FLAKE_DIR#server" \
             --target-host "$TARGET" \
             --ask-sudo-password

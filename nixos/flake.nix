@@ -29,6 +29,14 @@
       url = "git+ssh://git@github.com/Oibadaohnana/makinglist?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Encrypted secrets, decrypted on the server at activation. Public repo or
+    # not, an API token with write access to the DNS zone does not belong in
+    # git as plaintext -- and /nix/store is world-readable on every machine
+    # that builds this, which rules out simply pointing at a file here.
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {
@@ -72,6 +80,7 @@
       specialArgs = { inherit (inputs) bobby-dangling worms-whup todo makinglist; };
 
       modules = [
+        inputs.sops-nix.nixosModules.sops
         ./server_configuration.nix
         ./garbage_collect.nix
         ./hardware/server.nix

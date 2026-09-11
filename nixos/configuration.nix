@@ -58,9 +58,24 @@
   systemd.packages = [ pkgs.hyprpolkitagent ];
   systemd.user.services.hyprpolkitagent.wantedBy = [ "graphical-session.target" ];
   
-  networking.firewall.allowedTCPPorts = [ 8787 ];	
+  # 8787 bobby-dangling, 8080 bank-bobbery's dev server (`just host` or
+  # ./run.sh in ~/projects/bankbobbery). That game serves the page and the
+  # WebSocket off one port, so this single line is the whole of what LAN
+  # guests need: they open http://<this box>:8080/, type the four-character
+  # room code the host reads out, and they are in.
+  #
+  # Laptop only. The deployed box opens its own port in
+  # nixos/server/games/bank-bobbery.nix, which uses 8789.
+  networking.firewall.allowedTCPPorts = [ 8787 8080 ];
+
   # System packages
   environment.systemPackages = with pkgs; [
+    # Editing the server's encrypted secrets -- `sops nixos/server/secrets/*.yaml`
+    # from the nixcfg repo. age is what sops encrypts with here, and ssh-to-age
+    # converts a box's SSH host key into a recipient (see nixcfg/.sops.yaml).
+    sops
+    age
+    ssh-to-age
     firefox
     adwaita-icon-theme
     # Terminal editor. Nano-style keys (ctrl+s save, ctrl+q quit, ctrl+z undo)

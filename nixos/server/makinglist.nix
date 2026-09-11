@@ -1,19 +1,9 @@
 # Cooking and baking recipes.
 #
-# Served on plain HTTP at http://45.129.182.102:8790 -- deliberately, and on
-# the same terms as todo.nix. There is no domain yet and so no certificate,
-# which means the login form posts the password in clear text to anyone on the
-# path. That is a considered trade: a recipe book holds nothing worth
-# protecting, and a tunnel for every phone in the kitchen was more friction
-# than the contents justify.
-#
-# The one thing that follows from it: whatever password is in
-# /etc/makinglist/pw.hash should be used for nothing else, because it is
-# effectively public.
-#
-# The vhost at the bottom is the way out. When we own a domain -- zaggl.fun is
-# a friend's, see ../server/domain-setup.md -- uncomment it, set HOST back to
-# 127.0.0.1, drop the firewall line, and this becomes ordinary HTTPS.
+# Served over HTTPS at https://rezepte.baggly.de -- nginx terminates TLS with
+# the shared *.baggly.de cert and proxies to the loopback port below, on the
+# same terms as todo.nix. The login form no longer crosses the network in
+# clear text, so the password here is an ordinary secret again.
 #
 # Before this serves anything, the password hash has to exist: the unit fails
 # on a box where /etc/makinglist/pw.hash is missing. See "The password" below.
@@ -40,19 +30,18 @@ in {
     after = ["network-online.target"];
 
     environment = {
-      # Public, not loopback -- there is no nginx in front while there is no
-      # certificate to put there. This is the line that changes back when the
-      # vhost below is uncommented.
-      MAKINGLIST_HOST = "0.0.0.0";
+      # Loopback only -- nginx is the public face and the only thing that can
+      # reach this port. Binding publicly would put the login form back on the
+      # open internet without a certificate in front of it.
+      MAKINGLIST_HOST = "127.0.0.1";
       MAKINGLIST_PORT = port;
       # StateDirectory below creates and owns this path.
       MAKINGLIST_DB = "/var/lib/makinglist/makinglist.db";
 
-      # Off, and it has to be: a Secure cookie is only stored by a browser over
-      # HTTPS (localhost aside), so leaving this on over plain HTTP means the
-      # login appears to succeed and then bounces straight back to the form,
-      # forever. Turn it back on with the vhost.
-      MAKINGLIST_SECURE_COOKIE = "0";
+      # On, and it has to be: nginx serves this over HTTPS only, and a Secure
+      # cookie is the point of doing so -- without it the session cookie rides
+      # along on any plain-HTTP request that slips past the redirect.
+      MAKINGLIST_SECURE_COOKIE = "1";
 
       # No MAKINGLIST_PASSWORD_HASH_FILE here on purpose. The hash arrives as
       # the systemd credential below, which the service finds via
@@ -87,11 +76,6 @@ in {
     };
   };
 
-  # Open only while the book is reached directly. This line goes away with the
-  # vhost below: once nginx is in front, 443 is the only port anybody needs.
-  # Same shape as todo, and temporary for the same reason.
-  networking.firewall.allowedTCPPorts = [8790];
-
   # On PATH so the password can be set without hunting for the store path. The
   # binary is already in the closure, so this costs nothing.
   environment.systemPackages = [app];
@@ -125,22 +109,15 @@ in {
   #      sudo nix run nixpkgs#sqlite -- /var/lib/makinglist/makinglist.db \
   #        ".backup '/root/makinglist-$(date +%F).db'"
 
-  # Waiting on a domain of our own. zaggl.fun is a friend's -- bobby-dangling
-  # sits on it as a favour -- so this does not get a subdomain there. See
-  # ../server/domain-setup.md for the records to create once we have one.
-  #
-  # When rezepte.<ourdomain> points here, uncomment this and put the real name
-  # in. Three things move with it, all in this file: MAKINGLIST_HOST back to
-  # 127.0.0.1, MAKINGLIST_SECURE_COOKIE back to "1", and the firewall line
-  # deleted. web.nix already has 443 open and ACME set up, so nothing outside
-  # this file changes.
-  #
-  # services.nginx.virtualHosts."rezepte.example.com" = {
-  #   enableACME = true;
-  #   forceSSL = true;
-  #   locations."/" = {
-  #     proxyPass = "http://127.0.0.1:${port}";
-  #     # No websockets here; the app is plain form posts and redirects.
-  #   };
-  # };
+  # Behind the shared wildcard cert -- see ../server/web.nix. useACMEHost, not
+  # enableACME: there is one cert for the whole domain and this vhost only
+  # borrows it.
+  services.nginx.virtualHosts."rezepte.baggly.de" = {
+    useACMEHost = "baggly.de";
+    forceSSL = true;
+    locations."/" = {
+      proxyPass = "http://127.0.0.1:${port}";
+      # No websockets here; the app is plain form posts and redirects.
+    };
+  };
 }

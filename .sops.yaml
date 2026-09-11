@@ -1,0 +1,21 @@
+# Who can decrypt what. sops walks up from the file being edited to find this.
+#
+# Two recipients on every secret:
+#   benji  -- the laptop's age key, ~/.config/sops/age/keys.txt. This is the
+#             one that must be backed up; lose it and only the server can read
+#             these files, so they can no longer be edited.
+#   server -- benji-server's existing SSH host key, converted to age. Nothing
+#             extra was installed there: sops-nix reads
+#             /etc/ssh/ssh_host_ed25519_key at activation. A reinstall issues a
+#             new host key, so the secrets have to be re-encrypted afterwards
+#             (`sops updatekeys`) unless that key is restored with it.
+keys:
+  - &benji age15nffht3ukgpwjvzdh9r75yyt7ts5l2pqjfwlayzpywfsjksmzedqmxcnfu
+  - &server age1zhkglkrcek8gjt436scvzj9srxqgz3cg8e4yptd2mkluc4pcm4pqp3szqa
+
+creation_rules:
+  - path_regex: nixos/server/secrets/[^/]+\.yaml$
+    key_groups:
+      - age:
+          - *benji
+          - *server
