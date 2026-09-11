@@ -62,14 +62,14 @@ in {
     };
   };
 
-  # bank.baggly.de. The wildcard DNS record already answers for it and the
-  # wildcard cert in ../web.nix already covers it, so this vhost is the whole
-  # of what the game needs -- no DNS edit, no cert order.
+  # bank.buggly.de. The wildcard DNS record already answers for it,
+  # so this vhost is the whole of what the game needs, and the wildcard
+  # cert in ../web.nix already covers it -- no DNS edit, no cert order.
   #
   # proxyWebsockets is not optional -- the whole game runs over the socket, and
   # without it the page loads and then sits on "Reconnecting...".
-  services.nginx.virtualHosts."bank.baggly.de" = {
-    useACMEHost = "baggly.de";
+  services.nginx.virtualHosts."bank.buggly.de" = {
+    useACMEHost = "buggly.de";
     forceSSL = true;
     locations."/" = {
       proxyPass = "http://127.0.0.1:${port}";

@@ -45,11 +45,9 @@ in {
     };
   };
 
-  # serverName comes from the attribute name; the wildcard DNS record already
-  # answers for it and the wildcard cert already covers it, so a new game needs
-  # neither a DNS edit nor a cert order. useACMEHost points at that one cert in
-  # ../web.nix -- enableACME would order a separate one, and the two options
-  # are mutually exclusive.
+  # serverName comes from the attribute name; the wildcard DNS record
+  # already answers for it, so a new game needs no DNS edit, and no cert for
+  # this name -- it is covered by the wildcard cert in ../web.nix already.
   #
   # forceSSL adds the :80 -> :443 redirect. No explicit listen list: forceSSL
   # filters it to ssl entries, so a port-80-only list would leave the vhost
@@ -58,8 +56,8 @@ in {
   #
   # Not `default = true` any more -- the landing page in ../landing.nix takes
   # that, so unmatched subdomains land somewhere that explains itself.
-  services.nginx.virtualHosts."bobby.baggly.de" = {
-    useACMEHost = "baggly.de";
+  services.nginx.virtualHosts."bobby.buggly.de" = {
+    useACMEHost = "buggly.de";
     forceSSL = true;
     locations."/" = {
       proxyPass = "http://127.0.0.1:${port}";

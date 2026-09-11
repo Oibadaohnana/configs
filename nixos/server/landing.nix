@@ -1,4 +1,4 @@
-# baggly.de -- the front door. Lists the games and links to their subdomains.
+# buggly.de -- the front door. Lists the games and links to their subdomains.
 #
 # Adding a game is one entry in `games` below plus its own module under
 # server/games/. The page is a store path built from that list, so there is no
@@ -9,7 +9,11 @@
   lib,
   ...
 }: let
-  domain = "baggly.de";
+  domain = "buggly.de";
+  # Split for the wordmark below -- "buggly" + a coloured dot + "de". Derived
+  # rather than typed so renaming the domain is one line, not a hunt.
+  label = lib.head (lib.splitString "." domain);
+  tld = lib.concatStringsSep "." (lib.tail (lib.splitString "." domain));
 
   # status: "live" -> linked card. "soon" -> dimmed, no link. "desktop" -> a
   # game people run locally; only its relay lives on this box, so there is
@@ -59,8 +63,8 @@
     <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>baggly.de</title>
-    <meta name="description" content="Games on baggly.de">
+    <title>${domain}</title>
+    <meta name="description" content="Games on ${domain}">
     <style>
       :root {
         --bg: #11131a;
@@ -152,7 +156,7 @@
     <body>
     <main>
       <header>
-        <h1>baggly<span class="dot">.</span>de</h1>
+        <h1>${label}<span class="dot">.</span>${tld}</h1>
         <p class="tagline">Small games, run on one small server.</p>
       </header>
 
@@ -160,7 +164,7 @@
     ${lib.concatMapStringsSep "\n" card games}
       </div>
 
-      <footer>Every game lives on its own subdomain of baggly.de.</footer>
+      <footer>Every game lives on its own subdomain of ${domain}.</footer>
     </main>
     </body>
     </html>
@@ -169,13 +173,13 @@ in {
   # default = true so the wildcard DNS record has somewhere to land: any
   # subdomain without a vhost of its own -- a typo, an old link, a game not
   # wired up yet -- gets this page rather than nginx's blank built-in 404.
-  # The wildcard cert covers those names too, so they arrive without a
-  # certificate warning first.
+  # The wildcard cert in ./web.nix covers those names too, so they arrive
+  # without a certificate warning first.
   services.nginx.virtualHosts."${domain}" = {
     default = true;
     serverAliases = ["www.${domain}"];
     # No enableACME: the wildcard cert in web.nix names the apex and covers
-    # www through *.baggly.de.
+    # www through *.buggly.de.
     useACMEHost = domain;
     forceSSL = true;
     root = page;

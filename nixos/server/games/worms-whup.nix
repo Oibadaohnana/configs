@@ -59,17 +59,17 @@ in {
   # vhost below: once nginx is in front, 443 is the only port anybody needs.
   networking.firewall.allowedTCPPorts = [8788];
 
-  # Left as it is on purpose. baggly.de has a wildcard record and a wildcard
-  # cert, so the name would resolve and be covered already -- but flipping this
-  # is not only a server change: the shipped client has `net.server` baked in,
-  # so the relay has to keep answering on the bare address until every copy out
-  # there has been updated. Uncomment this, set HOST back to 127.0.0.1, drop
-  # the firewall line, and point the client at `wss://whup.baggly.de` in the
-  # same release. `proxyWebsockets` is the whole of what the relay needs from
-  # nginx; there is no static half to split off.
+  # Left as it is on purpose. buggly.de has a wildcard record so the name
+  # already resolves, and the cert would be ordered automatically -- but
+  # flipping this is not only a server change: the shipped client has
+  # `net.server` baked in, so the relay has to keep answering on the bare
+  # address until every copy out there has been updated. Uncomment this, set
+  # HOST back to 127.0.0.1, drop the firewall line, and point the client at
+  # `wss://whup.buggly.de` in the same release. `proxyWebsockets` is the whole
+  # of what the relay needs from nginx; there is no static half to split off.
   #
-  # services.nginx.virtualHosts."whup.baggly.de" = {
-  #   useACMEHost = "baggly.de";
+  # services.nginx.virtualHosts."whup.buggly.de" = {
+  #   useACMEHost = "buggly.de";
   #   forceSSL = true;
   #   locations."/" = {
   #     proxyPass = "http://127.0.0.1:${port}";

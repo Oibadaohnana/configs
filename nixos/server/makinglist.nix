@@ -1,7 +1,7 @@
 # Cooking and baking recipes.
 #
-# Served over HTTPS at https://rezepte.baggly.de -- nginx terminates TLS with
-# the shared *.baggly.de cert and proxies to the loopback port below, on the
+# Served over HTTPS at https://rezepte.buggly.de -- nginx terminates TLS with
+# the shared *.buggly.de cert and proxies to the loopback port below, on the
 # same terms as todo.nix. The login form no longer crosses the network in
 # clear text, so the password here is an ordinary secret again.
 #
@@ -112,8 +112,8 @@ in {
   # Behind the shared wildcard cert -- see ../server/web.nix. useACMEHost, not
   # enableACME: there is one cert for the whole domain and this vhost only
   # borrows it.
-  services.nginx.virtualHosts."rezepte.baggly.de" = {
-    useACMEHost = "baggly.de";
+  services.nginx.virtualHosts."rezepte.buggly.de" = {
+    useACMEHost = "buggly.de";
     forceSSL = true;
     locations."/" = {
       proxyPass = "http://127.0.0.1:${port}";

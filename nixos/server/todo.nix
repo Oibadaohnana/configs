@@ -1,7 +1,7 @@
 # Personal to-do list.
 #
-# Served over HTTPS at https://todo.baggly.de -- nginx terminates TLS with the
-# shared *.baggly.de cert and proxies to the loopback port below. The login
+# Served over HTTPS at https://todo.buggly.de -- nginx terminates TLS with the
+# shared *.buggly.de cert and proxies to the loopback port below. The login
 # form no longer crosses the network in clear text, so the password here is an
 # ordinary secret again rather than an effectively public one.
 #
@@ -104,8 +104,8 @@ in {
   # Behind the shared wildcard cert -- see ../server/web.nix. useACMEHost, not
   # enableACME: there is one cert for the whole domain and this vhost only
   # borrows it.
-  services.nginx.virtualHosts."todo.baggly.de" = {
-    useACMEHost = "baggly.de";
+  services.nginx.virtualHosts."todo.buggly.de" = {
+    useACMEHost = "buggly.de";
     forceSSL = true;
     locations."/" = {
       proxyPass = "http://127.0.0.1:${port}";

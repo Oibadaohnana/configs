@@ -4,7 +4,7 @@
 #
 # One wildcard certificate covers the lot, so a new game is a vhost and nothing
 # else: no DNS edit, no cert order, no rate-limit risk from a burst of new
-# subdomains.
+# subdomains, and no certificate warning on a name that has no vhost yet.
 {config, ...}: {
   services.nginx = {
     enable = true;
@@ -18,15 +18,15 @@
     acceptTerms = true;
     defaults.email = "bennywuest@posteo.com";
 
-    # The one cert. Vhosts reference it with `useACMEHost = "baggly.de"` rather
+    # The one cert. Vhosts reference it with `useACMEHost = "buggly.de"` rather
     # than `enableACME` -- the two are mutually exclusive, and enableACME would
     # order a separate per-name cert over HTTP-01.
-    certs."baggly.de" = {
+    certs."buggly.de" = {
       # Cert name, and so also `domain`, must not contain a "*" -- the acme
       # module builds systemd unit names from it. The wildcard rides along as
-      # an extra SAN instead. The apex needs naming explicitly: *.baggly.de
-      # matches www but never baggly.de itself.
-      extraDomainNames = ["*.baggly.de"];
+      # an extra SAN instead. The apex needs naming explicitly: *.buggly.de
+      # matches www but never buggly.de itself.
+      extraDomainNames = ["*.buggly.de"];
 
       # Let's Encrypt will not issue a wildcard over HTTP-01 -- there is no
       # single hostname to fetch a challenge file from -- so DNS-01 is the only
@@ -34,19 +34,19 @@
       # value is a fresh token every renewal, which is why this cannot be a
       # record placed by hand.
       #
-      # Cloudflare rather than Netcup because baggly.de sits on Netcup's
-      # CloudDNS, and lego's netcup provider only speaks the older CCP DNS API
-      # (ccp.netcup.net/run/webservice/...) -- a CloudDNS key cannot
-      # authenticate against it. The domain stays registered at Netcup; only
-      # the nameservers point at Cloudflare.
+      # Cloudflare and not Netcup: buggly.de is registered at Netcup but its
+      # nameservers point at Cloudflare, precisely because lego only speaks
+      # Netcup's older CCP DNS API and the zone was on CloudDNS, which that API
+      # cannot reach. See ../server/domain-setup.md.
       #
       # `dnsProvider` also has to be the *only* challenge set here -- the
       # module asserts exactly one of dnsProvider/webroot/listenHTTP/s3Bucket,
       # and nginx only injects a webroot for enableACME vhosts, so useACMEHost
       # everywhere keeps that assertion satisfied.
       dnsProvider = "cloudflare";
-      # Rendered by ./secrets.nix from the sops-encrypted token in this repo --
-      # nothing to place on the server by hand. Scoped "Edit zone DNS" on baggly.de.
+      # Rendered by ./secrets.nix from the sops-encrypted token in this repo,
+      # so there is nothing to place on the server by hand. The token must be
+      # scoped to the buggly.de zone -- "Edit zone DNS" on that zone.
       environmentFile = config.sops.templates."cloudflare-acme.env".path;
 
       # Without this nginx cannot read the key: acme certs default to group
@@ -55,7 +55,7 @@
       group = "nginx";
 
       # Cloudflare serves a fresh TXT record almost immediately, so the default
-      # self-check -- lego queries the zone's own nameservers until the record
+      # self-check -- lego querying the zone's own nameservers until the record
       # shows up -- costs seconds. Left on deliberately: a failure here is a
       # real problem, not impatience.
       dnsPropagationCheck = true;
