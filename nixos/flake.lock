@@ -1,5 +1,26 @@
 {
   "nodes": {
+    "bank-bobbery": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789158918,
+        "narHash": "sha256-fjidPX3Rpl8gHUsa0ToTqP+9d8vaGu7EiQMMSK1WL7c=",
+        "ref": "main",
+        "rev": "e62831673c71a95f53368595d926371d7e0bec27",
+        "revCount": 6,
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/bankbobbery"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/bankbobbery"
+      }
+    },
     "bobby-dangling": {
       "inputs": {
         "nixpkgs": [
@@ -78,6 +99,7 @@
     },
     "root": {
       "inputs": {
+        "bank-bobbery": "bank-bobbery",
         "bobby-dangling": "bobby-dangling",
         "flake-utils": "flake-utils",
         "makinglist": "makinglist",

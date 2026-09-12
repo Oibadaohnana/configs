@@ -17,6 +17,9 @@ alias todoupdate="nix flake update todo --flake /home/benji/nixcfg/nixos"
 # makinglistupdate: bump the makinglist pin to current main. Same two steps
 # again -- this moves the pin, bsyss deploys it.
 alias makinglistupdate="nix flake update makinglist --flake /home/benji/nixcfg/nixos"
+# bankupdate: bump the bank-bobbery pin to current main. Same two steps once
+# more -- this moves the pin, bsyss deploys it.
+alias bankupdate="nix flake update bank-bobbery --flake /home/benji/nixcfg/nixos"
 alias onesync="onedrive --synchronize --verbose"
 alias geoguessr="electron /home/benji/nixcfg/scripts/webwindow.js"
 alias tmr='nix-shell ~/nixcfg/shells/ --run "python ./nixcfg/scripts/python/timer.py"'

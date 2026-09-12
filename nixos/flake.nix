@@ -29,6 +29,12 @@
       url = "git+ssh://git@github.com/Oibadaohnana/makinglist?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Bank Bobbery. Same account once more, so the same key reaches it, and the
+    # same two steps: `bankupdate`, then `bsyssl`.
+    bank-bobbery = {
+      url = "git+ssh://git@github.com/Oibadaohnana/bankbobbery?ref=main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # Encrypted secrets, decrypted on the server at activation. Public repo or
     # not, an API token with write access to the DNS zone does not belong in
     # git as plaintext -- and /nix/store is world-readable on every machine
@@ -77,7 +83,7 @@
 
       # Only the modules that package something need inputs, so hand them
       # just those rather than the whole inputs set.
-      specialArgs = { inherit (inputs) bobby-dangling worms-whup todo makinglist; };
+      specialArgs = { inherit (inputs) bobby-dangling worms-whup todo makinglist bank-bobbery; };
 
       modules = [
         inputs.sops-nix.nixosModules.sops

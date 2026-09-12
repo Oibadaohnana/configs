@@ -2,50 +2,115 @@
 {
     // "layer": "top", // Waybar at top layer
     "position": "bottom", // Waybar position (top|bottom|left|right)
-    "height": 30, // Waybar height (to be removed for auto height)
+    "height": 36, // Waybar height (to be removed for auto height)
     // "width": 1280, // Waybar width
     "spacing": 4, // Gaps between modules (4px)
     // Choose the order of the modules
     "modules-left": [
-        "hyprland/workspaces",
+        "group/workspaces",
         "hyprland/submap",
         "custom/media"
     ],
 
-    "hyprland/workspaces": {
-        // Not clickable: the module switches by sending "dispatch workspace N"
-        // over Hyprland IPC, which a Lua config parses as Lua and rejects.
-        // ext/workspaces clicks fine but has no {windows}, so the app icons
-        // below would be lost. Switch desktops with Super+1..9 instead.
-        "all-outputs": true,
-        "format": "{id} {windows}",
-        "format-window-separator": " ",
-        // The values below are Nerd Font glyphs (installed by nixos/fonts.nix).
-        // They live in the Unicode private use area, so they look like blanks
-        // in any editor lacking the font -- that is expected, not corruption.
-        // To identify one, run the line through `hexdump -C` and look the
-        // codepoint up on nerdfonts.com/cheat-sheet.
-        "window-rewrite-default": "",
-        // Keys match "class<...>" / "title<...>" of each window on the workspace.
-        "window-rewrite": {
-            "class<firefox>": "",
-            "class<kitty>": "",
-            "class<code>": "",
-            "class<discord>": "󰙯",
-            "class<org.kde.dolphin>": "",
-            "class<blender>": "",
-            "class<com.obsproject.Studio>": "",
-            "class<REAPER>": "",
-            "class<mumble>": "",
-            "class<pavucontrol>": "",
-            "class<.blueman-manager-wrapped>": "",
-            "class<steam>": "",
-            "class<steam_app_.*>": "",
-            "class<libreoffice.*>": "",
-            "class<org.pwmt.zathura>": "",
-            "class<imv>": "",
-            "class<mpv>": ""
-        }
+    // Desktop tiles: one custom module each, not hyprland/workspaces -- that
+    // module's clicks are dead under the Lua config parser. See
+    // hypr_workspaces.sh, which also holds the old "window-rewrite" icons.
+    // A tile printing empty text hides itself, so empty desktops stay off.
+    "group/workspaces": {
+        "orientation": "horizontal",
+        "modules": [
+            "custom/ws1",
+            "custom/ws2",
+            "custom/ws3",
+            "custom/ws4",
+            "custom/ws5",
+            "custom/ws6",
+            "custom/ws7",
+            "custom/ws8",
+            "custom/ws9",
+            "custom/ws10"
+        ]
+    },
+
+    "custom/ws1": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/hypr_workspaces.sh waybar 1",
+        "on-click": "~/nixcfg/scripts/hypr_workspaces.sh focus 1",
+        "interval": 30,
+        "signal": 11
+    },
+    "custom/ws2": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/hypr_workspaces.sh waybar 2",
+        "on-click": "~/nixcfg/scripts/hypr_workspaces.sh focus 2",
+        "interval": 30,
+        "signal": 11
+    },
+    "custom/ws3": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/hypr_workspaces.sh waybar 3",
+        "on-click": "~/nixcfg/scripts/hypr_workspaces.sh focus 3",
+        "interval": 30,
+        "signal": 11
+    },
+    "custom/ws4": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/hypr_workspaces.sh waybar 4",
+        "on-click": "~/nixcfg/scripts/hypr_workspaces.sh focus 4",
+        "interval": 30,
+        "signal": 11
+    },
+    "custom/ws5": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/hypr_workspaces.sh waybar 5",
+        "on-click": "~/nixcfg/scripts/hypr_workspaces.sh focus 5",
+        "interval": 30,
+        "signal": 11
+    },
+    "custom/ws6": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/hypr_workspaces.sh waybar 6",
+        "on-click": "~/nixcfg/scripts/hypr_workspaces.sh focus 6",
+        "interval": 30,
+        "signal": 11
+    },
+    "custom/ws7": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/hypr_workspaces.sh waybar 7",
+        "on-click": "~/nixcfg/scripts/hypr_workspaces.sh focus 7",
+        "interval": 30,
+        "signal": 11
+    },
+    "custom/ws8": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/hypr_workspaces.sh waybar 8",
+        "on-click": "~/nixcfg/scripts/hypr_workspaces.sh focus 8",
+        "interval": 30,
+        "signal": 11
+    },
+    "custom/ws9": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/hypr_workspaces.sh waybar 9",
+        "on-click": "~/nixcfg/scripts/hypr_workspaces.sh focus 9",
+        "interval": 30,
+        "signal": 11
+    },
+    "custom/ws10": {
+        "format": "{}",
+        "return-type": "json",
+        "exec": "~/nixcfg/scripts/hypr_workspaces.sh waybar 10",
+        "on-click": "~/nixcfg/scripts/hypr_workspaces.sh focus 10",
+        "interval": 30,
+        "signal": 11
     },
     "modules-center": [
         "hyprland/window"

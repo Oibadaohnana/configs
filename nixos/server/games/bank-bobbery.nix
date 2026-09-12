@@ -2,9 +2,8 @@
 # process serves the built client, the level editor and the game WebSocket on a
 # single port, so nginx proxies one upstream with no static/ws split.
 #
-# Not imported yet -- server_configuration.nix and flake.nix both need a line
-# adding, and the flake input needs a repo to point at. See the block at the
-# bottom of this file for the exact two edits.
+# Moving the pin to newer work is `bankupdate`, then `bsyssl` -- the same two
+# steps as the other games.
 {
   pkgs,
   bank-bobbery,
@@ -83,24 +82,3 @@ in {
     };
   };
 }
-#
-# ---------------------------------------------------------------------------
-# Wiring, once github.com/Oibadaohnana/bankbobbery exists (same account, so the
-# github_serverssh key already reaches it):
-#
-#   flake.nix, in inputs:
-#     bank-bobbery = {
-#       url = "git+ssh://git@github.com/Oibadaohnana/bankbobbery?ref=main";
-#       inputs.nixpkgs.follows = "nixpkgs";
-#     };
-#
-#   flake.nix, in nixosConfigurations."server":
-#     specialArgs = { inherit (inputs) bobby-dangling worms-whup todo makinglist bank-bobbery; };
-#
-#   server_configuration.nix, in imports:
-#     ./server/games/bank-bobbery.nix
-#
-# Then bump it the same way as the others: `nix flake update bank-bobbery`,
-# then `bsyss`.
-# ---------------------------------------------------------------------------
-

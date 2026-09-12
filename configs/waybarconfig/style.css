@@ -5,7 +5,7 @@
        Noto Sans is what bare `sans-serif` already resolved to here, so naming
        it explicitly keeps the text looking exactly as it did. */
     font-family: "Noto Sans", "Symbols Nerd Font", sans-serif;
-    font-size: 13px;
+    font-size: 16px;
 }
 
 window#waybar {
@@ -56,33 +56,26 @@ button:hover {
 #pulseaudio:hover {
     background-color: #85692e;
 }
-
-/* Buttons carry "{id} {windows}" now, so they need a little more breathing
-   room than a bare number did. */
-#workspaces button {
+/* Desktop tiles: custom-module labels now, not workspace buttons, so they go
+   by the "ws" class hypr_workspaces.sh puts on each. Padding for "{id} {windows}". */
+.ws {
     padding: 0 8px;
-    background-color: transparent;
     color: #ffffff;
 }
 
-#workspaces button:hover {
+.ws:hover {
     background: rgba(100, 100, 100, 0.2);
 }
-/* Empty desktops are hidden entirely (see persistent-workspaces removal in
-   config), so any button shown here that isn't active/visible is occupied. */
-#workspaces button:not(.active):not(.visible) {
+/* Empty desktops print no text and so hide: anything on the bar that is not
+   active/visible is occupied. */
+.ws:not(.active):not(.visible) {
     background-color: #3a3a3a;
 }
-#workspaces button.visible {
+.ws.visible {
     background-color: #23292e; /* Different, dimmer color for visible but unfocused */
-    /* box-shadow: inset 0 -3px #a0a0a0; */
 }
-#workspaces button.active {
+.ws.active {
     background-color: #64727D;
-    /* box-shadow: inset 0 -3px #ffffff; */
-}
-#workspaces button.urgent {
-    background-color: #eb4d4b;
 }
 
 #mode {

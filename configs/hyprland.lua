@@ -128,6 +128,20 @@ hl.on("config.reloaded", function()
     hl.exec_cmd("sleep 1 && ~/nixcfg/scripts/monitors.sh apply")
 end)
 
+-- Waybar's desktop tiles are custom modules (hypr_workspaces.sh) and only
+-- redraw when poked, so every event that changes one sends their signal.
+-- window.title stays out: icons go by class, terminals retitle constantly.
+for _, event in ipairs({
+    "workspace.active", "workspace.created", "workspace.removed",
+    "workspace.move_to_monitor", "monitor.focused",
+    "window.open", "window.close", "window.destroy",
+    "window.move_to_workspace", "window.class",
+}) do
+    hl.on(event, function()
+        hl.exec_cmd("pkill -RTMIN+11 waybar")
+    end)
+end
+
 ----------------------------------------
 -- Input
 ----------------------------------------

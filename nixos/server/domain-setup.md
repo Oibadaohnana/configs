@@ -186,12 +186,43 @@ Expect `DNS:buggly.de, DNS:*.buggly.de`.
        };
 
 2. An entry in `server/landing.nix` so it shows up on the front page.
-3. The import in `server_configuration.nix`.
+3. An entry in `server/icons.nix`, keyed by the same vhost name, so the tab gets
+   an icon rather than a blank page sheet. See "Icons" below.
+4. The import in `server_configuration.nix`.
 
 Ports in use: 8787 bobby-dangling, 8788 worms-whup, 8789 todo, 8790 makinglist,
 8791 bank-bobbery.
 
 No DNS record and no certificate work -- the wildcards already cover it.
+
+## Icons
+
+`server/icons.nix` renders one icon per vhost -- a coloured tile with a dark
+glyph cut out of it, a different hue each so two pinned tabs tell apart -- and
+nginx serves it at three exact-match paths:
+
+    /favicon.ico            32x32, a PNG inside an ICO container
+    /favicon.svg            the source, for anything that would rather scale it
+    /apple-touch-icon.png   180x180, what iOS pins to a home screen
+
+The apps behind the proxy need no change for this. A browser asks for
+`/favicon.ico` on its own for any page that names no icon, and `= /favicon.ico`
+is an exact-match location, so it wins over the `/` proxy without disturbing
+anything else the vhost serves.
+
+**Unless the page does name one.** todo and makinglist carried
+
+    link rel="icon" href="data:,";
+
+in `src/views.rs` -- an empty icon, added back when nothing here answered for
+`/favicon.ico` and every page load logged a 404. That line suppresses the
+automatic request, so those two stay blank until the replacement ships:
+`todoupdate` / `makinglistupdate`, then `bsyssl`. The other three pick their
+icon up on the next `bsyssl` alone.
+
+Changing an icon is the glyph in `server/icons.nix` and `bsyssl`. They go out
+with `expires 7d`, so a browser that has already seen one keeps it for up to a
+week; a hard reload or a private window shows the new one at once.
 
 ## What a reinstall has to redo
 

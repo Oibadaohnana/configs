@@ -10,8 +10,10 @@
     ./server/secrets.nix
     ./server/web.nix
     ./server/landing.nix
+    ./server/icons.nix
     ./server/games/bobby-dangling.nix
     ./server/games/worms-whup.nix
+    ./server/games/bank-bobbery.nix
     ./server/todo.nix
     ./server/makinglist.nix
   ];
