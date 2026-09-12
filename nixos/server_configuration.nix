@@ -16,6 +16,7 @@
     ./server/games/bank-bobbery.nix
     ./server/todo.nix
     ./server/makinglist.nix
+    ./server/split.nix
   ];
 
   nix.settings.experimental-features = ["nix-command" "flakes"];

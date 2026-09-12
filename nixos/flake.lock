@@ -28,11 +28,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789119755,
-        "narHash": "sha256-H1iBdtEgqs1SP/dIy0lBxaHjdzkhyzAEDkMXG5F69HU=",
+        "lastModified": 1789227412,
+        "narHash": "sha256-y6B5nsYYx5xcCKW0857lWx+BMpQdpX+DJg3jCvjkLZU=",
         "ref": "main",
-        "rev": "9cf4df040f8fb5af4eccdff677606bf826c60585",
-        "revCount": 21,
+        "rev": "b1839362ea5d0e839ac4a8430aac67ef83879f11",
+        "revCount": 22,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/bobby_dangling"
       },
@@ -67,11 +67,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1788883366,
-        "narHash": "sha256-eu/3BER91QfVpAMcs8lDxskcSXwMCrbqewLagqUmMuY=",
+        "lastModified": 1789227423,
+        "narHash": "sha256-GgxF/5vBBAhXfFS4EzQKTIG4FsmwIc1pGxsvPJGQHGU=",
         "ref": "main",
-        "rev": "0099d68317bbff9341bc25abcbed961ce70eb595",
-        "revCount": 5,
+        "rev": "13bfe6580204f3849b1ccc84598611751de3e954",
+        "revCount": 6,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/makinglist"
       },
@@ -105,6 +105,7 @@
         "makinglist": "makinglist",
         "nixpkgs": "nixpkgs",
         "sops-nix": "sops-nix",
+        "split": "split",
         "todo": "todo",
         "worms-whup": "worms-whup"
       }
@@ -150,6 +151,27 @@
         "type": "github"
       }
     },
+    "split": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789235961,
+        "narHash": "sha256-daGp3EMOHG+iUDLCFeEzqEQKBtUNwLCpkpLIkTiyh40=",
+        "ref": "main",
+        "rev": "1fd150c43359af2cb5f708e8a91c053d67f41eba",
+        "revCount": 3,
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/split"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/split"
+      }
+    },
     "systems": {
       "locked": {
         "lastModified": 1681028828,
@@ -172,11 +194,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1788866461,
-        "narHash": "sha256-BmcP/P1sTHkr9c4z0/6aY4aClNmo6hqYQ5s9AXpWOJI=",
+        "lastModified": 1789227444,
+        "narHash": "sha256-lfEYl5m5vGCJMZpU1zWz9H3bT3TIelbzw1zhnZjV9TI=",
         "ref": "main",
-        "rev": "6c5186316fbfcb3750b559a793b0094e1681f5b8",
-        "revCount": 3,
+        "rev": "2be2ddc017b73ec4aa9666855d705dee343e8ff7",
+        "revCount": 4,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/todo"
       },

@@ -1,6 +1,6 @@
 # Site icons -- one per vhost, rendered here and served by nginx rather than by
-# the app behind it. The apps live in four separate repos and none of them ships
-# an icon, so doing this upstream would be four changes and four releases to get
+# the app behind it. The apps live in five separate repos and none of them ships
+# an icon, so doing this upstream would be five changes and five releases to get
 # one consistent set. Here it is one entry in `sites` below.
 #
 # A browser asks for /favicon.ico on its own for any page that does not name an
@@ -8,11 +8,11 @@
 # exact-match location and beats the `/` proxy without touching anything else
 # the vhost serves.
 #
-# todo and rezepte are the exception. Their pages carry
-# `link rel="icon" href="data:,"` -- an empty icon, added back when nothing here
-# answered for /favicon.ico and every page load logged a 404. That line
-# suppresses the automatic request, so those two stay blank until it is dropped
-# upstream. See ./domain-setup.md.
+# The 192, 512 and maskable PNGs are here for the same reason: a web app
+# manifest has to name icons at those sizes before a browser will offer to
+# install the site, and split, todo and rezepte are all PWAs. Their manifests
+# name these paths; the manifest itself is served by each app, because it
+# carries that app's name and colours and nothing here knows those.
 {
   pkgs,
   lib,
@@ -77,6 +77,17 @@
       '';
     };
 
+    "split.buggly.de" = {
+      accent = "#fb923c";
+      # A coin split in two, the halves pulled apart along the cut. Two
+      # half-discs and a gap: the offset is what makes it read as "divided"
+      # rather than as a circle with a line through it at 16px.
+      glyph = ''
+        <path d="M29 6 A 24 24 0 0 0 29 54 Z"/>
+        <path d="M35 10 A 24 24 0 0 1 35 58 Z"/>
+      '';
+    };
+
     "rezepte.buggly.de" = {
       accent = "#fb7185";
       # A pot: knob, lid, two handles, tapered body. Crossed cutlery is the
@@ -102,6 +113,23 @@
       </svg>
     '';
 
+  # The same tile with square corners and the glyph pulled into the middle 80%.
+  # Android masks a `purpose: "maskable"` icon to whatever shape the launcher
+  # uses -- a circle on most, a squircle on others -- and crops everything
+  # outside that safe zone. An icon drawn to the edge loses its corners, and a
+  # tile that rounds its own corners gets rounded twice with a pale sliver
+  # between the two radii. split, todo and rezepte each name one in their
+  # manifest; it is built for every site because it costs one more resvg call.
+  maskableSource = site:
+    pkgs.writeText "icon-maskable.svg" ''
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+      <rect width="64" height="64" fill="${site.accent}"/>
+      <g fill="${ink}" stroke="${ink}" stroke-linecap="round" transform="translate(6.4 6.4) scale(0.8)">
+      ${site.glyph}
+      </g>
+      </svg>
+    '';
+
   # ICO and not PNG: /favicon.ico is what a browser fetches unprompted, and ICO
   # is the one format all of them accept there. The container holds a single
   # 32x32 PNG -- legal since Vista and what every generator emits now -- so the
@@ -113,6 +141,13 @@
       resvg -w 32 -h 32 $out/favicon.svg icon.png
       # 180px is what iOS pins to a home screen. Nothing else asks for it.
       resvg -w 180 -h 180 $out/favicon.svg $out/apple-touch-icon.png
+
+      # A web app manifest has to name a 192 and a 512 before Chrome will offer
+      # to install the site at all, and the 512 is what it puts on the splash
+      # screen. split, todo and rezepte all name them.
+      resvg -w 192 -h 192 $out/favicon.svg $out/icon-192.png
+      resvg -w 512 -h 512 $out/favicon.svg $out/icon-512.png
+      resvg -w 512 -h 512 ${maskableSource site} $out/icon-maskable.png
 
       # printf twice over: the inner one writes the literal text \xNN, the outer
       # one turns that into the byte. Little-endian, four bytes.
@@ -132,7 +167,14 @@
   # `root` on an exact-match location means nginx serves <store path>/<that
   # name> and never consults the proxy or the vhost root.
   served = dir:
-    lib.genAttrs ["= /favicon.ico" "= /favicon.svg" "= /apple-touch-icon.png"] (_: {
+    lib.genAttrs [
+      "= /favicon.ico"
+      "= /favicon.svg"
+      "= /apple-touch-icon.png"
+      "= /icon-192.png"
+      "= /icon-512.png"
+      "= /icon-maskable.png"
+    ] (_: {
       root = dir;
       # Nothing here changes between releases, and a 404-less icon fetch on
       # every page load is not worth a log line.
@@ -143,7 +185,7 @@
     });
 in {
   # Merged into the vhosts defined in ./landing.nix, ./todo.nix,
-  # ./makinglist.nix and ./games/*.nix -- the module system joins the two
+  # ./makinglist.nix, ./split.nix and ./games/*.nix -- the module system joins the two
   # definitions. A name here with no vhost of its own would quietly create a
   # plain-HTTP one, so these must match the serverNames over there exactly.
   services.nginx.virtualHosts =
