@@ -60,6 +60,9 @@ button:hover {
    by the "ws" class hypr_workspaces.sh puts on each. Padding for "{id} {windows}". */
 .ws {
     padding: 0 8px;
+    /* Keeps an empty desktop -- number only, no icons -- a rectangle rather
+       than a sliver; occupied tiles are wider than this already. */
+    min-width: 20px;
     color: #ffffff;
 }
 
