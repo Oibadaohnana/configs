@@ -67,11 +67,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789227423,
-        "narHash": "sha256-GgxF/5vBBAhXfFS4EzQKTIG4FsmwIc1pGxsvPJGQHGU=",
+        "lastModified": 1789240921,
+        "narHash": "sha256-f0o78njZCDtHKakaOAR54xh0VWEotGR2tAAKFk2u+KE=",
         "ref": "main",
-        "rev": "13bfe6580204f3849b1ccc84598611751de3e954",
-        "revCount": 6,
+        "rev": "33502ab7cc5f97214673f336a598d8002797a1d3",
+        "revCount": 8,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/makinglist"
       },
@@ -158,11 +158,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789235961,
-        "narHash": "sha256-daGp3EMOHG+iUDLCFeEzqEQKBtUNwLCpkpLIkTiyh40=",
+        "lastModified": 1789240830,
+        "narHash": "sha256-d7QQDoRMbHikIaJdx2LtXwrUxuXNF4nagqN7kZVvHoc=",
         "ref": "main",
-        "rev": "1fd150c43359af2cb5f708e8a91c053d67f41eba",
-        "revCount": 3,
+        "rev": "186cdf61712a07710c9abba2cc495f56e164819e",
+        "revCount": 4,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/split"
       },
@@ -194,11 +194,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789227444,
-        "narHash": "sha256-lfEYl5m5vGCJMZpU1zWz9H3bT3TIelbzw1zhnZjV9TI=",
+        "lastModified": 1789240878,
+        "narHash": "sha256-RzAxmLjrbjvVf8hp/N/k2L7RoDq8WdDHw27TNzoOb1E=",
         "ref": "main",
-        "rev": "2be2ddc017b73ec4aa9666855d705dee343e8ff7",
-        "revCount": 4,
+        "rev": "b8060b288ceba55c7f83c6cc2fad61a4c93b45e0",
+        "revCount": 6,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/todo"
       },

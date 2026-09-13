@@ -99,6 +99,7 @@ button:hover {
 #custom-monitors,
 #custom-sleep,
 #custom-perfmode,
+#custom-toolstoggle,
 #tray,
 #mode,
 #idle_inhibitor,
@@ -295,6 +296,23 @@ label:focus {
 #custom-perfmode.power-saver {
     background-color: #2f4535;
     color: #bfe0c8;
+}
+
+/* Retractable trays -- the hardware tiles behind the chevron, the date behind
+   the clock. .drawer is the revealer waybar wraps the hidden tiles in. */
+.drawer {
+    background-color: #151515;
+}
+
+/* Dim at rest, lit while open: waybar marks open by setting GTK's PRELIGHT
+   flag on the group, which CSS sees as :hover. */
+#custom-toolstoggle {
+    background-color: transparent;
+    color: #6e7679;
+}
+
+#tools:hover #custom-toolstoggle {
+    color: #e8e8e8;
 }
 
 /* RAM left. Bare at rest. The two states are the exception to the

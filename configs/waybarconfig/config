@@ -117,20 +117,56 @@
     ],
     "modules-right": [
         //"mpd",
-        "custom/audiosink",
-        "pulseaudio",
-        "bluetooth",
-        "custom/monitors",
-        "custom/sleep",
-        "custom/perfmode",
+        "group/tools",
         "memory",
         "network",
         "battery",
         "battery#bat2",
-        "clock",
+        "group/datetime",
         "tray",
         "custom/power"
     ],
+
+    // Retractable hardware tray: chevron stays, rest slide out leftward on click.
+    // Handle takes no on-click -- a click action there swallows the press.
+    "group/tools": {
+        "orientation": "horizontal",
+        "drawer": {
+            "transition-duration": 300,
+            "transition-left-to-right": false,
+            "click-to-reveal": true,
+            "children-class": "tool"
+        },
+        "modules": [
+            "custom/toolstoggle",
+            "custom/audiosink",
+            "pulseaudio",
+            "bluetooth",
+            "custom/monitors",
+            "custom/sleep",
+            "custom/perfmode"
+        ]
+    },
+
+    "custom/toolstoggle": {
+        "format": "",
+        "tooltip": false
+    },
+
+    // Same trick for the date: click the time to slide it out leftward. The
+    // time is the handle, so it stays put and only the tiles left of it shift.
+    "group/datetime": {
+        "orientation": "horizontal",
+        "drawer": {
+            "transition-duration": 300,
+            "transition-left-to-right": false,
+            "click-to-reveal": true
+        },
+        "modules": [
+            "clock",
+            "clock#date"
+        ]
+    },
 
 
    
@@ -176,9 +212,17 @@
         //   "TelegramDesktop": "$HOME/.local/share/icons/hicolor/16x16/apps/telegram.png"
         // }
     },
+    // Handle for group/datetime, so no on-click -- a click action here would
+    // swallow the press and the date would never slide out.
     "clock": {
         // "timezone": "America/New_York",
-        "format": "{:%d.%m.%Y   <span weight='800'>%H:%M</span>}",
+        "format": "<span weight='800'>{:%H:%M}</span>",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
+    },
+
+    // The hidden half. Keeps the rofi calendar the clock used to open.
+    "clock#date": {
+        "format": "{:%d.%m.%Y}",
         "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
         "on-click": "rofi -dmenu -l 0 -p 'Calendar' -theme-str '* {font: \"monospace 12\";}' -mesg \"$(cal -3)\""
     },
