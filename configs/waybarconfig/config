@@ -295,7 +295,10 @@
         "format-wifi": "{icon}",
         "format-ethernet": "LAN",
         "format-linked": "{icon}",
-        "format-disconnected": "<span color=\"#777777\">▁▃▅▇</span>",
+        // Empty format hides the module outright, so the wifi meter only shows
+        // up once a wifi link is actually up. The desktop has no wifi hardware
+        // at all, so there it stays hidden permanently.
+        "format-disconnected": "",
         "format-icons": [
             "<span color=\"#777777\">▁▃▅▇</span>",
             "▁<span color=\"#777777\">▃▅▇</span>",
