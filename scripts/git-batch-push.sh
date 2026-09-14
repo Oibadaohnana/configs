@@ -3,7 +3,8 @@
 # git-batch-push.sh — walk every git repo under a root directory and
 # add / commit / push them one at a time.
 #
-#   * commit messages carry an auto-incrementing index, counted per repo
+#   * commit messages carry an auto-incrementing index and a host tag,
+#     counted per repo — e.g. "[#11desk] ..." on benji-desktop
 #   * the counters live in a state file outside the repos
 #   * the SSH passphrase is asked for exactly once (ssh-agent)
 #
@@ -17,6 +18,14 @@ STATE_FILE="$STATE_DIR/counters"
 SSH_KEY="${GIT_BATCH_SSH_KEY:-$HOME/.ssh/id_ed25519}"
 DEPTH=3
 DRY_RUN=0
+
+# Short per-machine tag baked into the commit message, so history shows which
+# box a change was pushed from. Unknown hosts fall back to the short hostname.
+case "$(hostname -s)" in
+    benji-desktop)   HOST_TAG=desk  ;;
+    benji-framework) HOST_TAG=frame ;;
+    *)               HOST_TAG="$(hostname -s)" ;;
+esac
 
 # ---------------------------------------------------------------- ui ---
 
@@ -230,7 +239,7 @@ for repo in "${REPOS[@]}"; do
     info "  ${DIM}commit #$next for this repo (edit the line below as you like)${RESET}"
     msg=''
     while [[ -z ${msg// } ]]; do
-        read -e -r -i "[#$next] " -p "  message: " msg </dev/tty || { msg=''; break; }
+        read -e -r -i "[#${next}${HOST_TAG}] " -p "  message: " msg </dev/tty || { msg=''; break; }
         [[ -z ${msg// } ]] && echo "  message cannot be empty"
     done
     [[ -z ${msg// } ]] && { warn "aborted"; SKIPPED+=("$name"); continue; }
