@@ -149,6 +149,15 @@ lua="(function()
     if f then f:write(line .. '\n') f:close() end
   end
 
+  -- Ids of every window that still exists, for the sweep at the end to prune
+  -- against. Written here because hyprctl prints stable ids in hex and this
+  -- side has them in decimal.
+  local lf = io.open(STATE .. '/live', 'w')
+  if lf then
+    for _, x in ipairs(hl.get_windows()) do lf:write(string.format('%d\n', x.stable_id)) end
+    lf:close()
+  end
+
   local function stored()
     local f = io.open(PREF_FILE, 'r')
     if not f then return nil end
@@ -176,8 +185,11 @@ lua="(function()
   end
   if not w then report('none 0 0 0 0 0 - -') return hl.dsp.no_op() end
 
+  -- Keyed by stable_id, never by address: a closed window's address is handed
+  -- straight to the next one (mpv stepping through a playlist reuses it within
+  -- seconds), and a leftover state file would make the first press restore.
   local sel  = 'address:' .. w.address
-  local path = STATE .. '/' .. w.address
+  local path = string.format('%s/%d', STATE, w.stable_id)
   local m    = w.monitor
 
   local saved
@@ -277,23 +289,23 @@ lua="(function()
   return hl.dsp.no_op()
 end)()"
 
+# Nothing reads stderr when this comes from the hotkey, so a failure has to
+# reach the screen or it just looks like the key did not register.
+fail() { printf '%s\n' "$2" >&2; notify-send -a overscan -r 9002 "$1" "$2" || true; exit 1; }
+
 # hyprctl prints Lua errors on stdout and still exits 0 for some of them, so
 # check the text as well as the status. Swallowing this is how a mistyped
 # dispatcher verb turns into "the script silently does nothing".
 if ! out=$(hyprctl dispatch "$lua" 2>&1) || [[ $out == error:* ]]; then
-    printf 'Hyprland rejected the request:\n%s\n' "$out" >&2
-    exit 1
+    fail "Overscan failed" "Hyprland rejected the request: $out"
 fi
 
-read -r state pct x y w h monitor class src < "$REPORT" 2>/dev/null || {
-    echo "Hyprland did not answer -- is it running?" >&2
-    exit 1
-}
+read -r state pct x y w h monitor class src < "$REPORT" 2>/dev/null ||
+    fail "Overscan failed" "Hyprland did not answer -- is it running?"
 
 case "$state" in
     none)
-        echo "No window to inset." >&2
-        exit 1
+        fail "Overscan" "No window to inset."
         ;;
     show)
         case "$src" in
@@ -317,13 +329,13 @@ case "$state" in
         ;;
 esac
 
-# Windows that have since been closed would otherwise leave their saved
-# geometry behind forever. Cheap to sweep here; the directory is tiny and lives
-# in the runtime dir, so it is empty again after a reboot regardless.
-if [[ -d $STATE_DIR ]]; then
-    live=$(hyprctl clients | awk '/^Window /{ print "0x" $2 }')
-    for f in "$STATE_DIR"/0x*; do
+# Closed windows would otherwise leave their saved geometry behind forever.
+# Hygiene only now that the key is a stable id -- a stale file can no longer be
+# picked up by a later window.
+if [[ -s $STATE_DIR/live ]]; then
+    for f in "$STATE_DIR"/[0-9]*; do
         [[ -e $f ]] || continue
-        grep -qxF "$(basename "$f")" <<<"$live" || rm -f "$f"
+        grep -qxF "${f##*/}" "$STATE_DIR/live" || rm -f "$f"
     done
+    rm -f "$STATE_DIR"/0x*   # keyed by address before
 fi
