@@ -56,5 +56,36 @@ in {
     locations."~* \\.(mp4|mkv|mov|webm|avi|m4v|zip|7z|iso|pdf)$".extraConfig = ''
       add_header Content-Disposition "attachment";
     '';
+
+    # A capability URL: the unguessable path *is* the credential, so there is
+    # nothing for anyone to type. Basic auth always asks for a username as
+    # well as a password -- that is in the HTTP protocol, not an nginx setting
+    # -- and a phone keyboard capitalises it and then appends a space, which is
+    # what actually blocked the first share (nginx log 2026-09-15 18:48:
+    # user "Friends", then user "friends ", six times over five minutes).
+    #
+    # The secret is the directory name *under* /dl/. It is created on the
+    # server and deliberately kept out of this repo, which is pushed to
+    # GitHub:
+    #
+    #     t=$(head -c9 /dev/urandom | base32 | tr -d = | tr 'A-Z' 'a-z')
+    #     mkdir -p /var/lib/share/dl/$t && echo $t
+    #
+    # /dl/ itself is a dead end -- autoindex off makes it 403 rather than
+    # listing the tokens, which is the whole reason they sit one level down
+    # instead of directly under the root.
+    #
+    # `^~` rather than a plain prefix, and this is the part that is easy to
+    # get wrong: in nginx a matching regex location beats a plain prefix
+    # location, so /dl/<token>/film.mp4 would otherwise be served by the media
+    # block above -- which has no `auth_basic off` and would therefore inherit
+    # the password after all, defeating the whole thing. `^~` stops regex
+    # matching once this prefix wins, which is also why Content-Disposition
+    # has to be repeated here instead of inherited.
+    locations."^~ /dl/".extraConfig = ''
+      auth_basic off;
+      autoindex off;
+      add_header Content-Disposition "attachment";
+    '';
   };
 }
