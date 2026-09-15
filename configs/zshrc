@@ -41,6 +41,15 @@ alias sshon='~/nixcfg/scripts/ssh_toggle.sh on'
 alias sshoff='~/nixcfg/scripts/ssh_toggle.sh off'
 alias sshstat='~/nixcfg/scripts/ssh_toggle.sh status'
 
+# Fit the focused window to what an overscanning TV really shows. Toggles.
+alias osc='~/nixcfg/scripts/overscan.sh'
+# Remember a per-edge crop percent for this screen. Moves nothing now. 2-5 typical.
+alias oscset='~/nixcfg/scripts/overscan.sh set'
+# Print the computed region, change nothing.
+alias oscshow='~/nixcfg/scripts/overscan.sh show'
+# Put the window back.
+alias oscoff='~/nixcfg/scripts/overscan.sh off'
+
 # Walk every git repo below the current directory: add, commit with a
 # per-repo running index, push. SSH passphrase is asked once per run.
 alias gitgo='~/nixcfg/scripts/git-batch-push.sh --root "$PWD"'
