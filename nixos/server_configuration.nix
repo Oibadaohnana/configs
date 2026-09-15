@@ -17,6 +17,7 @@
     ./server/todo.nix
     ./server/makinglist.nix
     ./server/split.nix
+    ./server/share.nix
   ];
 
   nix.settings.experimental-features = ["nix-command" "flakes"];
@@ -55,6 +56,10 @@
     git
     btop
     unrar
+    # Needed on *this* end too for `rsync --partial` uploads into
+    # /var/lib/share -- rsync only helps if both sides have it. scp alone
+    # restarts a dropped multi-gigabyte transfer from zero.
+    rsync
   ];
 
   environment.sessionVariables = {
@@ -90,8 +95,16 @@
     # Must exist before first boot -- without it useradd locks the account and
     # sshd refuses the login. Also what sudo prompts for. mkpasswd -m sha-512.
     hashedPassword = "$6$9xpPGismIJ/t4QFb$troHqmzQlmy2roQ.wdL/6QDpxy9EIkcfEzYdiqirre7Bc2OB81Eb1fD5jNMnPQjX1vBLCjrjMDQhrdtrV84fI1";
+    # Both comments read bennywuest@gmail.com because both keys were generated
+    # with the same git identity -- the trailing characters are the only way to
+    # tell them apart, so they are named here instead.
     openssh.authorizedKeys.keys = [
+      # benji-framework (the laptop). Also the machine holding the age private
+      # key for ./server/secrets, so sops edits happen there and nowhere else.
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOUaqYeDiY5Iabghr9SqChM+gpq0MNxvp6eguzzKHSGR bennywuest@gmail.com"
+      # benji-desktop. Added so bsyssl and uploads into /var/lib/share can run
+      # from the box the video files actually live on.
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJB7cnF1PVhO99vJydn+3/XPYKg9Z1K+FzIAcfi+VH+U bennywuest@gmail.com"
     ];
   };
 

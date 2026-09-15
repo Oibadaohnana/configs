@@ -26,9 +26,6 @@ hl.monitor({ output = "HDMI-A-1", mode = "1280x720@60", position = "auto", scale
 -- resolution whenever it's plugged in.
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = "auto" })
 
--- Workspace 4 always lives on the secondary screen
-hl.workspace_rule({ workspace = "4", monitor = "HDMI-A-1" })
-
 -- Laptop (uncomment when on framework)
 -- hl.monitor({ output = "DP-10", mode = "2560x1440@144", position = "1128x0", scale = 1 })
 -- hl.monitor({ output = "DP-11", mode = "2560x1440@144", position = "1128x0", scale = 1 })

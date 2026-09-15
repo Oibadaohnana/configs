@@ -27,6 +27,19 @@
 
   sops.secrets."cf-dns-api-token".sopsFile = ./secrets/cloudflare.yaml;
 
+  # The share.buggly.de basic-auth credential -- one htpasswd line, shared by
+  # everyone who gets the link. Owned by nginx because auth_basic_user_file is
+  # read by the worker at request time, not by the master at startup: leave it
+  # root-only and every request 500s on a permission error.
+  #
+  # Set or change it with ../../scripts/share-password.sh. That script writes
+  # the file rather than editing it, so it works on a machine without the age
+  # private key -- encrypting needs only the public keys in ../../.sops.yaml.
+  sops.secrets."share-htpasswd" = {
+    sopsFile = ./secrets/share.yaml;
+    owner = "nginx";
+  };
+
   # lego wants an EnvironmentFile, not a bare value, so the decrypted token is
   # interpolated into one. `sops.placeholder` is substituted at activation, and
   # /run is tmpfs -- the plaintext only ever exists in RAM.
