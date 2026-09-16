@@ -57,33 +57,38 @@ in {
       add_header Content-Disposition "attachment";
     '';
 
-    # A capability URL: the unguessable path *is* the credential, so there is
-    # nothing for anyone to type. Basic auth always asks for a username as
-    # well as a password -- that is in the HTTP protocol, not an nginx setting
-    # -- and a phone keyboard capitalises it and then appends a space, which is
-    # what actually blocked the first share (nginx log 2026-09-15 18:48:
-    # user "Friends", then user "friends ", six times over five minutes).
+    # Two independent secrets on the download path: an unguessable directory
+    # name *and* the password. Either one alone is useless, so a link forwarded
+    # into a group chat does not hand over the file.
     #
-    # The secret is the directory name *under* /dl/. It is created on the
-    # server and deliberately kept out of this repo, which is pushed to
-    # GitHub:
+    # This location briefly carried `auth_basic off` -- a pure capability URL,
+    # nothing to type -- because the password is what blocked the first share:
+    # nginx logged `user "Friends"` and `user "friends "` six times in five
+    # minutes, a phone keyboard capitalising the first letter and autocorrect
+    # appending a space. Basic auth cannot ignore the username, since it is
+    # half the credential in the protocol, so ../../scripts/share-password.sh
+    # now writes an htpasswd entry for each of those manglings against the one
+    # hash. That keeps the password without the footgun.
+    #
+    # The token is the directory name *under* /dl/, created on the server and
+    # deliberately kept out of this repo, which is pushed to GitHub:
     #
     #     t=$(head -c9 /dev/urandom | base32 | tr -d = | tr 'A-Z' 'a-z')
     #     mkdir -p /var/lib/share/dl/$t && echo $t
     #
-    # /dl/ itself is a dead end -- autoindex off makes it 403 rather than
-    # listing the tokens, which is the whole reason they sit one level down
-    # instead of directly under the root.
+    # 9 bytes of /dev/urandom is 72 bits, so guessing one is not a threat that
+    # needs rate limiting. /dl/ itself is still a dead end -- autoindex off
+    # makes it 403 rather than listing the tokens, which is the whole reason
+    # they sit one level down instead of directly under the root.
     #
     # `^~` rather than a plain prefix, and this is the part that is easy to
     # get wrong: in nginx a matching regex location beats a plain prefix
     # location, so /dl/<token>/film.mp4 would otherwise be served by the media
-    # block above -- which has no `auth_basic off` and would therefore inherit
-    # the password after all, defeating the whole thing. `^~` stops regex
-    # matching once this prefix wins, which is also why Content-Disposition
-    # has to be repeated here instead of inherited.
+    # block above and this block would never run at all -- which is why
+    # Content-Disposition has to be repeated here instead of inherited. It
+    # matters less now that both paths end up password-protected, but it still
+    # decides which block sets the download header.
     locations."^~ /dl/".extraConfig = ''
-      auth_basic off;
       autoindex off;
       add_header Content-Disposition "attachment";
     '';
