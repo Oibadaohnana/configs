@@ -8,6 +8,7 @@
   # touches the server config instead of the top-level flake.
   imports = [
     ./server/secrets.nix
+    ./server/network.nix
     ./server/web.nix
     ./server/landing.nix
     ./server/icons.nix
