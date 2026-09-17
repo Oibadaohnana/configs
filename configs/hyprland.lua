@@ -307,7 +307,10 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE && systemctl --user start nixos-fake-graphical-session.target")
     hl.exec_cmd("waybar -c ~/nixcfg/configs/waybarconfig/config -s ~/nixcfg/configs/waybarconfig/style.css")
     hl.exec_cmd("mako")
-    -- hl.exec_cmd("wlsunset -l 50.59 -L 8.69 -t 3000 -T 6500")
+    -- Night mode: fades the screen to a warm/red 3000 K over the hour after
+    -- sunset and back to neutral 6500 K around sunrise, with sun times
+    -- computed from the coordinates (Giessen); no clock schedule to maintain.
+    hl.exec_cmd("wlsunset -l 50.59 -L 8.69 -t 3000 -T 6500")
     hl.exec_cmd("hyprpaper")
     hl.exec_cmd("wl-paste --watch cliphist store")
     hl.exec_cmd("hypridle")
@@ -488,8 +491,23 @@ hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("~/nixcfg/scripts/volume_notify
 hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("~/nixcfg/scripts/volume_notify.sh down 5"),      { locked = true, repeating = true })
 hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("~/nixcfg/scripts/volume_notify.sh mute"),        { locked = true })
 hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd("~/nixcfg/scripts/volume_notify.sh mic-mute"),    { locked = true })
--- F9 = Push-to-mute mic (mutes the default source, e.g. for Discord)
-hl.bind("F9",                    hl.dsp.exec_cmd("~/nixcfg/scripts/volume_notify.sh mic-mute"),    { locked = true })
+-- F9 = Discord's own hotkey while Discord is running, mic-mute otherwise.
+-- Wayland never lets an unfocused app see a key, so a hotkey set inside
+-- Discord only works while its window is focused. `pass` forwards the raw
+-- press *and* release to the window regardless of focus (both matter: a
+-- push-to-talk/-mute hotkey is held). Decided per press so the pactl
+-- fallback still mutes when Discord is closed; a single unconditional
+-- `pass` bind would warn on every press instead.
+local discord         = "class:^(discord)$"
+local pass_to_discord = hl.dsp.pass({ window = discord })
+local mic_mute        = hl.dsp.exec_cmd("~/nixcfg/scripts/volume_notify.sh mic-mute")
+hl.bind("F9", function()
+    if hl.get_window(discord) then
+        hl.dispatch(pass_to_discord)
+    else
+        hl.dispatch(mic_mute)
+    end
+end, { locked = true })
 hl.bind("SHIFT + XF86AudioRaiseVolume", hl.dsp.exec_cmd("~/nixcfg/scripts/volume_notify.sh up 1"),   { locked = true, repeating = true })
 hl.bind("SHIFT + XF86AudioLowerVolume", hl.dsp.exec_cmd("~/nixcfg/scripts/volume_notify.sh down 1"), { locked = true, repeating = true })
 hl.bind("XF86AudioPlay",         hl.dsp.exec_cmd("playerctl play-pause"),   { locked = true })

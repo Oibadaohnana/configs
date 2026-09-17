@@ -47,6 +47,15 @@
     ];
   };
 
+  # Per-directory dev shells: a repo with an .envrc (`use flake`) gets its
+  # toolchain on PATH on cd, so cargo/node in ~/projects/bims2 work without
+  # `nix-shell --run`. nix-direnv (on by default) caches the shell so the cd
+  # is instant after the first time; the zsh hook goes into /etc/zshrc.
+  programs.direnv = {
+    enable = true;
+    silent = true;
+  };
+
   # Enable GameMode daemon + CLI wrapper for Steam launch options.
   programs.gamemode.enable = true;
   programs.steam.enable = true;
@@ -99,7 +108,13 @@
     libreoffice-fresh
     mumble
     beyond-all-reason
-    discord
+    # Discord's keybinds (its own F9 mute) come from a native module that
+    # only hooks X11 input, so under native Wayland (NIXOS_OZONE_WL below)
+    # they never fire, focused or not. Force it onto XWayland instead --
+    # Chromium takes the last --ozone-platform, and this one lands after the
+    # wrapper's wayland flags. hyprland.lua's F9 `pass` bind then reaches the
+    # hotkey even while Discord is unfocused.
+    (discord.override { commandLineArgs = "--ozone-platform=x11"; })
     thunderbird
     signal-desktop
     kitty
