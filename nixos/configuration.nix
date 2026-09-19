@@ -38,6 +38,9 @@
       ll = "ls -l";
       edit = "sudo -e";
       update = "sudo nixos-rebuild switch";
+      # Record whatever is playing on the default sink to ~/Music as mp3;
+      # press q to stop. Timestamped so repeat runs don't overwrite.
+      record-desktop = "ffmpeg -f pulse -i \"$(pactl get-default-sink).monitor\" -c:a libmp3lame -b:a 192k ~/Music/rec-$(date +%F_%H%M).mp3";
     };
 
     histSize = 10000;
@@ -133,6 +136,7 @@
     p7zip
     qpwgraph
     kdePackages.kdenlive
+    ffmpeg
   ];
 
   programs.appimage = {

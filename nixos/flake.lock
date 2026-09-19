@@ -28,11 +28,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789585315,
-        "narHash": "sha256-5o7+ejucLjaRwzZc+dIMY1tg2WW/BWWA/Z9gCrrKpPo=",
+        "lastModified": 1789651633,
+        "narHash": "sha256-mZiI/uv4wK7vjXNhfAJhP2ENDP9DmwA9aedSyi6spFE=",
         "ref": "main",
-        "rev": "c7662783468b2c418eac8d35e511a84d27b20cdc",
-        "revCount": 23,
+        "rev": "ca38b15f3a48a7673741960ed871e5330c0a8e79",
+        "revCount": 25,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/bobby_dangling"
       },

@@ -1,4 +1,5 @@
 {
+    "clipboard": "external",
     "colorscheme": "gruvbox-dark-hard",
     "softwrap": true,
     "wordwrap": true
