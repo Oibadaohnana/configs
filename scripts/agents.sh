@@ -2,10 +2,11 @@
 # agents.sh -- launch Claude Code agents in their own terminal windows, from the
 # current directory, and keep an overview of them.
 #
-#   agents add "prompt"     queue: opens when a queue slot is free (1 slot by
-#                           default, so queued prompts run one after another,
-#                           the next one opening when the previous agent has
-#                           finished its turn)
+#   agents add "prompt"     queue: opens once fewer than $AGENTS_SLOTS (1 by
+#                           default) agents are working -- whatever mode they
+#                           were started in -- so queued prompts run one after
+#                           another, each opening when everything before it
+#                           has finished its turn
 #   agents now "prompt"     parallel: opens right away next to whatever runs
 #   agents                  the app (same as agents ui); agents status for text
 #   agents ui               the app: overview plus an always-visible
@@ -71,7 +72,7 @@ job_id() { echo $((10#$(basename "$1"))); }
 first_line() { local l; IFS= read -r l < "$1"; printf '%s' "$l"; }
 # Statuses: queued -> running (working on a turn) -> done | asks (turn
 # finished, the window waits for you) -> exited (window closed; open again to
-# resume) | failed | killed. Only "running" agents in queue mode hold a slot.
+# resume) | failed | killed. Only "running" agents hold a queue slot.
 alive() { [[ $1 == running || $1 == done || $1 == asks ]]; }
 
 # ---------------------------------------------------------------- scheduling
@@ -99,13 +100,13 @@ start_job() {
     echo running > "$jd/status"; now > "$jd/started"; rm -f "$jd/pid" "$jd/ended" "$jd/exit"
     setsid -f "$SELF" __term "$jd" 9>&- </dev/null >/dev/null 2>&1
 }
-# Called under lock. Queue lane: at most $SLOTS "add" jobs work at once;
-# parallel ("now") jobs never count against it.
+# Called under lock. A queued job opens once fewer than $SLOTS agents are
+# working, in any mode; parallel ("now") jobs open regardless, but count.
 fill_slots() {
     reap
     local jd running=0
     for jd in $(all_jobs); do
-        [[ $(rd "$jd/status") == running && $(rd "$jd/mode") == add ]] && ((running++))
+        [[ $(rd "$jd/status") == running ]] && ((running++))
     done
     for jd in $(all_jobs); do
         (( running < SLOTS )) || break
@@ -116,6 +117,8 @@ fill_slots() {
 # Called under lock. Prints the new id.
 new_job() {
     local mode=$1 perm=$2 model=$3 prompt=$4
+    # Numbers start over at #1 whenever the list is empty (after a clear).
+    [[ -n $(all_jobs) ]] || rm -f "$STATE/counter"
     local n=$(( $(rd "$STATE/counter" || echo 0) + 1 )) id jd
     echo "$n" > "$STATE/counter"
     printf -v id '%03d' "$n"; jd="$JOBS/$id"; mkdir -p "$jd"
@@ -219,13 +222,14 @@ cmd_run() {
 # Hook inside the session (stdin: the hook's JSON). Tracks the session id
 # (changes on /clear and /resume), the transcript, and the turn boundaries.
 cmd_hook() {
-    local jd=$1 ev=$2 sid tp asks last
-    { read -r sid; read -r tp; read -r asks; IFS= read -r last; } < <(perl -MJSON::PP -e '
+    local jd=$1 ev=$2 sid tp asks busy last
+    { read -r sid; read -r tp; read -r asks; read -r busy; IFS= read -r last; } < <(perl -MJSON::PP -e '
         local $/; my $j = eval { decode_json(<STDIN>) } or exit;
         my $m = $j->{last_assistant_message} // "";
         my ($tail) = (grep { /\S/ } split /\n/, $m)[-1] // "";
         (my $one = $m) =~ s/\s+/ /g;
-        print $j->{session_id} // "", "\n", $j->{transcript_path} // "", "\n", ($tail =~ /\?/ ? 1 : 0), "\n$one\n";')
+        my $bg = ref $j->{background_tasks} eq "ARRAY" ? scalar @{ $j->{background_tasks} } : 0;
+        print $j->{session_id} // "", "\n", $j->{transcript_path} // "", "\n", ($tail =~ /\?/ ? 1 : 0), "\n$bg\n$one\n";')
     [[ -n $sid ]] && echo "$sid" > "$jd/session"
     [[ -n $tp ]] && echo "$tp" > "$jd/transcript"
     case $ev in
@@ -233,6 +237,9 @@ cmd_hook() {
             alive "$(rd "$jd/status")" && echo running > "$jd/status" ;;
         Stop)
             printf '%s\n' "$last" > "$jd/last"
+            # A turn that ends with background tasks still running is not the
+            # end: the agent gets woken again when they finish.
+            (( busy )) && return
             if [[ $(rd "$jd/status") == running ]]; then
                 if (( asks )); then echo asks > "$jd/status"; else echo done > "$jd/status"; fi
             fi
@@ -476,7 +483,7 @@ usage: agents [command] [args]      (opens agents in: $DIR)
   path                 print the state directory
 
 Anything that is not a command is taken as a prompt to queue.
-env: AGENTS_SLOTS=$SLOTS (parallel "add" jobs)  AGENTS_PERMISSION=$PERM  AGENTS_TERM=$TERM_APP  AGENTS_CLAUDE_ARGS
+env: AGENTS_SLOTS=$SLOTS (working agents a queued one waits for)  AGENTS_PERMISSION=$PERM  AGENTS_TERM=$TERM_APP  AGENTS_CLAUDE_ARGS
 EOT
 }
 
