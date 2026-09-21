@@ -21,6 +21,27 @@
         "url": "ssh://git@github.com/Oibadaohnana/bankbobbery"
       }
     },
+    "bims": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1789999581,
+        "narHash": "sha256-IrVTTNXpiAtuqm1RamUNfSrkRCuPDki1SU0iw5zBPbk=",
+        "ref": "main",
+        "rev": "0771bba3ee92adf06a0e76eb8d6c042df2c744a7",
+        "revCount": 17,
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/bims_bevy"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/bims_bevy"
+      }
+    },
     "bobby-dangling": {
       "inputs": {
         "nixpkgs": [
@@ -100,6 +121,7 @@
     "root": {
       "inputs": {
         "bank-bobbery": "bank-bobbery",
+        "bims": "bims",
         "bobby-dangling": "bobby-dangling",
         "flake-utils": "flake-utils",
         "makinglist": "makinglist",

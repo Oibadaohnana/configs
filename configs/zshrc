@@ -26,6 +26,10 @@ alias bankupdate="nix flake update bank-bobbery --flake /home/benji/nixcfg/nixos
 # splitupdate: bump the split pin to current main. Same two steps once more --
 # this moves the pin, bsyss deploys it.
 alias splitupdate="nix flake update split --flake /home/benji/nixcfg/nixos"
+# bimsupdate: bump the bims pin to current main -- the relay at
+# bims.buggly.de is built from it. Same two steps: this moves the pin, bsyssl
+# deploys it.
+alias bimsupdate="nix flake update bims --flake /home/benji/nixcfg/nixos"
 alias onesync="onedrive --synchronize --verbose"
 alias geoguessr="electron /home/benji/nixcfg/scripts/webwindow.js"
 alias tmr='nix-shell ~/nixcfg/shells/ --run "python ./nixcfg/scripts/python/timer.py"'

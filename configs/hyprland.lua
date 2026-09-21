@@ -303,6 +303,18 @@ hl.window_rule({
     fullscreen = true,
 })
 
+-- Claude Code agents started by scripts/agents.sh open in their own kitty
+-- windows. Keep those out of the way: they land on a special workspace without
+-- taking focus, and `agents` (Enter on an agent) moves one over to the current
+-- workspace when you want to talk to it.
+hl.window_rule({
+    name  = "claude-agents-hidden",
+    match = { class = "^claude-agent-.*" },
+
+    workspace        = "special:agents silent",
+    no_initial_focus = true,
+})
+
 ----------------------------------------
 -- Autostart
 ----------------------------------------

@@ -35,6 +35,13 @@
       url = "git+ssh://git@github.com/Oibadaohnana/bankbobbery?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Bims. Same account, so the same key reaches it; only the relay is built
+    # from it (`packages.bims-server`), so the box never needs a GPU stack.
+    # Two steps to move it: `bimsupdate`, then `bsyssl`.
+    bims = {
+      url = "git+ssh://git@github.com/Oibadaohnana/bims_bevy?ref=main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # Shared expenses, split between friends. Same account again, so the same
     # key reaches it, and the same two steps: `splitupdate`, then `bsyss`.
     split = {
@@ -89,7 +96,7 @@
 
       # Only the modules that package something need inputs, so hand them
       # just those rather than the whole inputs set.
-      specialArgs = { inherit (inputs) bobby-dangling worms-whup todo makinglist bank-bobbery split; };
+      specialArgs = { inherit (inputs) bobby-dangling worms-whup todo makinglist bank-bobbery split bims; };
 
       modules = [
         inputs.sops-nix.nixosModules.sops

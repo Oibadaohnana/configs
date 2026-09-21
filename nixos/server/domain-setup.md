@@ -191,7 +191,8 @@ Expect `DNS:buggly.de, DNS:*.buggly.de`.
 4. The import in `server_configuration.nix`.
 
 Ports in use: 8787 bobby-dangling, 8788 worms-whup, 8789 todo, 8790 makinglist,
-8791 bank-bobbery.
+8791 bank-bobbery, 8792 bims (the relay; the desktop game dials
+`wss://bims.buggly.de`, so it sits behind nginx from the start).
 
 No DNS record and no certificate work -- the wildcards already cover it.
 

@@ -88,6 +88,18 @@
       '';
     };
 
+    "bims.buggly.de" = {
+      accent = "#7dd3a0";
+      # A ship seen from above, the way the game draws one: a hull coming to
+      # a bow, a deck plate inside it, and a helm at the point. The two
+      # rectangles are what survive 16px; the bow says which way is up.
+      glyph = ''
+        <path d="M32 5 L54 24 L54 56 Q 54 60 50 60 L14 60 Q 10 60 10 56 L10 24 Z"/>
+        <rect x="19" y="30" width="26" height="20" rx="3" fill="#7dd3a0" stroke="none"/>
+        <rect x="27" y="17" width="10" height="7" rx="2" fill="#7dd3a0" stroke="none"/>
+      '';
+    };
+
     "rezepte.buggly.de" = {
       accent = "#fb7185";
       # A pot: knob, lid, two handles, tapered body. Crossed cutlery is the

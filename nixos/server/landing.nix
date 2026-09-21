@@ -37,6 +37,12 @@
       host = null;
       blurb = "Turn-based artillery for the desktop. The match runs on your machine; this server only introduces the players.";
     }
+    {
+      name = "Bims";
+      status = "desktop";
+      host = null;
+      blurb = "A ship, a crew, and whatever they can grow -- for the desktop. Open a lobby, read the code out, and lay the ship out together; this server only passes the words between you.";
+    }
   ];
 
   badge = {

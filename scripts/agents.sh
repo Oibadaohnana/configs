@@ -1,34 +1,16 @@
 #!/usr/bin/env bash
-# agents.sh -- launch Claude Code agents in their own terminal windows, from the
-# current directory, and keep an overview of them.
-#
-#   agents add "prompt"     queue: opens once fewer than $AGENTS_SLOTS (1 by
-#                           default) agents are working -- whatever mode they
-#                           were started in -- so queued prompts run one after
-#                           another, each opening when everything before it
-#                           has finished its turn
-#   agents now "prompt"     parallel: opens right away next to whatever runs
-#   agents                  the app (same as agents ui); agents status for text
-#   agents ui               the app: overview plus an always-visible
-#                           micro prompt box (Enter sends, Tab toggles
-#                           queue/parallel, Esc: agent list, Enter there jumps
-#                           into its window
-#
-# Each agent is a normal interactive `claude` session in a new terminal window
-# (kitty), started with the prompt as its first message: you talk to it there
-# exactly as if you had typed the prompt yourself. Hooks injected into that
-# session report back when it finished a turn, which is what frees a queue
-# slot. Every agent is told (via --append-system-prompt) which other agents
-# work in the same directory, how to check again and where to leave notes.
-#
+# agents.sh -- Claude Code agents in their own terminal windows, one launcher per
+# directory (agents help for the commands).
 # State: ~/.local/state/claude-agents/<dir>/jobs/<id>/{prompt,mode,status,...}
 # Tunables (env): AGENTS_SLOTS=1  AGENTS_PERMISSION=auto  AGENTS_TERM=kitty
-#                 AGENTS_CLAUDE_ARGS=""
+#                 AGENTS_CLAUDE_ARGS=""  AGENTS_KEEP=3600 (closed agents are
+#                 forgotten after this many seconds)
 set -uo pipefail
 
 SELF=$(readlink -f "${BASH_SOURCE[0]}")
 STATE_ROOT=${AGENTS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/claude-agents}
 SLOTS=${AGENTS_SLOTS:-1}
+KEEP=${AGENTS_KEEP:-3600}
 PERM=${AGENTS_PERMISSION:-auto}
 TERM_APP=${AGENTS_TERM:-kitty}
 
@@ -49,7 +31,8 @@ now() { date +%s; }
 rd()  { [[ -f $1 ]] && cat "$1"; }
 fmt_dur() {
     local s=$1
-    if (( s >= 3600 )); then printf '%dh%02dm' $((s/3600)) $((s%3600/60))
+    if (( s >= 86400 )); then printf '%dd%dh' $((s/86400)) $((s%86400/3600))
+    elif (( s >= 3600 )); then printf '%dh%02dm' $((s/3600)) $((s%3600/60))
     elif (( s >= 60 )); then printf '%dm%02ds' $((s/60)) $((s%60))
     else printf '%ds' "$s"; fi
 }
@@ -58,8 +41,7 @@ init() {
     echo "$DIR" > "$STATE/dir"
     [[ -f $NOTES ]] || printf '# Notes between agents working in %s\n' "$DIR" > "$NOTES"
 }
-# Serialise everything that touches job state. fd 9 must not leak into the
-# detached terminals (see start_job), otherwise they would hold the lock forever.
+# fd 9 must not leak into the detached terminals (start_job), or they hold the lock forever.
 locked() { ( flock -w 30 9 || die "could not take lock"; "$@" ) 9>>"$LOCK"; }
 
 jobdir() {
@@ -70,18 +52,25 @@ jobdir() {
 all_jobs() { ls -d "$JOBS"/[0-9]* 2>/dev/null | sort -V; }
 job_id() { echo $((10#$(basename "$1"))); }
 first_line() { local l; IFS= read -r l < "$1"; printf '%s' "$l"; }
+# claude writes no transcript for a child session (see the env scrub in cmd_run): no resume then.
+has_transcript() { [[ -f $1/transcript && -f $(<"$1/transcript") ]]; }
 # Statuses: queued -> running (working on a turn) -> done | asks (turn
 # finished, the window waits for you) -> exited (window closed; open again to
 # resume) | failed | killed. Only "running" agents hold a queue slot.
 alive() { [[ $1 == running || $1 == done || $1 == asks ]]; }
 
 # ---------------------------------------------------------------- scheduling
-# Called under lock. A job whose window/worker went away without reporting
-# counts as exited; one whose terminal never came up as failed.
+# Under lock. Gone without reporting = exited; terminal never came up = failed;
+# closed ones are forgotten $KEEP s after they ended.
 reap() {
     local jd pid st
     for jd in $(all_jobs); do
-        st=$(rd "$jd/status"); alive "$st" || continue
+        st=$(rd "$jd/status")
+        if [[ $st == exited || $st == failed || $st == killed ]]; then
+            (( $(now) - $(rd "$jd/ended" || now) >= KEEP )) && rm -rf "$jd"
+            continue
+        fi
+        alive "$st" || continue
         pid=$(rd "$jd/pid")
         if [[ -n $pid ]]; then
             kill -0 "$pid" 2>/dev/null && continue
@@ -94,29 +83,43 @@ reap() {
         now > "$jd/ended"
     done
 }
-# Called under lock. Opens the agent's terminal window, detached from us.
+# Under lock.
 start_job() {
     local jd=$1
-    echo running > "$jd/status"; now > "$jd/started"; rm -f "$jd/pid" "$jd/ended" "$jd/exit"
+    echo running > "$jd/status"; now > "$jd/started"; rm -f "$jd/pid" "$jd/ended" "$jd/exit" "$jd/turn"
     setsid -f "$SELF" __term "$jd" 9>&- </dev/null >/dev/null 2>&1
 }
-# Called under lock. A queued job opens once fewer than $SLOTS agents are
-# working, in any mode; parallel ("now") jobs open regardless, but count.
+# #N has been started at some point (or is gone): what a "with #N" job waits for.
+has_started() {
+    local id; printf -v id '%03d' "$((10#$1))" 2>/dev/null || return 0
+    [[ ! -d $JOBS/$id || -f $JOBS/$id/started ]]
+}
+# Under lock. Queued: opens when fewer than $SLOTS are running (any mode counts).
+# Parallel: regardless. "with #N": once #N has started. Held: never; the ones
+# behind it go past.
 fill_slots() {
     reap
-    local jd running=0
+    local jd running=0 with started=1
     for jd in $(all_jobs); do
         [[ $(rd "$jd/status") == running ]] && ((running++))
     done
-    for jd in $(all_jobs); do
-        (( running < SLOTS )) || break
-        [[ $(rd "$jd/status") == queued ]] || continue
-        start_job "$jd"; ((running++))
+    # Repeat while something opened: a job may wait for one that just did.
+    while (( started )); do
+        started=0
+        for jd in $(all_jobs); do
+            [[ $(rd "$jd/status") == queued && ! -f $jd/hold ]] || continue
+            with=$(rd "$jd/with")
+            if [[ -n $with ]]; then has_started "$with" || continue
+            elif [[ $(rd "$jd/mode") == now ]]; then :    # a released parallel prompt
+            else (( running < SLOTS )) || continue; fi
+            start_job "$jd"; ((running++)); started=1
+        done
     done
 }
-# Called under lock. Prints the new id.
+# Under lock. Prints the new id.
 new_job() {
-    local mode=$1 perm=$2 model=$3 prompt=$4
+    local mode=$1 perm=$2 model=$3 prompt=$4 with=${5:-} hold=${6:-}
+    [[ -z $with ]] || jobdir "$with" >/dev/null || exit 1
     # Numbers start over at #1 whenever the list is empty (after a clear).
     [[ -n $(all_jobs) ]] || rm -f "$STATE/counter"
     local n=$(( $(rd "$STATE/counter" || echo 0) + 1 )) id jd
@@ -125,16 +128,17 @@ new_job() {
     printf '%s\n' "$prompt" > "$jd/prompt"
     echo "$mode" > "$jd/mode"; echo "$perm" > "$jd/perm"
     [[ -n $model ]] && echo "$model" > "$jd/model"
-    # Session id chosen up front (claude --session-id) so the window can be
-    # reopened with --resume at any time; the class finds the window again.
+    [[ -n $with ]] && echo "$((10#$with))" > "$jd/with"
+    # Session id up front (--session-id) so the window can be reopened with --resume.
     cat /proc/sys/kernel/random/uuid > "$jd/session"
     echo "claude-agent-$(printf '%s' "$DIR" | cksum | cut -d' ' -f1)-$id" > "$jd/class"
     echo queued > "$jd/status"; now > "$jd/created"
-    if [[ $mode == now ]]; then reap; start_job "$jd"; else fill_slots; fi
+    if [[ -n $hold ]]; then touch "$jd/hold"
+    elif [[ $mode == now && -z $with ]]; then reap; start_job "$jd"
+    else fill_slots; fi
     echo "$n"
 }
 
-# What every agent gets appended to its system prompt.
 build_sysprompt() {
     local me=$1 jd st others=""
     for jd in $(all_jobs); do
@@ -164,7 +168,6 @@ Rules for sharing the directory:
 - Coordination notes: read $NOTES before you start; append a dated line there when you do something the others should know (a rename, a moved file, a changed interface).
 EOT
 }
-# Settings JSON for --settings: hooks that report the session's state back here.
 hooks_json() {
     local cmd="'$SELF' __hook '$1'" ev out="{\"hooks\":{" sep=""
     cmd=${cmd//\\/\\\\}; cmd=${cmd//\"/\\\"}
@@ -174,7 +177,6 @@ hooks_json() {
     echo "$out}}"
 }
 
-# The terminal window: runs __run inside, closes when claude exits.
 cmd_term() {
     local jd=$1 title
     printf -v title 'agent #%s: %s' "$(job_id "$jd")" "$(first_line "$jd/prompt")"
@@ -186,7 +188,6 @@ cmd_term() {
         *)         exec "$TERM_APP" -e "$SELF" __run "$jd" ;;
     esac
 }
-# Inside the window: the interactive claude session, then the bookkeeping.
 cmd_run() {
     local jd=$1 rc perm args=()
     echo $$ > "$jd/pid"
@@ -195,19 +196,18 @@ cmd_run() {
     if [[ $perm == bypassPermissions || $perm == yolo ]]; then args+=(--dangerously-skip-permissions)
     else args+=(--permission-mode "$perm"); fi
     [[ -f $jd/model ]] && args+=(--model "$(<"$jd/model")")
-    # shellcheck disable=SC2206
     args+=(${AGENTS_CLAUDE_ARGS:-})
     build_sysprompt "$jd" > "$jd/sysprompt"
     args+=(--settings "$(hooks_json "$jd")" --append-system-prompt "$(<"$jd/sysprompt")")
-    if [[ -f $jd/transcript ]]; then
-        # Reopened: pick the conversation up where the closed window left it.
+    if has_transcript "$jd"; then
         args+=(--resume "$(<"$jd/session")")
     else
         args+=(--session-id "$(<"$jd/session")" "$(<"$jd/prompt")")
     fi
-    # Scrub the identity of a Claude session we may have been started from
-    # (agents ui run inside claude): the agent must be its own top-level session.
-    local v; for v in $(compgen -e | grep -E "^(CLAUDECODE|CLAUDE_PID|CLAUDE_CODE_(CHILD_SESSION|SESSION_ID|SESSION_ATTENDED|MESSAGING_.*|ENTRYPOINT))$"); do unset "$v"; done
+    # Started from inside a claude session (the app, or another agent's Stop
+    # hook): with these inherited, claude treats the agent as a child session
+    # and writes no transcript. No compgen: the nix dev shell's bash lacks it.
+    unset CLAUDECODE CLAUDE_PID CLAUDE_CODE_CHILD_SESSION CLAUDE_CODE_SESSION_ID CLAUDE_CODE_SESSION_ATTENDED CLAUDE_CODE_ENTRYPOINT "${!CLAUDE_CODE_MESSAGING_@}"
     claude "${args[@]}"; rc=$?
     echo "$rc" > "$jd/exit"; now > "$jd/ended"
     if [[ $(rd "$jd/status") != killed ]]; then
@@ -219,8 +219,7 @@ cmd_run() {
     fi
     locked fill_slots
 }
-# Hook inside the session (stdin: the hook's JSON). Tracks the session id
-# (changes on /clear and /resume), the transcript, and the turn boundaries.
+# Hook inside the session (stdin: its JSON). The session id changes on /clear and /resume.
 cmd_hook() {
     local jd=$1 ev=$2 sid tp asks busy last
     { read -r sid; read -r tp; read -r asks; read -r busy; IFS= read -r last; } < <(perl -MJSON::PP -e '
@@ -237,29 +236,31 @@ cmd_hook() {
             alive "$(rd "$jd/status")" && echo running > "$jd/status" ;;
         Stop)
             printf '%s\n' "$last" > "$jd/last"
-            # A turn that ends with background tasks still running is not the
-            # end: the agent gets woken again when they finish.
+            # Background tasks still running: the agent gets woken again when they finish.
             (( busy )) && return
             if [[ $(rd "$jd/status") == running ]]; then
                 if (( asks )); then echo asks > "$jd/status"; else echo done > "$jd/status"; fi
+                now > "$jd/turn"    # when the turn ended: the time shown stops here
             fi
             locked fill_slots ;;    # a turn ended: the queue may move on
     esac
 }
 
 # ---------------------------------------------------------------- transcript
-# One-line "what is it doing right now" from the tail of a session transcript.
+# "? question" while an AskUserQuestion waits: that blocks the turn, so no Stop hook.
 activity() {
     [[ -s ${1:-} ]] || { echo "(starting)"; return; }
     tail -n 40 "$1" | perl -MJSON::PP -e '
-        binmode STDOUT, ":utf8"; my $last = "";
+        binmode STDOUT, ":utf8"; my ($last, $q) = ("", "");
         while (<>) {
             my $j = eval { decode_json($_) } or next; $j->{type} //= "";
             next if $j->{isSidechain};
+            $q = "" if $j->{type} eq "user";
             if ($j->{type} eq "assistant") {
                 for my $c (@{ $j->{message}{content} || [] }) {
                     if ($c->{type} eq "tool_use") {
                         my $i = $c->{input};
+                        $q = join " ", map { $_->{question} // "" } @{ $i->{questions} || [] } if $c->{name} eq "AskUserQuestion";
                         my $s = $i->{command} // $i->{file_path} // $i->{pattern} // $i->{description} // $i->{prompt} // $i->{query} // "";
                         $s =~ s/\s+/ /g; $last = "$c->{name}: $s";
                     } elsif ($c->{type} eq "text" && length $c->{text}) {
@@ -268,9 +269,8 @@ activity() {
                 }
             }
         }
-        print $last;'
+        print $q ne "" ? "? $q" : $last;'
 }
-# Human-readable rendering of a session transcript (stdin).
 pretty_log() {
     perl -MJSON::PP -e '
         $| = 1; binmode STDOUT, ":utf8"; my $max = $ENV{AGENTS_RESULT_LINES} || 15;
@@ -305,16 +305,56 @@ pretty_log() {
         }'
 }
 
+# ---------------------------------------------------------------- usage
+# Same endpoint and token as claude's /usage. Lines: "five_hour|seven_day PERCENT RESETS_AT_EPOCH".
+usage_limits() {
+    local creds=${CLAUDE_CONFIG_DIR:-$HOME/.claude}/.credentials.json tok
+    tok=$(perl -MJSON::PP -e 'local $/; print eval { decode_json(<STDIN>) }->{claudeAiOauth}{accessToken} // ""' < "$creds" 2>/dev/null)
+    [[ -n $tok ]] || { echo "not logged in ($creds)" >&2; return 1; }
+    curl -sf -m 10 -H "Authorization: Bearer $tok" -H "anthropic-beta: oauth-2025-04-20" \
+        https://api.anthropic.com/api/oauth/usage | perl -MJSON::PP -MTime::Piece -e '
+        local $/; my $j = eval { decode_json(<STDIN>) } or exit 1;
+        for my $k (qw(five_hour seven_day)) {
+            my $w = $j->{$k} or next;
+            (my $r = $w->{resets_at} // "") =~ s/\..*//;    # 2026-09-21T18:40:00.560+00:00
+            my $t = eval { Time::Piece->strptime($r, "%Y-%m-%dT%H:%M:%S")->epoch } // 0;
+            printf "%s %d %d\n", $k, $w->{utilization} // 0, $t;
+        }'
+}
+cmd_usage() {
+    local k pct at
+    while read -r k pct at; do
+        printf '%-7s %3d%% used, resets in %s\n' "${k/five_hour/5-hour}" "$pct" "$(fmt_dur $(( at - $(now) )))"
+    done < <(usage_limits) | sed 's/^seven_day/weekly /'
+}
+
 # ---------------------------------------------------------------- windows
-# Bring the agent's terminal window to the front. Returns 1 when not found.
+# Agent windows live on Hyprland's special:agents workspace (rule in configs/hyprland.lua).
 focus_window() {
     local class; class=$(rd "$1/class"); [[ -n $class ]] || return 1
     command -v hyprctl >/dev/null || return 1
-    # The lua config parser has no exit code for a missed focus: match the text.
-    ! hyprctl dispatch "hl.dsp.focus({ window = \"class:^${class}\$\" })" 2>&1 | grep -q "not found"
+    hyprctl repl "
+        local w
+        for _, x in ipairs(hl.get_windows()) do if tostring(x.class) == '${class}' then w = x end end
+        if not w then return 'not found' end
+        local ws = hl.get_active_workspace()
+        if ws then hl.dispatch(hl.dsp.window.move({ window = w, workspace = ws.id })) end
+        hl.dispatch(hl.dsp.focus({ window = w }))
+        return 'ok'" 2>&1 | grep -q '^ok'
 }
-# Enter/open on an agent: jump to its window, or open a new one that resumes
-# the conversation when the old window is gone.
+hide_window() {
+    local class; class=$(rd "$1/class"); [[ -n $class ]] || return 1
+    command -v hyprctl >/dev/null || return 1
+    hyprctl dispatch "hl.dsp.window.move({ window = \"class:^${class}\$\", workspace = \"special:agents\", follow = false })" >/dev/null 2>&1
+}
+show_when_up() {
+    local i
+    for i in $(seq 1 40); do
+        focus_window "$1" && return 0
+        sleep 0.2
+    done
+    return 1
+}
 cmd_open() {
     local jd; jd=$(jobdir "$1") || exit 1
     local st; st=$(rd "$jd/status")
@@ -327,45 +367,72 @@ cmd_open() {
                 return
             fi ;;&
         *)  locked start_job "$jd"
-            [[ -f $jd/transcript ]] && echo waiting > "$jd/status"     # resumed: waits for you
+            has_transcript "$jd" && { echo done > "$jd/status"; now > "$jd/turn"; }    # resumed: waits for you
+            show_when_up "$jd" >/dev/null 2>&1 &
             echo "#$1 opened again" ;;
     esac
 }
+cmd_hide() {
+    local jd; jd=$(jobdir "$1") || exit 1
+    alive "$(rd "$jd/status")" || die "#$1 has no open window"
+    hide_window "$jd" && echo "#$1 hidden"
+}
 
 # ---------------------------------------------------------------- commands
-# Plain-text overview, one job per line (+ what it does / asks for live ones).
+# Groups, top to bottom: closed, finished (done/asks), working+queued; a rule between.
 render_status() {
-    local jd id st mode dur line width=${1:-$(tput cols 2>/dev/null || echo 120)}
-    local nrun=0 nwait=0 nq=0 nask=0 prefix='                              > '
+    local jd id st mode with dur line width=${1:-$(tput cols 2>/dev/null || echo 120)}
+    local nrun=0 nwait=0 nq=0 nask=0 prefix='                                  > '
+    local closed=() finished=() rest=() group printed=0
     locked reap
     for jd in $(all_jobs); do
-        id=$(job_id "$jd"); st=$(rd "$jd/status"); mode=$(rd "$jd/mode")
-        case $st in
-            queued)  dur=-; ((nq++)) ;;
-            running|done|asks)
-                dur=$(fmt_dur $(( $(now) - $(rd "$jd/started") )))
-                case $st in running) ((nrun++)) ;; asks) ((nask++)) ;; *) ((nwait++)) ;; esac ;;
-            *)       dur=$(fmt_dur $(( $(rd "$jd/ended" || now) - $(rd "$jd/started" || rd "$jd/created") ))) ;;
-        esac
-        printf -v line ' #%-3s %-8s %-4s %7s  %s' "$id" "$st" "$mode" "$dur" "$(first_line "$jd/prompt")"
-        echo "${line:0:width}"
-        case $st in
-            running) line="$prefix$(activity "$(rd "$jd/transcript")")"; echo "${line:0:width}" ;;
-            asks)    line="$prefix$(rd "$jd/last")"; echo "${line:0:width}" ;;
-            failed)  [[ -s $jd/err ]] && { line="$prefix$(first_line "$jd/err")"; echo "${line:0:width}"; } ;;
+        case $(rd "$jd/status") in
+            done|asks) finished+=("$jd") ;;
+            exited|failed|killed) closed+=("$jd") ;;
+            *) rest+=("$jd") ;;
         esac
     done
+    for group in closed finished rest; do
+        local -n jds=$group
+        (( ${#jds[@]} )) || continue
+        (( printed++ )) && printf -- '-%.0s' $(seq 1 "$width") && echo
+        for jd in "${jds[@]}"; do status_line "$jd"; done
+    done
     echo "$DIR: $nrun working, $nwait done, $nq queued$( (( nask )) && echo ", $nask ASKING YOU" ), $SLOTS queue slot(s)$( [[ $(wc -l < "$NOTES") -gt 1 ]] && echo ", notes in $NOTES" )"
+}
+# Counts into render_status's locals.
+status_line() {
+    local jd=$1
+    id=$(job_id "$jd"); st=$(rd "$jd/status"); mode=$(rd "$jd/mode")
+    with=$(rd "$jd/with"); [[ -n $with ]] && mode="with #$with"
+    [[ $st == queued && -f $jd/hold ]] && st=held
+    case $st in
+        queued|held) dur=-; ((nq++)) ;;
+        running) dur=$(fmt_dur $(( $(now) - $(rd "$jd/started") ))); ((nrun++)) ;;
+        done|asks)  # the time stops when the turn ended
+            dur=$(fmt_dur $(( $(rd "$jd/turn" || now) - $(rd "$jd/started") )))
+            case $st in asks) ((nask++)) ;; *) ((nwait++)) ;; esac ;;
+        *)       dur=$(fmt_dur $(( $(rd "$jd/ended" || now) - $(rd "$jd/started" || rd "$jd/created") ))) ;;
+    esac
+    printf -v line ' #%-3s %-8s %-8s %7s  %s' "$id" "$st" "$mode" "$dur" "$(first_line "$jd/prompt")"
+    echo "${line:0:width}"
+    case $st in
+        running) line="$prefix$(activity "$(rd "$jd/transcript")")"; echo "${line:0:width}" ;;
+        asks)    line="$prefix$(rd "$jd/last")"; echo "${line:0:width}" ;;
+        failed)  [[ -s $jd/err ]] && { line="$prefix$(first_line "$jd/err")"; echo "${line:0:width}"; } ;;
+    esac
 }
 cmd_status() { render_status; }
 cmd_watch()  { while :; do clear; render_status; sleep 2; done; }
 
 cmd_add() {
-    local mode=$1 perm=$PERM model="" prompt="" args=(); shift
+    local mode=$1 perm=$PERM model="" with="" hold="" prompt="" args=(); shift
     while (($#)); do
         case $1 in
             -y|--yolo) perm=bypassPermissions ;;
+            -H|--hold) hold=1 ;;
             -m|--model) model=$2; shift ;;
+            -w|--with) with=${2#\#}; shift; [[ $with == - ]] && with="" ;;
             -f|--file) prompt=$(<"$2"); shift ;;
             --) shift; args+=("$@"); break ;;
             *) args+=("$1") ;;
@@ -379,24 +446,44 @@ cmd_add() {
         else prompt=$(cat); fi
     fi
     [[ -n ${prompt//[[:space:]]/} ]] || die "empty prompt"
-    local id; id=$(locked new_job "$mode" "$perm" "$model" "$prompt") || exit 1
-    echo "#$id $mode: $(first_line <(printf '%s\n' "$prompt"))"
+    [[ -n $with && $mode != now ]] && die "-w only makes sense for parallel (now) prompts"
+    local id; id=$(locked new_job "$mode" "$perm" "$model" "$prompt" "$with" "$hold") || exit 1
+    echo "#$id $mode${with:+ with #$with}${hold:+ (held)}: $(first_line <(printf '%s\n' "$prompt"))"
 }
-# Close #N's window (the job stays in the list as killed).
+cmd_hold() {
+    local jd; jd=$(jobdir "$1") || exit 1
+    [[ $(rd "$jd/status") == queued ]] || die "#$1 is not queued"
+    touch "$jd/hold"; echo "#$1 held"
+}
+cmd_release() {
+    local jd; jd=$(jobdir "$1") || exit 1
+    [[ -f $jd/hold ]] || die "#$1 is not held"
+    rm -f "$jd/hold"; locked fill_slots; echo "#$1 released"
+}
+cmd_edit() {
+    local jd; jd=$(jobdir "$1") || exit 1; shift
+    local prompt=""
+    case ${1:-} in -f|--file) prompt=$(<"$2") ;; ?*) prompt=$* ;; *) prompt=$(cat) ;; esac
+    [[ -n ${prompt//[[:space:]]/} ]] || die "empty prompt"
+    locked set_prompt "$jd" "$prompt" && echo "#$(job_id "$jd") prompt changed: $(first_line <(printf '%s\n' "$prompt"))"
+}
+# Under lock.
+set_prompt() {
+    [[ $(rd "$1/status") == queued ]] || die "#$(job_id "$1") is not queued any more"
+    printf '%s\n' "$2" > "$1/prompt"
+}
 cmd_kill() {
     local jd; jd=$(jobdir "$1") || exit 1
     alive "$(rd "$jd/status")" || die "#$1 has no open window"
     echo killed > "$jd/status"; close_window "$jd"
     now > "$jd/ended"; locked fill_slots; echo "#$1 killed"
 }
-# The window's own process group (the terminal gave it a fresh session):
-# claude, its hooks and our worker go down together, the window closes.
+# The terminal gave the window its own process group: claude, hooks and worker go down together.
 close_window() {
     local pid pg; pid=$(rd "$1/pid"); pg=$(ps -o pgid= -p "$pid" 2>/dev/null | tr -d ' ')
     [[ -n $pg ]] && kill -- -"$pg" 2>/dev/null; [[ -n $pid ]] && kill "$pid" 2>/dev/null
     return 0
 }
-# Remove #N from the list, whatever its state; an open window is closed first.
 cmd_drop() {
     local jd; jd=$(jobdir "$1") || exit 1
     local st; st=$(rd "$jd/status")
@@ -404,8 +491,6 @@ cmd_drop() {
     rm -rf "$jd"; alive "$st" && locked fill_slots
     echo "#$1 removed"
 }
-# Forget every agent that is finished: closed ones, and done ones (waiting for
-# you / asking) whose windows get closed. Working and queued agents stay.
 cmd_clear() {
     local jd st n=0 closed=0
     locked reap
@@ -422,7 +507,8 @@ cmd_clear() {
 }
 cmd_retry() {
     local jd; jd=$(jobdir "$1") || exit 1
-    local id; id=$(locked new_job "$(rd "$jd/mode")" "$(rd "$jd/perm")" "$(rd "$jd/model")" "$(<"$jd/prompt")")
+    local with; with=$(rd "$jd/with"); [[ -n $with && -d $JOBS/$(printf '%03d' "$with") ]] || with=""
+    local id; id=$(locked new_job "$(rd "$jd/mode")" "$(rd "$jd/perm")" "$(rd "$jd/model")" "$(<"$jd/prompt")" "$with")
     echo "#$id queued again (was #$1)"
 }
 cmd_log() {
@@ -434,27 +520,23 @@ cmd_log() {
 }
 cmd_show() {
     local jd; jd=$(jobdir "$1") || exit 1
-    echo "#$1  $(rd "$jd/status")  mode=$(rd "$jd/mode")  perm=$(rd "$jd/perm")  session=$(rd "$jd/session")  window=$(rd "$jd/class")"
+    echo "#$1  $(rd "$jd/status")  mode=$(rd "$jd/mode")$( [[ -s $jd/with ]] && echo " with=#$(<"$jd/with")")  perm=$(rd "$jd/perm")  session=$(rd "$jd/session")  window=$(rd "$jd/class")"
     echo "--- prompt"; cat "$jd/prompt"
     [[ -s $jd/last ]] && { echo "--- last message"; cat "$jd/last"; }
     [[ -s $jd/err ]] && { echo "--- error"; cat "$jd/err"; }
     return 0
 }
-# Continue a closed agent in THIS terminal instead of a new window.
 cmd_resume() {
     local jd; jd=$(jobdir "$1") || exit 1
     alive "$(rd "$jd/status")" && die "#$1 still has a window open (agents open $1 jumps there)"
-    [[ -f $jd/transcript ]] || die "#$1 never started a session"
+    has_transcript "$jd" || die "#$1 never started a session"
     cd "$DIR" && exec env -u CLAUDECODE -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_SESSION_ID claude --resume "$(<"$jd/session")"
 }
 
-# ---------------------------------------------------------------- ui
-# The app lives in nixos/pkgs/agents-ui (Rust, ratatui): the overview, the
-# always-visible prompt input, and the keys that run the commands above. It is
-# on PATH once the system is rebuilt with it; a plain `cargo build --release`
-# in that directory works for trying it out before that.
+# ---------------------------------------------------------------- app
+# nixos/pkgs/agents-ui (Rust); cargo build --release there for trying it before a rebuild.
 cmd_ui() {
-    [[ -t 0 && -t 1 ]] || die "ui needs a terminal"
+    [[ -t 0 && -t 1 ]] || die "the app needs a terminal"
     local bin
     for bin in "${AGENTS_UI:-}" "$(command -v agents-ui)" "$(dirname "$SELF")/../nixos/pkgs/agents-ui/target/release/agents-ui"; do
         [[ -n $bin && -x $bin ]] || continue
@@ -469,10 +551,14 @@ usage: agents [command] [args]      (opens agents in: $DIR)
 
   add [-y] [-m model] [-f file] PROMPT   queue: opens when a queue slot is free
   now [-y] [-m model] [-f file] PROMPT   parallel: opens right away
+       -w N   parallel with #N: waits until #N has started, then opens next to it
+       -H     held: does not open until released (agents release N)
        (no PROMPT: read stdin, or open \$EDITOR when interactive)
+  hold N | release N   keep queued #N from starting, whatever frees up | let it start again
+  edit N [PROMPT]      replace the prompt of queued #N (argument, -f file, or stdin)
   status               text overview       watch        overview, refreshed every 2 s
-  ui | (nothing)       the app: overview + micro prompt box (Enter sends, Tab queue/parallel)
-  open N               go to #N's window (opens a new one resuming #N if it was closed)
+  (nothing)            the app: overview + micro prompt box (Enter sends, Tab queue/parallel, Shift+Tab with #N)
+  open N | hide N      bring #N's window here (reopens it if closed) | send it back out of sight
   resume N             continue closed #N in this terminal (claude --resume)
   log [-f] N           readable transcript of #N (-f follows)
   show N               prompt, last message and session id of #N
@@ -480,6 +566,7 @@ usage: agents [command] [args]      (opens agents in: $DIR)
   retry N              queue #N's prompt again as a new agent
   clear                forget finished agents (closed ones, and done ones: their windows close)
   notes                show the shared notes file
+  usage                the account's 5-hour and weekly usage limits (as claude's /usage)
   path                 print the state directory
 
 Anything that is not a command is taken as a prompt to queue.
@@ -488,27 +575,33 @@ EOT
 }
 
 init
-cmd=${1:-ui}; shift || true
+cmd=${1:-}; shift || true
 case $cmd in
+    "") cmd_ui ;;
     __term) cmd_term "$@" ;;
     __run) cmd_run "$@" ;;
     __hook) cmd_hook "$@" ;;
-    __reap) locked reap ;;
+    __reap) locked fill_slots ;;   # reaps, and moves the queue on if that freed a slot
+    __usage) usage_limits ;;
     __pretty) pretty_log ;;
     add|a|append|queue|q) cmd_add add "$@" ;;
     now|n|par|parallel|p) cmd_add now "$@" ;;
     status|st|ls|list) cmd_status ;;
     watch|w) cmd_watch ;;
-    ui|tui) cmd_ui ;;
     open|o|focus|go) cmd_open "$@" ;;
+    hide|h) cmd_hide "$@" ;;
     resume|r) cmd_resume "$@" ;;
     log) cmd_log "$@" ;;
     show|result) cmd_show "$@" ;;
     kill|k|stop) cmd_kill "$@" ;;
     drop|rm) cmd_drop "$@" ;;
     retry) cmd_retry "$@" ;;
+    hold|pause) cmd_hold "$@" ;;
+    release|unhold) cmd_release "$@" ;;
+    edit) cmd_edit "$@" ;;
     clear|clean) cmd_clear ;;
     notes) cat "$NOTES" ;;
+    usage) cmd_usage ;;
     path) echo "$STATE" ;;
     -h|--help|help) usage ;;
     -*) usage; exit 1 ;;

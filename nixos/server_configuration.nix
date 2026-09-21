@@ -15,6 +15,7 @@
     ./server/games/bobby-dangling.nix
     ./server/games/worms-whup.nix
     ./server/games/bank-bobbery.nix
+    ./server/games/bims.nix
     ./server/todo.nix
     ./server/makinglist.nix
     ./server/split.nix
