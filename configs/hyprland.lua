@@ -217,6 +217,12 @@ hl.config({
         },
         layout = "dwindle",
 
+        -- Drag any window edge to resize without a modifier; tiled neighbours
+        -- take up the slack. The border is 1px, so widen the grab zone.
+        resize_on_border = true,
+        extend_border_grab_area = 10,
+        hover_icon_on_border = true,
+
         -- Master switch for tearing. Nothing tears on its own: only windows
         -- carrying an `immediate` rule do, and only while fullscreen and alone
         -- on screen. Trades a visible tear line for lower input latency.
@@ -389,6 +395,25 @@ hl.bind(mod .. " + SHIFT + SPACE", hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mod .. " + SPACE", hl.dsp.window.cycle_next())
 -- Toggle dwindle split orientation (vertical/horizontal)
 hl.bind(mod .. " + H", hl.dsp.layout("togglesplit"))
+
+-- Reset every split on the current workspace to equal halves. `splitratio`
+-- only touches the node above the focused window, so walk each tiled window,
+-- focus it, reset, then hand focus back.
+hl.bind(mod .. " + B", function()
+    local ws = hl.get_active_workspace()
+    if not ws then return end
+    local tiled = {}
+    for _, w in ipairs(hl.get_workspace_windows(ws)) do
+        if w.mapped and not w.floating then tiled[#tiled + 1] = w end
+    end
+    if #tiled < 2 then return end
+    local orig = hl.get_active_window()
+    for _, w in ipairs(tiled) do
+        hl.dispatch(hl.dsp.focus({ window = w }))
+        hl.dispatch(hl.dsp.layout("splitratio 1.0 exact"))
+    end
+    if orig then hl.dispatch(hl.dsp.focus({ window = orig })) end
+end)
 -- Reload config
 hl.bind(mod .. " + SHIFT + C", hl.dsp.exec_cmd("hyprctl reload"))
 -- Exit session
