@@ -1,0 +1,16 @@
+[package]
+name = "agents-ui"
+version = "0.2.0"
+edition = "2021"
+description = "Overview and launcher for Claude Code agents (the interface of scripts/agents.sh)"
+
+[dependencies]
+ratatui = "0.30"
+tui-term = "0.3"
+vt100 = "0.16"
+portable-pty = "0.9"
+serde_json = "1"
+
+[profile.release]
+strip = true
+lto = true

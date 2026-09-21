@@ -6,6 +6,9 @@ alias bsyssl="nixos-rebuild switch --cores 0 --flake /home/benji/nixcfg/nixos#se
 # ship: the three steps in one run -- gitgo, bump any game input whose branch
 # moved, then bsyssl. Flags: --dry-run, --yes, --no-git/--no-update/--no-deploy.
 alias ship='~/nixcfg/scripts/server-ship.sh'
+# Launcher for Claude Code agents, each in its own kitty window, in the current dir
+# (`agents` opens the app, `agents "prompt"` queues, `agents now "prompt"` runs alongside).
+alias agents='~/nixcfg/scripts/agents.sh'
 # bobbyupdate: bump bobby-dangling pin to current main. deploy separately with bsyss
 alias bobbyupdate="nix flake update bobby-dangling --flake /home/benji/nixcfg/nixos"
 # wormsupdate: bump the worms_whup pin to current main. Same two steps as

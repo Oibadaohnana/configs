@@ -132,6 +132,8 @@
     hplip
     unrar
     claude-code
+    # The overview app of scripts/agents.sh (`agents ui`): nixos/pkgs/agents-ui.
+    (callPackage ./pkgs/agents-ui/package.nix { })
     reaper
     p7zip
     qpwgraph
