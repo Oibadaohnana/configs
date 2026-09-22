@@ -17,6 +17,12 @@
 //! clicks as SGR escape sequences, which `App::mouse` matches against the
 //! regions registered while drawing (rows, boxes, the mode badge, the help
 //! keys); clicks on micro's screen are forwarded to it.
+//!
+//! micro shows nothing but text, so pictures live beside it: the box on the
+//! right of the prompt takes whatever image is on the clipboard (Ctrl+V, or
+//! Alt+V from anywhere), writes it into the state dir and lists it. When the
+//! prompt goes out, the paths of those files are appended to it, and the
+//! agent reads the pictures itself.
 
 use std::{
     env, fs,
@@ -74,6 +80,8 @@ enum Focus {
     List,
     /// The "with #N" field of the parallel mode.
     With,
+    /// The box of pasted screenshots beside the prompt.
+    Shots,
 }
 
 struct Job {
@@ -127,6 +135,26 @@ struct Limit {
     resets: u64,
 }
 
+/// A picture pasted from the clipboard. It waits in the box beside the prompt
+/// until that is sent; then its path is part of the prompt.
+struct Shot {
+    path: PathBuf,
+    /// Its pixel size, from the PNG header (JPEGs do not say here).
+    dims: Option<(u32, u32)>,
+    bytes: u64,
+}
+
+impl Shot {
+    /// What the box shows for it: the picture's size, or its file name when
+    /// the format does not say.
+    fn label(&self) -> String {
+        match self.dims {
+            Some((w, h)) => format!("{w}×{h}  {}", fmt_size(self.bytes)),
+            None => format!("{}  {}", self.path.file_name().unwrap_or_default().to_string_lossy(), fmt_size(self.bytes)),
+        }
+    }
+}
+
 /// What a mouse click on a part of the screen does; the parts are registered
 /// while drawing (see `App::hits`).
 #[derive(Clone, Copy, PartialEq)]
@@ -137,6 +165,10 @@ enum Act {
     Editor,
     /// The "with agent #" box.
     With,
+    /// The screenshot box: the click also picks the shot under the pointer.
+    Shots,
+    /// One of the screenshot box's single-letter keys, as if typed.
+    ShotKey(u8),
     /// The mode badge, and the "Tab" key of the help line.
     Mode,
     FocusList,
@@ -184,6 +216,10 @@ struct App {
     limits_at: Option<Instant>,
     jobs: Vec<Job>,
     sel: Option<u32>,
+    /// The selection was moved by hand (keys, click): it stays where it is
+    /// until that agent changes status; otherwise `load` keeps it on the
+    /// oldest working agent.
+    sel_manual: bool,
     table: TableState,
     mode: Mode,
     /// The agent number a parallel prompt should start with; empty ("-") = right away.
@@ -195,6 +231,11 @@ struct App {
     quit: bool,
     /// The file micro edits; its saved content is what gets sent.
     prompt_file: PathBuf,
+    /// Where the pasted screenshots are written.
+    shots_dir: PathBuf,
+    /// The pictures waiting to go out with the prompt.
+    shots: Vec<Shot>,
+    shot_sel: usize,
     micro_config: PathBuf,
     editor: Option<Editor>,
     /// The editor holds the prompt of this queued agent: Enter saves it there instead of sending.
@@ -210,6 +251,10 @@ struct App {
     /// Where micro's screen and the table's rows were drawn, for the mouse.
     editor_rect: Rect,
     rows_rect: Rect,
+    /// Where the screenshot rows were drawn, and the first one of them: the
+    /// box scrolls when there are more shots than lines.
+    shots_rows: Rect,
+    shots_from: usize,
     /// The last click, to see a double-click.
     last_click: Option<(Instant, u16, u16)>,
     /// A button went down on micro's screen: the drag and release are its too.
@@ -251,6 +296,16 @@ fn home_tilde(p: &Path) -> String {
 
 fn squash(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// The first `width` cells of `s`, with an ellipsis when it is longer.
+fn cut(s: &str, width: usize) -> String {
+    if s.chars().count() <= width {
+        return s.to_string();
+    }
+    let mut out: String = s.chars().take(width.saturating_sub(1)).collect();
+    out.push('…');
+    out
 }
 
 /// What a working agent is up to, from the tail of its transcript: one line
@@ -362,6 +417,84 @@ fn poll_limits(sh: PathBuf, dir: PathBuf, tx: mpsc::Sender<Option<Vec<Limit>>>) 
     });
 }
 
+fn fmt_size(b: u64) -> String {
+    if b >= 1 << 20 {
+        format!("{:.1} MB", b as f64 / (1 << 20) as f64)
+    } else {
+        format!("{} KB", b.div_ceil(1024))
+    }
+}
+
+/// What kind of image some bytes are, by the first of them.
+fn image_ext(b: &[u8]) -> Option<&'static str> {
+    if b.starts_with(b"\x89PNG\r\n\x1a\n") {
+        Some("png")
+    } else if b.starts_with(&[0xff, 0xd8, 0xff]) {
+        Some("jpg")
+    } else {
+        None
+    }
+}
+
+/// Width and height out of a PNG's IHDR, which is always its first chunk.
+fn png_dims(b: &[u8]) -> Option<(u32, u32)> {
+    if !b.starts_with(b"\x89PNG\r\n\x1a\n") || b.len() < 24 {
+        return None;
+    }
+    let n = |i: usize| u32::from_be_bytes([b[i], b[i + 1], b[i + 2], b[i + 3]]);
+    Some((n(16), n(20)))
+}
+
+/// The clipboard as an image, with the extension to save it under: wl-paste
+/// under Wayland, xclip under X11 (whichever is there). `Ok(None)` means the
+/// clipboard holds no picture -- then Ctrl+V is micro's ordinary paste.
+fn clipboard_image() -> Result<Option<(Vec<u8>, &'static str)>, String> {
+    let order = if env::var_os("WAYLAND_DISPLAY").is_some() { ["wl-paste", "xclip"] } else { ["xclip", "wl-paste"] };
+    let mut any_tool = false;
+    for tool in order {
+        for ty in ["image/png", "image/jpeg"] {
+            let args: Vec<&str> = if tool == "wl-paste" {
+                vec!["--no-newline", "--type", ty]
+            } else {
+                vec!["-selection", "clipboard", "-t", ty, "-o"]
+            };
+            let out = match Command::new(tool).args(&args).stderr(Stdio::null()).output() {
+                Ok(o) => o,
+                Err(_) => break, // not installed: the other tool, then
+            };
+            any_tool = true;
+            if let Some(ext) = image_ext(&out.stdout) {
+                return Ok(Some((out.stdout, ext)));
+            }
+        }
+    }
+    if any_tool {
+        Ok(None)
+    } else {
+        Err("neither wl-paste nor xclip is here to read the clipboard".into())
+    }
+}
+
+/// Where pasted screenshots are kept. The prompt only carries their paths, so
+/// the files have to outlive the send; the ones nobody looked at in a week go.
+fn shots_dir(state: &Path) -> PathBuf {
+    let dir = state.join("shots");
+    let _ = fs::create_dir_all(&dir);
+    if let Ok(entries) = fs::read_dir(&dir) {
+        for e in entries.flatten() {
+            let stale = e
+                .metadata()
+                .and_then(|m| m.modified())
+                .map(|t| t.elapsed().map(|d| d > Duration::from_secs(7 * 86400)).unwrap_or(false))
+                .unwrap_or(false);
+            if stale {
+                let _ = fs::remove_file(e.path());
+            }
+        }
+    }
+    dir
+}
+
 /// A config dir for the embedded micro: the user's own settings, plugins and
 /// colorschemes (symlinked), plus Ctrl-s = save and quit, which is how Enter
 /// hands the text over.
@@ -407,6 +540,7 @@ impl App {
             limits_at: None,
             jobs: Vec::new(),
             sel: None,
+            sel_manual: false,
             table: TableState::default(),
             mode,
             with: String::new(),
@@ -416,6 +550,9 @@ impl App {
             loaded: Instant::now(),
             quit: false,
             prompt_file: state.join("prompt.md"),
+            shots_dir: shots_dir(&state),
+            shots: Vec::new(),
+            shot_sel: 0,
             micro_config: micro_config_dir(&state),
             editor: None,
             editing: None,
@@ -426,6 +563,8 @@ impl App {
             hits: Vec::new(),
             editor_rect: Rect::default(),
             rows_rect: Rect::default(),
+            shots_rows: Rect::default(),
+            shots_from: 0,
             last_click: None,
             drag_editor: false,
             state,
@@ -513,15 +652,25 @@ impl App {
                 session: read(&jd.join("session")),
             });
         }
+        let was = self.selected().map(|j| j.status.clone());
         // Three zones with a rule between them (see `zone`): closed agents at
         // the top, then finished turns (done, asking), then the working and
         // queued ones at the bottom, each oldest first. An agent you talk to
         // again is working and drops back down.
         jobs.sort_by_key(|j| (j.zone(), j.id));
         self.jobs = jobs;
-        // Nothing (valid) selected: the oldest working agent, the first row
-        // below the rules; else the first queued one, else whatever is on top.
-        if !self.jobs.iter().any(|j| Some(j.id) == self.sel) {
+        // The selection sits on the oldest working agent, the first row below
+        // the rules (else the first queued one, else whatever is on top): when
+        // nothing (valid) is selected, and when the selected agent is not
+        // working (its turn ended, or it was queued when there was nothing
+        // running yet) — unless you moved the selection there yourself; that
+        // holds until the agent changes status.
+        let now = self.selected().map(|j| j.status.clone());
+        if now != was {
+            self.sel_manual = false;
+        }
+        let stale = now.as_deref() != Some("running") && !self.sel_manual && self.jobs.iter().any(|j| j.status == "running");
+        if now.is_none() || stale {
             let pick = |f: &dyn Fn(&Job) -> bool| self.jobs.iter().find(|j| f(j)).map(|j| j.id);
             self.sel = pick(&|j| j.status == "running").or_else(|| pick(&|j| j.zone() == 2)).or_else(|| pick(&|_| true));
         }
@@ -566,7 +715,14 @@ impl App {
         let i = self.sel_index().unwrap_or(0) as isize + delta;
         let i = i.clamp(0, self.jobs.len() as isize - 1) as usize;
         self.sel = Some(self.jobs[i].id);
+        self.sel_manual = true;
         self.table.select(Some(self.row_of(i)));
+    }
+
+    /// The queue goes in order: a queued agent waits behind the first held
+    /// queue agent before it (parallel ones are not in the queue).
+    fn held_ahead(&self, id: u32) -> Option<u32> {
+        self.jobs.iter().find(|j| j.id < id && j.status == "held" && j.with.is_none() && j.mode != "now").map(|j| j.id)
     }
 
     fn counts(&self) -> (usize, usize, usize, usize, usize) {
@@ -750,8 +906,18 @@ impl App {
             self.restore_stash();
             return;
         }
+        // The pictures in the box go out as paths under the prompt: the agent
+        // reads the files (they stay in the state dir until they are stale).
+        let mut text = text.trim_end().to_string();
+        if !self.shots.is_empty() {
+            text.push_str("\n\nScreenshots for this task, read the files:\n");
+            for shot in &self.shots {
+                text.push_str(&format!("{}\n", shot.path.display()));
+            }
+            text = text.trim_end().to_string();
+        }
         let ok = if let Some(id) = self.editing {
-            let (ok, out) = self.run(&["edit", &id.to_string()], Some(text.trim_end()));
+            let (ok, out) = self.run(&["edit", &id.to_string()], Some(&text));
             self.msg = out;
             if ok {
                 self.editing = None;
@@ -760,7 +926,7 @@ impl App {
         } else {
             let args = self.send_args();
             let args: Vec<&str> = args.iter().map(String::as_str).collect();
-            let (ok, out) = self.run(&args, Some(text.trim_end()));
+            let (ok, out) = self.run(&args, Some(&text));
             self.msg = out;
             if ok {
                 // "with #N" is for that one prompt; the next one runs right away again.
@@ -769,6 +935,8 @@ impl App {
             ok
         };
         if ok {
+            self.shots.clear();
+            self.shot_sel = 0;
             self.restore_stash();
         }
         self.load();
@@ -807,6 +975,89 @@ impl App {
         self.editing = None;
         self.restore_stash();
         self.msg = "edit cancelled".into();
+    }
+
+    // -- screenshots
+
+    /// Ctrl+V in the prompt, v in the box: the clipboard's picture joins the
+    /// ones waiting for the prompt. With `or_paste` a clipboard that holds no
+    /// picture is left to micro, whose Ctrl+V pastes text.
+    fn attach_clipboard(&mut self, or_paste: bool) {
+        match clipboard_image() {
+            Ok(Some((bytes, ext))) => self.add_shot(&bytes, ext),
+            Ok(None) => {
+                if or_paste {
+                    self.editor_write(&[0x16]);
+                } else {
+                    self.msg = "the clipboard holds no picture".into();
+                }
+            }
+            Err(e) => {
+                if or_paste {
+                    self.editor_write(&[0x16]);
+                }
+                self.msg = e;
+            }
+        }
+    }
+
+    fn add_shot(&mut self, bytes: &[u8], ext: &str) {
+        let mut path = self.shots_dir.join(format!("shot-{}.{ext}", now()));
+        let mut n = 1;
+        while path.exists() {
+            n += 1;
+            path = self.shots_dir.join(format!("shot-{}-{n}.{ext}", now()));
+        }
+        if let Err(e) = fs::write(&path, bytes) {
+            self.msg = format!("cannot save the picture: {e}");
+            return;
+        }
+        self.shots.push(Shot { path, dims: png_dims(bytes), bytes: bytes.len() as u64 });
+        self.shot_sel = self.shots.len() - 1;
+        self.msg = format!("{} picture(s) go with the prompt", self.shots.len());
+    }
+
+    /// Take one out of the box again; the file goes with it.
+    fn remove_shot(&mut self) {
+        if self.shot_sel < self.shots.len() {
+            let shot = self.shots.remove(self.shot_sel);
+            let _ = fs::remove_file(&shot.path);
+            self.shot_sel = self.shot_sel.min(self.shots.len().saturating_sub(1));
+            self.msg = "picture removed".into();
+        }
+    }
+
+    /// The selected picture in whatever opens images here.
+    fn open_shot(&mut self) {
+        let Some(shot) = self.shots.get(self.shot_sel) else {
+            return;
+        };
+        let viewer = env::var("AGENTS_IMAGE_VIEWER").unwrap_or_else(|_| "xdg-open".into());
+        let mut cmd = Command::new(&viewer);
+        cmd.arg(&shot.path).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).process_group(0);
+        if let Err(e) = cmd.spawn() {
+            self.msg = format!("cannot start {viewer}: {e}");
+        }
+    }
+
+    fn move_shot_sel(&mut self, delta: isize) {
+        if self.shots.is_empty() {
+            return;
+        }
+        let last = self.shots.len() as isize - 1;
+        self.shot_sel = (self.shot_sel as isize + delta).clamp(0, last) as usize;
+    }
+
+    /// Single-letter commands while the screenshot box has the focus.
+    fn key_shots(&mut self, b: u8) {
+        self.msg.clear();
+        match b {
+            b'v' | b'V' | 0x16 => self.attach_clipboard(false),
+            b'd' | b'D' | b'x' | b'X' | 0x7f | 0x08 => self.remove_shot(),
+            b'o' | b'O' => self.open_shot(),
+            b'\r' | b'\n' | b'i' | b'I' => self.focus = Focus::Editor,
+            _ => {}
+        }
     }
 
     // -- keys
@@ -855,13 +1106,25 @@ impl App {
                         self.flush_pass(&mut pass);
                         self.toggle_with();
                     }
+                    (_, b"\x1bv") | (_, b"\x1bV") => {
+                        // Alt+V: the clipboard's picture into the box, from anywhere.
+                        self.flush_pass(&mut pass);
+                        self.attach_clipboard(false);
+                    }
+                    (_, b"\x1bs") | (_, b"\x1bS") => {
+                        // Alt+S: the screenshot box, and back to the prompt.
+                        self.flush_pass(&mut pass);
+                        self.focus = if self.focus == Focus::Shots { Focus::Editor } else { Focus::Shots };
+                    }
+                    (Focus::Shots, b"\x1b[A") | (Focus::Shots, b"\x1bOA") => self.move_shot_sel(-1),
+                    (Focus::Shots, b"\x1b[B") | (Focus::Shots, b"\x1bOB") => self.move_shot_sel(1),
                     (Focus::Editor, b"\x1b\r") | (Focus::Editor, b"\x1b\n") => pass.push(b'\r'), // Alt+Enter: newline
                     (Focus::Editor, _) => pass.extend_from_slice(seq),
                     (Focus::List, b"\x1b[A") | (Focus::List, b"\x1bOA") => self.move_sel(-1),
                     (Focus::List, b"\x1b[B") | (Focus::List, b"\x1bOB") => self.move_sel(1),
                     (Focus::List, b"\x1b[5~") => self.move_sel(-10),
                     (Focus::List, b"\x1b[6~") => self.move_sel(10),
-                    (Focus::List, _) | (Focus::With, _) => {}
+                    (Focus::List, _) | (Focus::With, _) | (Focus::Shots, _) => {}
                 }
                 continue;
             }
@@ -890,6 +1153,12 @@ impl App {
                     // Send: micro saves and quits (our Ctrl-s binding), check_editor picks the file up.
                     pass.extend_from_slice(b"\x13");
                 }
+                (Focus::Editor, 0x16) => {
+                    // Ctrl+V: a picture on the clipboard goes into the box beside
+                    // the prompt, anything else is micro's own paste.
+                    self.flush_pass(&mut pass);
+                    self.attach_clipboard(true);
+                }
                 (Focus::Editor, b'\n') => pass.push(b'\r'), // Ctrl+J: newline
                 (Focus::Editor, _) => pass.push(b),
                 (Focus::List, _) => {
@@ -899,6 +1168,10 @@ impl App {
                 (Focus::With, _) => {
                     self.flush_pass(&mut pass);
                     self.key_with(b);
+                }
+                (Focus::Shots, _) => {
+                    self.flush_pass(&mut pass);
+                    self.key_shots(b);
                 }
             }
         }
@@ -973,6 +1246,7 @@ impl App {
                     let id = job.id;
                     self.msg.clear();
                     self.sel = Some(id);
+                    self.sel_manual = true;
                     self.table.select(Some(row));
                     self.focus = Focus::List;
                     if double {
@@ -987,6 +1261,18 @@ impl App {
                 }
                 self.focus = Focus::With;
             }
+            Some(Act::Shots) => {
+                self.focus = Focus::Shots;
+                let inside = y >= self.shots_rows.y && y < self.shots_rows.y + self.shots_rows.height;
+                let row = y.saturating_sub(self.shots_rows.y) as usize + self.shots_from;
+                if inside && row < self.shots.len() {
+                    self.shot_sel = row;
+                    if double {
+                        self.open_shot();
+                    }
+                }
+            }
+            Some(Act::ShotKey(k)) => self.key_shots(k),
             Some(Act::Mode) => self.toggle_mode(),
             Some(Act::FocusList) => {
                 self.msg.clear();
@@ -1005,7 +1291,7 @@ impl App {
         self.msg.clear();
         self.focus = match self.focus {
             Focus::Editor => Focus::List,
-            Focus::List | Focus::With => Focus::Editor,
+            Focus::List | Focus::With | Focus::Shots => Focus::Editor,
         };
     }
 
@@ -1190,10 +1476,46 @@ fn frame_block(title: impl Into<Line<'static>>, focused: bool, color: Color) -> 
 fn draw(f: &mut Frame, app: &mut App) -> Rect {
     let area = f.area();
     let editor_h = (area.height / 4).clamp(5, 8);
+    // Details of the selected agent: its prompt, and one line on what it does
+    // now (running), said (done) or waits for (queued), with the keys for it.
+    // Built before the layout: the pane is as tall as the wrapped text needs,
+    // so a long prompt does not push the second line out. The prompt itself
+    // is cut to one line: its start is enough to tell the agents apart.
+    let mut lines: Vec<Line> = Vec::new();
+    let mut title = String::from(" details ");
+    if let Some(j) = app.selected() {
+        title = format!(" #{} · {} · {} ", j.id, j.status, &j.session[..j.session.len().min(8)]);
+        lines.push(Line::from(cut(&squash(&j.prompt), area.width.saturating_sub(2) as usize)));
+        let keys = |s: &str| Span::styled(format!("   {s}"), Style::new().dim());
+        let hold_keys = if app.editing == Some(j.id) { "its prompt is in the box below: Enter there saves it, e cancels" } else { "p holds it back, e changes its prompt" };
+        lines.push(match j.status.as_str() {
+            "running" => Line::from(vec![Span::styled("now  ", status_style("running")), Span::raw(j.detail.clone())]),
+            "done" | "asks" => Line::from(vec![Span::styled("said  ", status_style(&j.status)), Span::raw(j.detail.clone())]),
+            "failed" => Line::from(vec![Span::styled("error  ", status_style("failed")), Span::raw(j.detail.clone()), keys("Enter opens a new window resuming it, d removes it")]),
+            "held" => Line::from(vec![
+                Span::styled("held: does not start whatever frees up, and the queue behind it waits", status_style("held").remove_modifier(Modifier::BOLD)),
+                keys(if app.editing == Some(j.id) { hold_keys } else { "p releases it, e changes its prompt" }),
+            ]),
+            "queued" => {
+                let waiting = match j.with {
+                    Some(w) => format!("waiting for #{w} to start, then opens next to it"),
+                    None if j.mode == "now" => "opens right away".to_string(),
+                    None => match app.held_ahead(j.id) {
+                        Some(h) => format!("waiting behind held #{h}"),
+                        None => "waiting for a free queue slot".to_string(),
+                    },
+                };
+                Line::from(vec![Span::styled(waiting, Style::new().dim()), keys(hold_keys)])
+            }
+            _ => Line::from(Span::styled("window closed — Enter opens a new one resuming the conversation, d removes it", Style::new().dim())),
+        });
+    }
+    let details = Paragraph::new(lines).wrap(Wrap { trim: false }).block(frame_block(title, false, Color::Reset));
+    let details_h = (details.line_count(area.width) as u16).clamp(4, (area.height / 3).max(4));
     let chunks = Layout::vertical([
         Constraint::Length(1),
         Constraint::Min(4),
-        Constraint::Length(4),
+        Constraint::Length(details_h),
         Constraint::Length(editor_h),
         Constraint::Length(1),
         Constraint::Length(1),
@@ -1347,35 +1669,6 @@ fn draw(f: &mut Frame, app: &mut App) -> Rect {
         }
     }
 
-    // Details of the selected agent: its prompt, and one line on what it does
-    // now (running), said (done) or waits for (queued), with the keys for it.
-    let mut lines: Vec<Line> = Vec::new();
-    let mut title = String::from(" details ");
-    if let Some(j) = app.selected() {
-        title = format!(" #{} · {} · {} ", j.id, j.status, &j.session[..j.session.len().min(8)]);
-        lines.push(Line::from(squash(&j.prompt)));
-        let keys = |s: &str| Span::styled(format!("   {s}"), Style::new().dim());
-        let hold_keys = if app.editing == Some(j.id) { "its prompt is in the box below: Enter there saves it, e cancels" } else { "p holds it back, e changes its prompt" };
-        lines.push(match j.status.as_str() {
-            "running" => Line::from(vec![Span::styled("now  ", status_style("running")), Span::raw(j.detail.clone())]),
-            "done" | "asks" => Line::from(vec![Span::styled("said  ", status_style(&j.status)), Span::raw(j.detail.clone())]),
-            "failed" => Line::from(vec![Span::styled("error  ", status_style("failed")), Span::raw(j.detail.clone()), keys("Enter opens a new window resuming it, d removes it")]),
-            "held" => Line::from(vec![
-                Span::styled("held: does not start whatever frees up; the ones behind it go past", status_style("held").remove_modifier(Modifier::BOLD)),
-                keys(if app.editing == Some(j.id) { hold_keys } else { "p releases it, e changes its prompt" }),
-            ]),
-            "queued" => {
-                let waiting = match j.with {
-                    Some(w) => format!("waiting for #{w} to start, then opens next to it"),
-                    None if j.mode == "now" => "opens right away".to_string(),
-                    None => "waiting for a free queue slot".to_string(),
-                };
-                Line::from(vec![Span::styled(waiting, Style::new().dim()), keys(hold_keys)])
-            }
-            _ => Line::from(Span::styled("window closed — Enter opens a new one resuming the conversation, d removes it", Style::new().dim())),
-        });
-    }
-    let details = Paragraph::new(lines).wrap(Wrap { trim: false }).block(frame_block(title, false, Color::Reset));
     f.render_widget(details, chunks[2]);
 
     // The prompt box: micro's screen. In parallel mode its first line is the
@@ -1387,9 +1680,19 @@ fn draw(f: &mut Frame, app: &mut App) -> Rect {
         (None, Mode::Queue) => (" prompt → queue   Enter sends · Tab: parallel · Esc: list ".to_string(), app.mode.color()),
         (None, Mode::Parallel) => (" prompt → parallel   Enter sends · Tab: queue · Shift+Tab: with # · Esc: list ".to_string(), app.mode.color()),
     };
+    // The screenshot box sits to its right, the same height. A narrow
+    // terminal keeps every column for micro and the box is left out; the
+    // pictures still go with the prompt.
+    let shots_w = if area.width >= 78 { (area.width / 4).clamp(22, 32) } else { 0 };
+    let (prompt_area, shots_area) = if shots_w > 0 {
+        let cols = Layout::horizontal([Constraint::Min(30), Constraint::Length(shots_w)]).split(chunks[3]);
+        (cols[0], Some(cols[1]))
+    } else {
+        (chunks[3], None)
+    };
     let block = frame_block(title, editor_focused || with_focused, color);
-    let mut inner = block.inner(chunks[3]);
-    f.render_widget(block, chunks[3]);
+    let mut inner = block.inner(prompt_area);
+    f.render_widget(block, prompt_area);
     if app.mode == Mode::Parallel && inner.height > 2 {
         let row = Rect { height: 1, ..inner };
         inner = Rect { y: inner.y + 1, height: inner.height - 1, ..inner };
@@ -1430,6 +1733,46 @@ fn draw(f: &mut Frame, app: &mut App) -> Rect {
         f.render_widget(Paragraph::new(Span::styled("(editor not running)", Style::new().dim())), inner);
     }
 
+    // The screenshot box: what Ctrl+V put there, waiting for the prompt.
+    if let Some(rect) = shots_area {
+        let focused = app.focus == Focus::Shots;
+        let title = match app.shots.len() {
+            0 => " screenshots ".to_string(),
+            n => format!(" screenshots ({n}) "),
+        };
+        let block = frame_block(title, focused, Color::Blue);
+        let inner = block.inner(rect);
+        f.render_widget(block, rect);
+        app.hits.push((rect, Act::Shots));
+        app.shots_rows = inner;
+        if app.shots.is_empty() {
+            let hint = Paragraph::new(Span::styled("Ctrl+V puts the picture on the clipboard here, and the prompt takes it along.", Style::new().dim()))
+                .wrap(Wrap { trim: false });
+            f.render_widget(hint, inner);
+            app.shots_from = 0;
+        } else {
+            // Only as many rows as fit, the selected one among them.
+            let h = inner.height.max(1) as usize;
+            let from = app.shot_sel.saturating_sub(h - 1);
+            let mut lines: Vec<Line> = Vec::new();
+            for (i, shot) in app.shots.iter().enumerate().skip(from).take(h) {
+                let style = if i == app.shot_sel && focused {
+                    Style::new().fg(Color::Black).bg(Color::Blue).bold()
+                } else if i == app.shot_sel {
+                    Style::new().bold()
+                } else {
+                    Style::new()
+                };
+                lines.push(Line::from(vec![
+                    Span::styled(format!("{:>2} ", i + 1), Style::new().dim()),
+                    Span::styled(cut(&shot.label(), inner.width.saturating_sub(3) as usize), style),
+                ]));
+            }
+            f.render_widget(Paragraph::new(lines), inner);
+            app.shots_from = from;
+        }
+    }
+
     // Message and key help (the keys are buttons too).
     f.render_widget(Paragraph::new(Span::styled(format!(" {}", app.msg), Style::new().fg(Color::Yellow))), chunks[4]);
     let at = (chunks[5].x, chunks[5].y);
@@ -1448,6 +1791,7 @@ fn draw(f: &mut Frame, app: &mut App) -> Rect {
                 ("Alt+⏎", "newline", Act::None),
                 ("Tab", "mode", Act::Mode),
                 ("Shift+Tab", "with #", Act::With),
+                ("Ctrl+V", "screenshot", Act::Shots),
                 ("Esc", "agent list", Act::FocusList),
                 ("micro keys", "everything else", Act::None),
             ],
@@ -1459,6 +1803,18 @@ fn draw(f: &mut Frame, app: &mut App) -> Rect {
                 ("0-9", "agent to start with", Act::None),
                 ("-", "none: run right away", Act::None),
                 ("⌫", "delete", Act::None),
+                ("⏎/Esc", "back to prompt", Act::FocusEditor),
+                ("Tab", "mode", Act::Mode),
+            ],
+        ),
+        Focus::Shots => key_help(
+            &mut app.hits,
+            at,
+            &[
+                ("↑↓", "select", Act::None),
+                ("v", "paste another", Act::ShotKey(b'v')),
+                ("d", "remove", Act::ShotKey(b'd')),
+                ("o", "open", Act::ShotKey(b'o')),
                 ("⏎/Esc", "back to prompt", Act::FocusEditor),
                 ("Tab", "mode", Act::Mode),
             ],

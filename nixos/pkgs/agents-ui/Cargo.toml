@@ -5,7 +5,7 @@ edition = "2021"
 description = "Overview and launcher for Claude Code agents (the interface of scripts/agents.sh)"
 
 [dependencies]
-ratatui = "0.30"
+ratatui = { version = "0.30", features = ["unstable-rendered-line-info"] }
 tui-term = "0.3"
 vt100 = "0.16"
 portable-pty = "0.9"

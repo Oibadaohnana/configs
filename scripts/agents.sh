@@ -94,24 +94,26 @@ has_started() {
     local id; printf -v id '%03d' "$((10#$1))" 2>/dev/null || return 0
     [[ ! -d $JOBS/$id || -f $JOBS/$id/started ]]
 }
-# Under lock. Queued: opens when fewer than $SLOTS are running (any mode counts).
-# Parallel: regardless. "with #N": once #N has started. Held: never; the ones
-# behind it go past.
+# Under lock. Queued: opens when fewer than $SLOTS are running (any mode counts),
+# in order: a held one stops the queue behind it. Parallel: regardless. "with
+# #N": once #N has started. Held: never.
 fill_slots() {
     reap
-    local jd running=0 with started=1
+    local jd running=0 with mode started=1 blocked
     for jd in $(all_jobs); do
         [[ $(rd "$jd/status") == running ]] && ((running++))
     done
     # Repeat while something opened: a job may wait for one that just did.
     while (( started )); do
-        started=0
+        started=0 blocked=0
         for jd in $(all_jobs); do
-            [[ $(rd "$jd/status") == queued && ! -f $jd/hold ]] || continue
-            with=$(rd "$jd/with")
+            [[ $(rd "$jd/status") == queued ]] || continue
+            with=$(rd "$jd/with"); mode=$(rd "$jd/mode")
+            # A held queue job stops the queue behind it; held parallel ones are not in it.
+            if [[ -f $jd/hold ]]; then [[ -z $with && $mode != now ]] && blocked=1; continue; fi
             if [[ -n $with ]]; then has_started "$with" || continue
-            elif [[ $(rd "$jd/mode") == now ]]; then :    # a released parallel prompt
-            else (( running < SLOTS )) || continue; fi
+            elif [[ $mode == now ]]; then :    # a released parallel prompt
+            else (( ! blocked && running < SLOTS )) || continue; fi
             start_job "$jd"; ((running++)); started=1
         done
     done
@@ -554,10 +556,11 @@ usage: agents [command] [args]      (opens agents in: $DIR)
        -w N   parallel with #N: waits until #N has started, then opens next to it
        -H     held: does not open until released (agents release N)
        (no PROMPT: read stdin, or open \$EDITOR when interactive)
-  hold N | release N   keep queued #N from starting, whatever frees up | let it start again
+  hold N | release N   keep queued #N (and the queue behind it) from starting | let it go again
   edit N [PROMPT]      replace the prompt of queued #N (argument, -f file, or stdin)
   status               text overview       watch        overview, refreshed every 2 s
-  (nothing)            the app: overview + micro prompt box (Enter sends, Tab queue/parallel, Shift+Tab with #N)
+  (nothing)            the app: overview + micro prompt box (Enter sends, Tab queue/parallel, Shift+Tab with #N,
+                       Ctrl+V puts a screenshot from the clipboard in the box beside it)
   open N | hide N      bring #N's window here (reopens it if closed) | send it back out of sight
   resume N             continue closed #N in this terminal (claude --resume)
   log [-f] N           readable transcript of #N (-f follows)
