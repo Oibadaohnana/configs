@@ -48,6 +48,8 @@
 #   monitors.sh all             switch every connected display on
 #   monitors.sh rescue          switch everything on if nothing is on
 #   monitors.sh hotplug         answer a display appearing or vanishing
+#   monitors.sh fixbars         put the bars back if one has been stranded
+#   monitors.sh stranded        print "yes" if a bar sits off its monitor
 #   monitors.sh list            one line per output, tab separated:
 #                               name desc disabled mode scale width height x y
 
@@ -310,6 +312,128 @@ refresh_waybar() {
     pkill "-RTMIN+$WAYBAR_SIGNAL" waybar 2>/dev/null || true
 }
 
+# ---------------------------------------------------------------------------
+# Stranded bars
+# ---------------------------------------------------------------------------
+#
+# A display appearing or vanishing makes Hyprland re-apply the monitor rules,
+# and the `position = "auto"` wildcard in hyprland.lua then moves whichever
+# outputs are left -- switch the main screen off at its own power button and
+# the remaining one slides over to 0x0. The layer surfaces sitting on those
+# outputs are not carried along: hyprctl goes on reporting waybar's bar at the
+# coordinates its monitor used to occupy, which by then are off the screen
+# altogether. The reserved strip stays reserved, so what is left is a bar-shaped
+# black gap with nothing drawn in it. The bar has not crashed and has not lost
+# its modules -- it is being painted somewhere nobody can see.
+#
+# Switching an output off from this script does not do it, which is why it
+# looks like a hardware-only fault: no rule is re-applied then, so nothing
+# moves and the bars stay where they belong.
+#
+# A layer surface cannot be moved from the outside -- the compositor places it,
+# once, when the surface is made -- so the only way back is to make new ones.
+
+# One line per waybar layer, tab separated: monitor, x, y. hyprctl reports
+# layer positions in the same absolute screen coordinates as monitor_list.
+waybar_layers() {
+    hyprctl layers | awk '
+        /^Monitor / { mon = $2; sub(/:$/, "", mon); next }
+        /namespace: waybar/ {
+            for (i = 1; i < NF; i++)
+                if ($i == "xywh:") { print mon "\t" $(i + 1) "\t" $(i + 2); break }
+        }
+    '
+}
+
+# "yes" if any waybar layer has been left outside the monitor it belongs to.
+# Judged on the layer's top-left corner: a bar that starts off its monitor is
+# the stranded case, and one that starts on it was placed against it.
+stranded_bars() {
+    local rects
+    rects=$(monitor_list | awk -F'\t' '$3 == "false" { print $1 "\t" $8 "\t" $9 "\t" $6 "\t" $7 }')
+    [[ -n $rects ]] || return 0
+    waybar_layers | awk -F'\t' -v rects="$rects" '
+        BEGIN {
+            n = split(rects, lines, "\n")
+            for (i = 1; i <= n; i++) {
+                split(lines[i], f, "\t")
+                if (f[1] == "") continue
+                mx[f[1]] = f[2]; my[f[1]] = f[3]; mw[f[1]] = f[4]; mh[f[1]] = f[5]
+            }
+        }
+        ($1 in mx) &&
+        ($2 < mx[$1] || $2 >= mx[$1] + mw[$1] ||
+         $3 < my[$1] || $3 >= my[$1] + mh[$1]) { print "yes"; exit }
+    '
+}
+
+# The running waybar's pid, or nothing at all.
+#
+# pgrep matches on the process name, which here is ".waybar-wrapped" -- the nix
+# wrapper, not "waybar" -- so the pattern has to stay unanchored, the same way
+# refresh_waybar's does. That also sweeps up waybar's own forked children for
+# the exec modules: they carry the same name, and they sit around as zombies
+# until it reaps them, so the newest match is very often a dead one. A zombie
+# has no command line left, which is what tells the two apart.
+waybar_pid() {
+    local pid
+    for pid in $(pgrep waybar 2>/dev/null); do
+        # Not `-s`: every file under /proc reports a size of zero, so the only
+        # way to know whether this one is empty is to read it.
+        [[ -n $(tr -d '\0' <"/proc/$pid/cmdline" 2>/dev/null) ]] || continue
+        printf '%s' "$pid"
+        return 0
+    done
+    return 1
+}
+
+# Start waybar again exactly as it is running now. The command line lives in
+# hyprland.lua, and reading it back out of /proc keeps this from becoming a
+# second copy of it that could quietly drift out of step.
+restart_waybar() {
+    local pid cmd i
+    pid=$(waybar_pid) || return 0
+    mapfile -d '' -t cmd <"/proc/$pid/cmdline" 2>/dev/null || return 0
+    (( ${#cmd[@]} )) || return 0
+
+    pkill waybar 2>/dev/null || true
+    # Wait for the old surfaces to actually go away. A bar made while the old
+    # one still holds the output would be placed against a layout that is
+    # about to change again, which is the very thing being repaired here.
+    for i in $(seq 1 20); do
+        waybar_pid >/dev/null || break
+        sleep 0.1
+    done
+
+    setsid -f "${cmd[@]}" >/dev/null 2>&1
+
+    # Wait for the new bars to actually be up before handing back. Two
+    # reasons: callers go on to poke waybar with a real-time signal, and
+    # until waybar has installed its handlers that signal is not a refresh
+    # but a kill; and a second monitor event arriving a moment later would
+    # otherwise look at a session with no bars in it and conclude that
+    # nothing is stranded.
+    for i in $(seq 1 30); do
+        [[ -n $(waybar_layers) ]] && break
+        sleep 0.1
+    done
+}
+
+# Put the bars back on their monitors, if any of them has been stranded.
+#
+# Checked rather than done unconditionally: recreating the bars costs a visible
+# flicker and re-registers the tray, and the outputs move without stranding
+# anything far more often than not -- every move this script makes itself
+# carries the layers along correctly.
+cmd_fixbars() {
+    # Hyprland reports the new geometry a moment after it settles, and a check
+    # against a half-finished layout would either miss a stranded bar or
+    # invent one.
+    sleep 0.5
+    [[ -n $(stranded_bars) ]] || return 0
+    restart_waybar
+}
+
 notify() {
     local title=$1 body=$2 id_file="$RUNTIME_DIR/monitors-notify.id" prev_id new_id
     prev_id=$(cat "$id_file" 2>/dev/null || echo 0)
@@ -458,6 +582,12 @@ cmd_hotplug() {
     fi
 
     cmd_rescue
+
+    # A display that has just appeared or vanished is the one thing that
+    # strands a bar off the side of its monitor -- see cmd_fixbars. Skipped
+    # while the session is starting up, where waybar is itself still coming
+    # up and its bars have not been placed yet.
+    (( age < SETTLE_SECONDS )) || cmd_fixbars
     refresh_waybar
 }
 
@@ -622,6 +752,8 @@ case "${1:-}" in
     apply)   cmd_apply ;;
     all)     cmd_all ;;
     rescue)  cmd_rescue ;;
+    fixbars) cmd_fixbars ;;
+    stranded) stranded_bars ;;
     # Serialised: cmd_all's own switching fires monitor.added, so a second copy
     # of this arrives while the first is still working. Taking turns means the
     # second one reads a settled monitor list and finds nothing left to do.
@@ -630,7 +762,7 @@ case "${1:-}" in
              cmd_hotplug ;;
     list)    monitor_list ;;
     *)
-        echo "Usage: $0 {waybar|menu|toggle <o>|on <o>|off <o>|left <o>|right <o>|layout|overlap|apply|all|rescue|hotplug|list}" >&2
+        echo "Usage: $0 {waybar|menu|toggle <o>|on <o>|off <o>|left <o>|right <o>|layout|overlap|apply|all|rescue|fixbars|stranded|hotplug|list}" >&2
         exit 1
         ;;
 esac
