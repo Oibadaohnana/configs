@@ -24,6 +24,7 @@
       case "$1" in
         setup)
           wineboot --init
+          wine reg add 'HKCU\Software\Wine\Drivers' /v Audio /t REG_SZ /d alsa /f
           wine regsvr32 /s wineasio64.dll && echo "WineASIO registered in $WINEPREFIX"
           ;;
         install)
