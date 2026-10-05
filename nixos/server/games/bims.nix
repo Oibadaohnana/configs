@@ -20,8 +20,10 @@
 }: let
   relay = bims.packages.${pkgs.stdenv.hostPlatform.system}.bims-server;
   # 8787 bobby-dangling, 8788 worms-whup, 8789 todo, 8790 makinglist,
-  # 8791 bank-bobbery. `wire::DEFAULT_PORT` in the game says the same.
-  port = "8792";
+  # 8791 bank-bobbery, 8792 split. Not `wire::DEFAULT_PORT` (8792, split's
+  # here): the players dial wss://bims.buggly.de on 443, so this port is only
+  # ever seen between nginx and the relay, and PORT below sets it.
+  port = "8793";
 in {
   systemd.services.bims = {
     description = "Bims relay";

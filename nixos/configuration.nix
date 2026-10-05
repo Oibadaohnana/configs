@@ -106,9 +106,25 @@
     git
     spotify
     telegram-desktop
-    mpv
+    # umpv is the image viewer (see xdg.mime below). mpv shows an image for
+    # image-display-duration (1s) and then advances -- or quits, since umpv's
+    # pseudo-gui profile uses idle=once -- so this auto-profile pauses on
+    # images and holds them indefinitely. profile-restore=copy undoes both
+    # when the playlist moves on to a real video. Passed via --include because
+    # there's no home-manager to own ~/.config/mpv; umpv execs this wrapper.
+    (mpv.override {
+      extraMakeWrapperArgs = [
+        "--add-flags" "--include=${writeText "mpv-images.conf" ''
+          [image]
+          profile-cond=get("current-tracks/video/image", false) and not get("current-tracks/video/albumart", false)
+          profile-restore=copy
+          pause=yes
+          image-display-duration=inf
+        ''}"
+      ];
+    })
     vlc
-    libreoffice-fresh
+    libreoffice
     mumble
     beyond-all-reason
     # Discord's keybinds (its own F9 mute) come from a native module that
@@ -132,6 +148,7 @@
     hplip
     unrar
     claude-code
+    python3
     # The overview app of scripts/agents.sh (`agents ui`): nixos/pkgs/agents-ui.
     (callPackage ./pkgs/agents-ui/package.nix { })
     reaper
@@ -140,6 +157,26 @@
     kdePackages.kdenlive
     ffmpeg
   ];
+
+  # Open images in umpv. umpv.desktop doesn't list image types in MimeType=,
+  # so register the association too, or KDE (Dolphin) won't offer it.
+  # Audio opens in umpv too; umpv.desktop already lists audio types, so it
+  # only needs the default.
+  # ~/.config/mimeapps.list still wins per type if it names something else.
+  xdg.mime = let
+    images = map (t: "image/${t}") [
+      "jpeg" "png" "gif" "webp" "bmp" "tiff" "avif" "heic" "heif" "jxl"
+    ];
+    audio = map (t: "audio/${t}") [
+      "mpeg" "mp3" "x-mp3" "flac" "x-flac" "ogg" "x-vorbis+ogg" "opus"
+      "wav" "x-wav" "aac" "mp4" "x-m4a" "x-aiff" "x-ms-wma" "webm"
+      "x-matroska" "x-ape" "x-wavpack" "midi" "x-mpegurl" "x-scpls"
+    ];
+    umpv = lib.genAttrs images (_: "umpv.desktop");
+  in {
+    defaultApplications = umpv // lib.genAttrs audio (_: "umpv.desktop");
+    addedAssociations = umpv;
+  };
 
   programs.appimage = {
   enable = true;

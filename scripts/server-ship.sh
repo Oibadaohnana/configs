@@ -2,6 +2,8 @@
 #
 # server-ship.sh — one run from local work to a deployed server.
 #
+#   0. builds  — move each repo's `BUILD` number up 0.1 if it has
+#                something to ship (bims2_bevy shows it in the corner)
 #   1. gitgo   — add / commit / push every git repo under the root
 #   2. *update — bump each private flake input whose branch has moved
 #                (bobbyupdate, wormsupdate, todoupdate, makinglistupdate)
@@ -107,6 +109,48 @@ done
 [[ -t 0 ]] || { err "this script is interactive — run it from a terminal"; exit 1; }
 (( DRY_RUN )) && warn "dry-run: nothing is pushed, bumped or deployed"
 
+# ------------------------------------------------------- 0. builds ---
+
+# A repo with a `BUILD` file at its top holding one number (`0.1`) counts
+# its shipped builds: each ship that has something of it to push moves the
+# number up a tenth (0.9 -> 1.0) before gitgo commits it, so the build on
+# the server carries the new number. Nothing to push, nothing bumped.
+
+BUILDS=()
+
+bump_build() {
+    local repo="$1" name="${1#$ROOT/}" file="$1/BUILD" now major minor next
+    now="$(tr -d '[:space:]' <"$file")"
+    [[ $now =~ ^([0-9]+)\.([0-9])$ ]] || return 0      # not a build number
+    major=${BASH_REMATCH[1]} minor=${BASH_REMATCH[2]}
+    if [[ -z "$(git -C "$repo" status --porcelain 2>/dev/null)" ]] &&
+        git -C "$repo" rev-parse --abbrev-ref '@{upstream}' >/dev/null 2>&1 &&
+        [[ -z "$(git -C "$repo" log --oneline '@{upstream}..HEAD' 2>/dev/null)" ]]; then
+        info "${DIM}$name: build $now — nothing to ship${RESET}"
+        return 0
+    fi
+    if (( minor == 9 )); then next="$(( major + 1 )).0"; else next="$major.$(( minor + 1 ))"; fi
+    if (( DRY_RUN )); then
+        printf '%s[dry-run]%s %s: build %s -> %s\n' "$DIM" "$RESET" "$name" "$now" "$next"
+    else
+        printf '%s\n' "$next" >"$file"
+        ok "$name: build $now -> $next"
+    fi
+    BUILDS+=("${repo##*/} $next")
+}
+
+if (( DO_GIT )); then
+    mapfile -t BUILD_REPOS < <(
+        find "$ROOT" -maxdepth 3 -type d -name .git -prune 2>/dev/null \
+            | sed 's|/\.git$||' | sort \
+            | while read -r repo; do [[ -f $repo/BUILD ]] && printf '%s\n' "$repo"; done
+    )
+    if (( ${#BUILD_REPOS[@]} )); then
+        header "builds"
+        for repo in "${BUILD_REPOS[@]}"; do bump_build "$repo"; done
+    fi
+fi
+
 # ---------------------------------------------------------- 1. gitgo ---
 
 if (( DO_GIT )); then
@@ -205,6 +249,7 @@ report() {
 }
 
 header "summary"
+report 'builds'    "$GREEN"  "${BUILDS[@]}"
 report 'bumped'    "$GREEN"  "${BUMPED[@]}"
 report 'unchanged' "$DIM"    "${UNCHANGED[@]}"
 report 'skipped'   "$YELLOW" "${SKIPPED[@]}"

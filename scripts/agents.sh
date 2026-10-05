@@ -49,7 +49,18 @@ jobdir() {
     [[ -d $JOBS/$id ]] || die "no job #$((10#$id))"
     echo "$JOBS/$id"
 }
-all_jobs() { ls -d "$JOBS"/[0-9]* 2>/dev/null | sort -V; }
+# Every job dir in list order, which is the queue order too: by number, unless
+# a job was moved (move_job) -- then its place is in $jd/order.
+keyed_jobs() {
+    local jd k
+    for jd in "$JOBS"/[0-9]*; do
+        [[ -d $jd ]] || continue
+        k=$((10#${jd##*/}))
+        [[ -f $jd/order ]] && read -r k < "$jd/order"
+        echo "$k $jd"
+    done | sort -n
+}
+all_jobs() { keyed_jobs | cut -d' ' -f2-; }
 job_id() { echo $((10#$(basename "$1"))); }
 first_line() { local l; IFS= read -r l < "$1"; printf '%s' "$l"; }
 # claude writes no transcript for a child session (see the env scrub in cmd_run): no resume then.
@@ -57,6 +68,9 @@ has_transcript() { [[ -f $1/transcript && -f $(<"$1/transcript") ]]; }
 # Statuses: queued -> running (working on a turn) -> done | asks (turn
 # finished, the window waits for you) -> exited (window closed; open again to
 # resume) | failed | killed. Only "running" agents hold a queue slot.
+# A running agent whose window has a dialog open (a permission question) keeps
+# the status -- the turn is not over -- and is marked by the file $jd/ask,
+# which holds what it waits for; it shows as asking too (see status_line).
 alive() { [[ $1 == running || $1 == done || $1 == asks ]]; }
 
 # ---------------------------------------------------------------- scheduling
@@ -170,11 +184,17 @@ Rules for sharing the directory:
 - Coordination notes: read $NOTES before you start; append a dated line there when you do something the others should know (a rename, a moved file, a changed interface).
 EOT
 }
+# Notification tells us the window waits for an answer (a permission question,
+# an MCP dialog): the turn is not over, so no Stop hook comes. PreToolUse says
+# what the dialog will be about, PostToolUse and PermissionDenied that the
+# answer is in -- those two only clear the flag.
 hooks_json() {
-    local cmd="'$SELF' __hook '$1'" ev out="{\"hooks\":{" sep=""
+    local cmd="'$SELF' __hook '$1'" ev m out="{\"hooks\":{" sep=""
     cmd=${cmd//\\/\\\\}; cmd=${cmd//\"/\\\"}
-    for ev in SessionStart UserPromptSubmit Stop; do
-        out+="$sep\"$ev\":[{\"hooks\":[{\"type\":\"command\",\"command\":\"$cmd $ev\",\"timeout\":10}]}]"; sep=","
+    for ev in SessionStart UserPromptSubmit Stop Notification PreToolUse PostToolUse PermissionDenied; do
+        m=""
+        [[ $ev == Notification ]] && m="\"matcher\":\"permission_prompt|agent_needs_input|elicitation_dialog|elicitation_url_dialog\","
+        out+="$sep\"$ev\":[{$m\"hooks\":[{\"type\":\"command\",\"command\":\"$cmd $ev\",\"timeout\":10}]}]"; sep=","
     done
     echo "$out}}"
 }
@@ -184,7 +204,9 @@ cmd_term() {
     printf -v title 'agent #%s: %s' "$(job_id "$jd")" "$(first_line "$jd/prompt")"
     title=${title:0:80}
     case $TERM_APP in
-        kitty)     exec kitty --class "$(<"$jd/class")" --title "$title" -d "$DIR" "$SELF" __run "$jd" ;;
+        # remember_window_size also restores the last closed kitty's maximized
+        # state: the agent would come over maximized and cover the UI.
+        kitty)     exec kitty -o remember_window_size=no --class "$(<"$jd/class")" --title "$title" -d "$DIR" "$SELF" __run "$jd" ;;
         foot)      exec foot --app-id "$(<"$jd/class")" --title "$title" -D "$DIR" "$SELF" __run "$jd" ;;
         alacritty) exec alacritty --class "$(<"$jd/class")" --title "$title" --working-directory "$DIR" -e "$SELF" __run "$jd" ;;
         *)         exec "$TERM_APP" -e "$SELF" __run "$jd" ;;
@@ -222,21 +244,61 @@ cmd_run() {
     locked fill_slots
 }
 # Hook inside the session (stdin: its JSON). The session id changes on /clear and /resume.
+# While a dialog is open in the window claude writes nothing to the transcript
+# -- not even the tool_use that opened it -- so the app would see the agent
+# working on its last tool forever. These two files say otherwise:
+#   $jd/tool  what it is about to do (PreToolUse), the line to show for it
+#   $jd/ask   what the open dialog waits for; gone means nobody waits
 cmd_hook() {
-    local jd=$1 ev=$2 sid tp asks busy last
-    { read -r sid; read -r tp; read -r asks; read -r busy; IFS= read -r last; } < <(perl -MJSON::PP -e '
+    local jd=$1 ev=$2 sid tp asks busy kind msg tool last line
+    # The answer is in. Nothing to read, and these run on every tool call.
+    case $ev in
+        PostToolUse|PermissionDenied) rm -f "$jd/ask" "$jd/tool"; return ;;
+    esac
+    { read -r sid; read -r tp; read -r asks; read -r busy; read -r kind; IFS= read -r msg; IFS= read -r tool; IFS= read -r last; } < <(perl -MJSON::PP -e '
         local $/; my $j = eval { decode_json(<STDIN>) } or exit;
         my $m = $j->{last_assistant_message} // "";
         my ($tail) = (grep { /\S/ } split /\n/, $m)[-1] // "";
         (my $one = $m) =~ s/\s+/ /g;
         my $bg = ref $j->{background_tasks} eq "ARRAY" ? scalar @{ $j->{background_tasks} } : 0;
-        print $j->{session_id} // "", "\n", $j->{transcript_path} // "", "\n", ($tail =~ /\?/ ? 1 : 0), "\n$bg\n$one\n";')
+        (my $msg = $j->{message} // "") =~ s/\s+/ /g;
+        # The tool, shown the way activity() shows it: a question by its question.
+        my ($name, $i, $t) = ($j->{tool_name} // "", $j->{tool_input} || {}, "");
+        if ($name ne "") {
+            if ($name eq "AskUserQuestion") {
+                $t = "? " . join " ", map { $_->{question} // "" } @{ $i->{questions} || [] };
+            } else {
+                $t = "$name: " . ($i->{command} // $i->{file_path} // $i->{pattern} // $i->{description} // $i->{prompt} // $i->{query} // "");
+            }
+            $t =~ s/\s+/ /g;
+        }
+        print $j->{session_id} // "", "\n", $j->{transcript_path} // "", "\n", ($tail =~ /\?/ ? 1 : 0),
+              "\n$bg\n", $j->{notification_type} // "", "\n$msg\n$t\n$one\n";')
     [[ -n $sid ]] && echo "$sid" > "$jd/session"
     [[ -n $tp ]] && echo "$tp" > "$jd/transcript"
     case $ev in
+        PreToolUse) printf '%s\n' "$tool" > "$jd/tool" ;;
+        Notification)
+            # A dialog is open in the window. The matcher keeps the
+            # notifications that do not wait for you out; when a claude version
+            # ignores it, the kind does.
+            case $kind in
+                ""|permission_prompt|agent_needs_input|elicitation*) ;;
+                *) return ;;
+            esac
+            msg=${msg:-waiting for you}
+            tool=$(rd "$jd/tool")
+            case $tool in
+                "? "*) line=$tool ;;              # a question: the question is the whole story
+                "")    line=$msg ;;
+                *)     line="$msg -- $tool" ;;    # "Claude needs your permission -- Bash: rm x"
+            esac
+            printf '%s\n' "$line" > "$jd/ask" ;;
         UserPromptSubmit)
+            rm -f "$jd/ask"
             alive "$(rd "$jd/status")" && echo running > "$jd/status" ;;
         Stop)
+            rm -f "$jd/ask"
             printf '%s\n' "$last" > "$jd/last"
             # Background tasks still running: the agent gets woken again when they finish.
             (( busy )) && return
@@ -249,7 +311,9 @@ cmd_hook() {
 }
 
 # ---------------------------------------------------------------- transcript
-# "? question" while an AskUserQuestion waits: that blocks the turn, so no Stop hook.
+# "? question" for an AskUserQuestion nothing has answered. claude writes the
+# tool_use only once the dialog is gone, so this sees the question after the
+# fact; $jd/ask (the Notification hook) is what catches it while it waits.
 activity() {
     [[ -s ${1:-} ]] || { echo "(starting)"; return; }
     tail -n 40 "$1" | perl -MJSON::PP -e '
@@ -381,14 +445,18 @@ cmd_hide() {
 }
 
 # ---------------------------------------------------------------- commands
-# Groups, top to bottom: closed, finished (done/asks), working+queued; a rule between.
+# Groups, top to bottom: closed, finished (done/asks), working+queued; a rule
+# between. An agent whose window waits for an answer counts as asking, whether
+# its turn ended on a question (status asks) or a dialog blocks it ($jd/ask).
 render_status() {
-    local jd id st mode with dur line width=${1:-$(tput cols 2>/dev/null || echo 120)}
+    local jd st0 id st mode with dur line width=${1:-$(tput cols 2>/dev/null || echo 120)}
     local nrun=0 nwait=0 nq=0 nask=0 prefix='                                  > '
     local closed=() finished=() rest=() group printed=0
     locked reap
     for jd in $(all_jobs); do
-        case $(rd "$jd/status") in
+        st0=$(rd "$jd/status")
+        [[ $st0 == running && -f $jd/ask ]] && st0=asks
+        case $st0 in
             done|asks) finished+=("$jd") ;;
             exited|failed|killed) closed+=("$jd") ;;
             *) rest+=("$jd") ;;
@@ -404,23 +472,31 @@ render_status() {
 }
 # Counts into render_status's locals.
 status_line() {
-    local jd=$1
+    local jd=$1 ask=""
     id=$(job_id "$jd"); st=$(rd "$jd/status"); mode=$(rd "$jd/mode")
     with=$(rd "$jd/with"); [[ -n $with ]] && mode="with #$with"
     [[ $st == queued && -f $jd/hold ]] && st=held
+    # A dialog waits in the window: the turn is not over, but it is on you now.
+    [[ $st == running && -f $jd/ask ]] && { st=asks; ask=$(rd "$jd/ask"); }
     case $st in
         queued|held) dur=-; ((nq++)) ;;
         running) dur=$(fmt_dur $(( $(now) - $(rd "$jd/started") ))); ((nrun++)) ;;
-        done|asks)  # the time stops when the turn ended
-            dur=$(fmt_dur $(( $(rd "$jd/turn" || now) - $(rd "$jd/started") )))
-            case $st in asks) ((nask++)) ;; *) ((nwait++)) ;; esac ;;
+        asks)
+            ((nask++))
+            if [[ -n $ask ]]; then dur=$(fmt_dur $(( $(now) - $(rd "$jd/started") )))    # still in its turn
+            else dur=$(fmt_dur $(( $(rd "$jd/turn" || now) - $(rd "$jd/started") ))); fi ;;
+        done)    # the time stops when the turn ended
+            dur=$(fmt_dur $(( $(rd "$jd/turn" || now) - $(rd "$jd/started") ))); ((nwait++)) ;;
         *)       dur=$(fmt_dur $(( $(rd "$jd/ended" || now) - $(rd "$jd/started" || rd "$jd/created") ))) ;;
     esac
     printf -v line ' #%-3s %-8s %-8s %7s  %s' "$id" "$st" "$mode" "$dur" "$(first_line "$jd/prompt")"
     echo "${line:0:width}"
     case $st in
         running) line="$prefix$(activity "$(rd "$jd/transcript")")"; echo "${line:0:width}" ;;
-        asks)    line="$prefix$(rd "$jd/last")"; echo "${line:0:width}" ;;
+        asks)
+            if [[ -n $ask ]]; then line="$prefix$ask"
+            else line="$prefix$(rd "$jd/last")"; fi
+            echo "${line:0:width}" ;;
         failed)  [[ -s $jd/err ]] && { line="$prefix$(first_line "$jd/err")"; echo "${line:0:width}"; } ;;
     esac
 }
@@ -468,6 +544,34 @@ cmd_edit() {
     case ${1:-} in -f|--file) prompt=$(<"$2") ;; ?*) prompt=$* ;; *) prompt=$(cat) ;; esac
     [[ -n ${prompt//[[:space:]]/} ]] || die "empty prompt"
     locked set_prompt "$jd" "$prompt" && echo "#$(job_id "$jd") prompt changed: $(first_line <(printf '%s\n' "$prompt"))"
+}
+cmd_move() {
+    local jd before=""; jd=$(jobdir "${1:-}") || exit 1
+    case ${2:-} in
+        end|-) ;;
+        "") die "move N M puts queued #N right before #M, move N end at the end of the queue" ;;
+        *) before=$(jobdir "$2") || exit 1 ;;
+    esac
+    locked move_job "$jd" "$before" || exit 1
+    if [[ $before == "$jd" ]]; then echo "#$(job_id "$jd") stays where it is"
+    elif [[ -n $before ]]; then echo "#$(job_id "$jd") moved before #$(job_id "$before")"
+    else echo "#$(job_id "$jd") moved to the end of the queue"; fi
+}
+# Under lock. Queued $1 goes right before $2 in the list, or to its end when $2
+# is empty. The places are shuffled among the jobs (a new job's number is past
+# all of them), so the others keep their order and new ones still come last.
+move_job() {
+    local jd=$1 before=$2 k j keys=() seq=() i
+    [[ $(rd "$jd/status") == queued ]] || die "#$(job_id "$jd") is not queued any more"
+    [[ $jd == "$before" ]] && return
+    while read -r k j; do
+        keys+=("$k")
+        [[ $j == "$jd" ]] && continue
+        [[ $j == "$before" ]] && seq+=("$jd")
+        seq+=("$j")
+    done < <(keyed_jobs)
+    [[ -z $before ]] && seq+=("$jd")
+    for i in "${!seq[@]}"; do echo "${keys[i]}" > "${seq[i]}/order"; done
 }
 # Under lock.
 set_prompt() {
@@ -524,6 +628,7 @@ cmd_show() {
     local jd; jd=$(jobdir "$1") || exit 1
     echo "#$1  $(rd "$jd/status")  mode=$(rd "$jd/mode")$( [[ -s $jd/with ]] && echo " with=#$(<"$jd/with")")  perm=$(rd "$jd/perm")  session=$(rd "$jd/session")  window=$(rd "$jd/class")"
     echo "--- prompt"; cat "$jd/prompt"
+    [[ -s $jd/ask ]] && { echo "--- waiting for you"; cat "$jd/ask"; }
     [[ -s $jd/last ]] && { echo "--- last message"; cat "$jd/last"; }
     [[ -s $jd/err ]] && { echo "--- error"; cat "$jd/err"; }
     return 0
@@ -558,6 +663,7 @@ usage: agents [command] [args]      (opens agents in: $DIR)
        (no PROMPT: read stdin, or open \$EDITOR when interactive)
   hold N | release N   keep queued #N (and the queue behind it) from starting | let it go again
   edit N [PROMPT]      replace the prompt of queued #N (argument, -f file, or stdin)
+  move N M | move N end   queued #N goes right before #M | to the end of the queue (numbers stay)
   status               text overview       watch        overview, refreshed every 2 s
   (nothing)            the app: overview + micro prompt box (Enter sends, Tab queue/parallel, Shift+Tab with #N,
                        Ctrl+V puts a screenshot from the clipboard in the box beside it)
@@ -602,6 +708,7 @@ case $cmd in
     hold|pause) cmd_hold "$@" ;;
     release|unhold) cmd_release "$@" ;;
     edit) cmd_edit "$@" ;;
+    move|mv) cmd_move "$@" ;;
     clear|clean) cmd_clear ;;
     notes) cat "$NOTES" ;;
     usage) cmd_usage ;;
