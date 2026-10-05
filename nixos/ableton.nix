@@ -1,7 +1,10 @@
 { pkgs, ... }:
 
 let
-  wineasio = pkgs.wineasio.overrideAttrs (old: {
+  wine = pkgs.wineWow64Packages.unstableFull;
+  wineasio = (pkgs.wineasio.override {
+    wineWow64Packages = pkgs.wineWow64Packages // { stable = wine; };
+  }).overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
       sed -i '/mlockall(MCL_FUTURE);/d' asio.c
     '';
@@ -9,7 +12,7 @@ let
 in
 {
   environment.systemPackages = with pkgs; [
-    wineWow64Packages.stable
+    wine
     winetricks
     wineasio
     (let
@@ -28,6 +31,9 @@ in
       export WINEDLLPATH="${wineasioDlls}"
       export PIPEWIRE_LATENCY="''${PIPEWIRE_LATENCY:-128/48000}"
       rm -f "$WINEPREFIX/dosdevices/z:"
+      if [ -f "$WINEPREFIX/system.reg" ] && [ "$(cat "$WINEPREFIX/.nix-wine" 2>/dev/null)" != "${wine}" ]; then
+        (cd "$WINEPREFIX/drive_c" && wineboot -u && wineserver -w) && echo "${wine}" > "$WINEPREFIX/.nix-wine"
+      fi
       case "$1" in
         setup)
           wineboot --init
