@@ -160,8 +160,6 @@
 
   # Open images in umpv. umpv.desktop doesn't list image types in MimeType=,
   # so register the association too, or KDE (Dolphin) won't offer it.
-  # Audio opens in umpv too; umpv.desktop already lists audio types, so it
-  # only needs the default.
   # ~/.config/mimeapps.list still wins per type if it names something else.
   xdg.mime = let
     images = map (t: "image/${t}") [

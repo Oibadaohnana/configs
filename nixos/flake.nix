@@ -74,6 +74,7 @@
         ./garbage_collect.nix
         ./hardware/desktop.nix
         ./vm.nix
+        ./ableton.nix
         { networking.hostName = "benji-desktop"; }
       ];
     };
