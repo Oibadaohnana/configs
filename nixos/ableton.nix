@@ -1,5 +1,12 @@
 { pkgs, ... }:
 
+let
+  wineasio = pkgs.wineasio.overrideAttrs (old: {
+    postPatch = (old.postPatch or "") + ''
+      sed -i '/mlockall(MCL_FUTURE);/d' asio.c
+    '';
+  });
+in
 {
   environment.systemPackages = with pkgs; [
     wineWow64Packages.stable
@@ -42,7 +49,16 @@
           ;;
       esac
     '')
+    (makeDesktopItem {
+      name = "ableton";
+      desktopName = "Ableton Live 10";
+      exec = "ableton %u";
+      mimeTypes = [ "x-scheme-handler/ableton" ];
+      noDisplay = true;
+    })
   ];
+
+  xdg.mime.defaultApplications."x-scheme-handler/ableton" = "ableton.desktop";
 
   services.pipewire.jack.enable = true;
   security.rtkit.enable = true;
