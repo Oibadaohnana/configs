@@ -356,6 +356,7 @@ hl.bind(mod .. " + P",      hl.dsp.exec_cmd("wdisplays"))
 hl.bind(mod .. " + D",      hl.dsp.exec_cmd(menu))
 -- Meta+V = Show Clipboard (matches Plasma)
 hl.bind(mod .. " + V",      hl.dsp.exec_cmd("cliphist list | rofi -dmenu | cliphist decode | wl-copy"))
+hl.bind(mod .. " + Y",      hl.dsp.exec_cmd("umpv \"$(wl-paste)\""))
 -- Meta+End = Toggle gaming display (matches Plasma)
 -- Routed through monitors.sh rather than calling hl.monitor() here, so the
 -- choice lands in the saved state and survives a logout like any other display

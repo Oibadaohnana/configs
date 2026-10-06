@@ -113,7 +113,15 @@
     # when the playlist moves on to a real video. Passed via --include because
     # there's no home-manager to own ~/.config/mpv; umpv execs this wrapper.
     (mpv.override {
+      scripts = [ mpvScripts.sponsorblock ];
       extraMakeWrapperArgs = [
+        "--add-flags" "--include=${writeText "mpv-youtube.conf" ''
+          cache=yes
+          demuxer-max-bytes=1GiB
+          demuxer-max-back-bytes=256MiB
+          demuxer-readahead-secs=600
+          ytdl-format=bestvideo[height<=?1440]+bestaudio/best
+        ''}"
         "--add-flags" "--include=${writeText "mpv-images.conf" ''
           [image]
           profile-cond=get("current-tracks/video/image", false) and not get("current-tracks/video/albumart", false)
