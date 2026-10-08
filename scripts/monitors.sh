@@ -428,10 +428,16 @@ restart_waybar() {
 cmd_fixbars() {
     # Hyprland reports the new geometry a moment after it settles, and a check
     # against a half-finished layout would either miss a stranded bar or
-    # invent one.
-    sleep 0.5
-    [[ -n $(stranded_bars) ]] || return 0
-    restart_waybar
+    # invent one. Nor is one look enough: a monitor that blinks off and on
+    # again moves the outputs twice, and a bar recreated between the two moves
+    # is placed against the first layout and stranded by the second -- with
+    # nothing left to look again, it stays gone for the rest of the session.
+    # So keep checking, restart included, until the bars have stayed put.
+    local delay
+    for delay in 0.5 1 2 4; do
+        sleep "$delay"
+        [[ -z $(stranded_bars) ]] || restart_waybar
+    done
 }
 
 notify() {
@@ -758,7 +764,7 @@ case "${1:-}" in
     # of this arrives while the first is still working. Taking turns means the
     # second one reads a settled monitor list and finds nothing left to do.
     hotplug) exec 9>"$RUNTIME_DIR/monitors-hotplug.lock"
-             flock -w 20 9 || exit 0
+             flock -w 40 9 || exit 0
              cmd_hotplug ;;
     list)    monitor_list ;;
     *)

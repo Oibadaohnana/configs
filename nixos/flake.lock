@@ -28,11 +28,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791311135,
-        "narHash": "sha256-mO8s4IpgEIgqdYs3QOnGst67d8p+OalLlvHC282rZJ4=",
+        "lastModified": 1791392552,
+        "narHash": "sha256-7iaxlkhPY+H4nxFmjbXVUthQlDwkQPm5OqUBQd05DXE=",
         "ref": "main",
-        "rev": "04b428a68d05a52ee431bd7deec4644c2f567501",
-        "revCount": 433,
+        "rev": "5b94990df6d207c69c94319264167e96a0a56eeb",
+        "revCount": 464,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/bims_bevy"
       },
@@ -104,11 +104,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1790185690,
-        "narHash": "sha256-xJ+X4hBtOcAFGBOe5nAMyMUeF9foJBmIOu3NjBqBycU=",
+        "lastModified": 1791260994,
+        "narHash": "sha256-Miqqk/ammqnTUxaoCyvtwoPeLbI1ksFyLxi/CazZpWY=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "4975466d324710c576dc11ad614684e6bd8cad8e",
+        "rev": "151fa4e8ddfdd8dd25d945ad94ed54a13de9f6e4",
         "type": "github"
       },
       "original": {
@@ -160,11 +160,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790498116,
-        "narHash": "sha256-rs9meAYxW3zzrh43yaW7htrqCD+X9+pupDPHN86fumI=",
+        "lastModified": 1791103873,
+        "narHash": "sha256-nFxM+pKoZ8LJAEnUXARyCaOAloWgaW9kZQOSjWzKcTE=",
         "owner": "Mic92",
         "repo": "sops-nix",
-        "rev": "5efb5a6f4f5ab192817d28557dd4d650fa14d866",
+        "rev": "dcd241ba97088c22569d1573286e1b9daad340c0",
         "type": "github"
       },
       "original": {

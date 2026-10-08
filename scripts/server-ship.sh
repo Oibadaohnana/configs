@@ -7,12 +7,13 @@
 #   1. gitgo   — add / commit / push every git repo under the root
 #   2. *update — bump each private flake input whose branch has moved
 #                (bobbyupdate, wormsupdate, todoupdate, makinglistupdate)
-#   3. bsyssl  — build here, copy the closure over, switch the server
+#   3. bsyss   — build on the server and switch it there
+#                (--local: bsyssl — build here, copy the closure over)
 #
 # The inputs are read out of flake.lock, so a new game repo is picked up
 # without touching this script.
 #
-# Usage: ./server-ship.sh [--root DIR] [--dry-run] [--yes]
+# Usage: ./server-ship.sh [--root DIR] [--dry-run] [--yes] [--local]
 #                         [--no-git] [--no-update] [--no-deploy]
 
 set -uo pipefail
@@ -25,6 +26,7 @@ SSH_KEY="${GIT_BATCH_SSH_KEY:-$HOME/.ssh/id_ed25519}"
 ROOT="$PWD"                                    # gitgo alias passes --root "$PWD"
 DRY_RUN=0 ASSUME_YES=0
 DO_GIT=1 DO_UPDATE=1 DO_DEPLOY=1
+BUILD_LOCAL=0
 
 # ---------------------------------------------------------------- ui ---
 
@@ -95,6 +97,7 @@ while (( $# )); do
         --root)      ROOT="$2"; shift 2 ;;
         --dry-run)   DRY_RUN=1; shift ;;
         -y|--yes)    ASSUME_YES=1; shift ;;
+        --local)     BUILD_LOCAL=1; shift ;;
         --no-git)    DO_GIT=0; shift ;;
         --no-update) DO_UPDATE=0; shift ;;
         --no-deploy) DO_DEPLOY=0; shift ;;
@@ -220,22 +223,34 @@ if (( DO_UPDATE )); then
     fi
 fi
 
-# --------------------------------------------------------- 3. bsyssl ---
+# ------------------------------------------------- 3. bsyss / bsyssl ---
 
 DEPLOY_RC=0
 
+if (( BUILD_LOCAL )); then
+    DEPLOY_NAME=bsyssl
+    DEPLOY_ARGS=(--cores 0)
+    DEPLOY_WHERE="build here, switch $TARGET"
+    DEPLOY_ASK="build the server closure locally and deploy it?"
+else
+    DEPLOY_NAME=bsyss
+    DEPLOY_ARGS=(--build-host "$TARGET")
+    DEPLOY_WHERE="build on and switch $TARGET"
+    DEPLOY_ASK="build the server closure on the server and deploy it?"
+fi
+
 if (( DO_DEPLOY )); then
-    header "bsyssl — build here, switch $TARGET"
-    if confirm "build the server closure locally and deploy it?" y; then
+    header "$DEPLOY_NAME — $DEPLOY_WHERE"
+    if confirm "$DEPLOY_ASK" y; then
         run nixos-rebuild switch \
-            --cores 0 \
+            "${DEPLOY_ARGS[@]}" \
             --flake "$FLAKE_DIR#server" \
             --target-host "$TARGET" \
             --ask-sudo-password
         DEPLOY_RC=$?
         (( DEPLOY_RC == 0 )) && ok "server switched" || err "deploy failed (rc=$DEPLOY_RC)"
     else
-        warn "deploy skipped — run bsyssl when ready"
+        warn "deploy skipped — run $DEPLOY_NAME when ready"
     fi
 fi
 
