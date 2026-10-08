@@ -66,14 +66,6 @@
   # GParted alternative; module also registers kpmcore polkit helper.
   programs.partition-manager.enable = true;
 
-  programs.firefox = {
-    enable = true;
-    preferences = {
-      "media.mediasource.eviction_threshold.video" = 524288000;
-      "media.mediasource.eviction_threshold.audio" = 67108864;
-    };
-  };
-
   # Polkit auth agent -- Hyprland starts none, so privileged prompts fail.
   systemd.packages = [ pkgs.hyprpolkitagent ];
   systemd.user.services.hyprpolkitagent.wantedBy = [ "graphical-session.target" ];
@@ -96,6 +88,7 @@
     sops
     age
     ssh-to-age
+    firefox
     adwaita-icon-theme
     # Terminal editor. Nano-style keys (ctrl+s save, ctrl+q quit, ctrl+z undo)
     # but with syntax highlighting and mouse support. Set as EDITOR below.
