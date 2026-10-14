@@ -28,11 +28,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791392552,
-        "narHash": "sha256-7iaxlkhPY+H4nxFmjbXVUthQlDwkQPm5OqUBQd05DXE=",
+        "lastModified": 1791876138,
+        "narHash": "sha256-m/Ai+h4MAgfVKDoJIbt8PaV/EUS0iyxfC3Ocllt41no=",
         "ref": "main",
-        "rev": "5b94990df6d207c69c94319264167e96a0a56eeb",
-        "revCount": 464,
+        "rev": "ae41be76012fcf45c6198f4a31462679e5fcc3b3",
+        "revCount": 476,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/bims_bevy"
       },
@@ -180,11 +180,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789240830,
-        "narHash": "sha256-d7QQDoRMbHikIaJdx2LtXwrUxuXNF4nagqN7kZVvHoc=",
+        "lastModified": 1791449619,
+        "narHash": "sha256-udXbts6I3yiPANG95j7MAFY8/BlCOtFM5GO7RxxBM4Q=",
         "ref": "main",
-        "rev": "186cdf61712a07710c9abba2cc495f56e164819e",
-        "revCount": 4,
+        "rev": "2253082aa48a66e534811930281a8b9d0de94a8e",
+        "revCount": 7,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/split"
       },
