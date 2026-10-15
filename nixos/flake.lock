@@ -28,11 +28,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791876138,
-        "narHash": "sha256-m/Ai+h4MAgfVKDoJIbt8PaV/EUS0iyxfC3Ocllt41no=",
+        "lastModified": 1791996564,
+        "narHash": "sha256-VCkSKr/V0ufBWHIdfSxjWj0Vsm8DLsyZr6VUMJXhjNc=",
         "ref": "main",
-        "rev": "ae41be76012fcf45c6198f4a31462679e5fcc3b3",
-        "revCount": 476,
+        "rev": "efbf6401724663919056da3da793ca6c62dafa06",
+        "revCount": 481,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/bims_bevy"
       },
