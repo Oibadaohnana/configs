@@ -9,6 +9,8 @@
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-amd" ];
   boot.extraModulePackages = [ ];
+  # eDP DMCUB hang (flip_done timeouts, panel frozen) during video: no PSR (0x10) / Panel Replay (0x400)
+  boot.kernelParams = [ "amdgpu.dcdebugmask=0x410" ];
 
   fileSystems."/" = {
     device = "/dev/disk/by-uuid/1b8f61b8-0417-45d2-b60d-d643d9cd4cf8";
