@@ -13,10 +13,12 @@
 //! field of the parallel mode (the prompt then waits until agent #N has
 //! started and opens next to it), Esc moves the focus to the agent list where
 //! single letters run the commands (p holds a queued agent back, e loads its
-//! prompt into micro to change it). The mouse works too: the terminal reports
-//! clicks as SGR escape sequences, which `App::mouse` matches against the
-//! regions registered while drawing (rows, boxes, the mode badge, the help
-//! keys); clicks on micro's screen are forwarded to it.
+//! prompt into micro to change it, m moves it in the queue: before the agent
+//! whose number you type). The mouse works too: the terminal reports clicks as
+//! SGR escape sequences, which `App::mouse` matches against the regions
+//! registered while drawing (rows, boxes, the mode badge, the help keys);
+//! clicks on micro's screen are forwarded to it, and a queued agent's row can
+//! be dragged to another place in the queue.
 //!
 //! micro shows nothing but text, so pictures live beside it: the box on the
 //! right of the prompt takes whatever image is on the clipboard (Ctrl+V, or
@@ -38,7 +40,10 @@ use std::{
 use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtySize};
 use ratatui::{
     crossterm::{
-        event::{DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture},
+        event::{
+            DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+            KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+        },
         execute,
     },
     prelude::*,
@@ -82,6 +87,8 @@ enum Focus {
     With,
     /// The box of pasted screenshots beside the prompt.
     Shots,
+    /// The number of the agent the queued one goes before (m in the list).
+    Move,
 }
 
 struct Job {
@@ -91,9 +98,15 @@ struct Job {
     /// Parallel with this agent: queued until it has started.
     with: Option<u32>,
     prompt: String,
+    /// Its place in the list and the queue: its number, unless it was moved.
+    order: u64,
     since: u64,
-    /// What it does right now (running), its last message (done/asks) or the error (failed).
+    /// What it does right now (running), what the window waits for (asking in
+    /// the middle of a turn), its last message (done, asks) or the error (failed).
     detail: String,
+    /// A dialog is open in its window -- a question it asked, a permission it
+    /// wants -- so it waits for you although its turn is not over.
+    dialog: bool,
     session: String,
 }
 
@@ -175,6 +188,8 @@ enum Act {
     FocusEditor,
     /// One of the list's single-letter commands, as if typed.
     ListKey(u8),
+    /// A key of the move field, as if typed.
+    MoveKey(u8),
     /// The confirm popup's answer.
     Answer(bool),
     /// A help label that has no click action.
@@ -194,6 +209,16 @@ enum Pending {
     Load(u32),
     /// Stop editing that prompt; the draft from before comes back.
     Cancel,
+}
+
+/// A queued agent's row held by the mouse. The list shows it where it would
+/// land; letting go moves it there in the queue.
+struct Drag {
+    id: u32,
+    /// The agent right below it where it was picked up, and where it is now
+    /// (None: the end of the list).
+    from: Option<u32>,
+    before: Option<u32>,
 }
 
 /// micro running in a pty, drawn into the prompt box.
@@ -259,6 +284,11 @@ struct App {
     last_click: Option<(Instant, u16, u16)>,
     /// A button went down on micro's screen: the drag and release are its too.
     drag_editor: bool,
+    /// A queued agent's row is being dragged to another place.
+    drag: Option<Drag>,
+    /// m in the list: this queued agent goes before the one whose number is
+    /// typed ("-" = the end of the queue).
+    moving: Option<(u32, String)>,
 }
 
 fn now() -> u64 {
@@ -332,7 +362,9 @@ fn activity(transcript: &str) -> Activity {
     }
     let buf = String::from_utf8_lossy(&raw);
     let mut last = String::new();
-    // A question dialog the user has not answered yet: its tool_use without a tool_result after it.
+    // A question dialog nobody answered: its tool_use without a tool_result
+    // after it. claude writes the tool_use only once the dialog is gone, so
+    // this finds the question after the fact; `ask` catches it while it waits.
     let mut question: Option<String> = None;
     // The first line may be a partial one when we started mid-file.
     for line in buf.lines().skip(if take < len { 1 } else { 0 }) {
@@ -567,6 +599,8 @@ impl App {
             shots_from: 0,
             last_click: None,
             drag_editor: false,
+            drag: None,
+            moving: None,
             state,
         };
         app.load();
@@ -628,15 +662,32 @@ impl App {
             if status == "queued" && jd.join("hold").exists() {
                 status = "held".into();
             }
+            let mut dialog = false;
             let detail = match status.as_str() {
-                // A question dialog mid-turn shows as asking, like a turn that ended with one.
-                "running" => match activity(&read(&jd.join("transcript"))) {
-                    Activity::Doing(d) => d,
-                    Activity::Asking(q) => {
+                // A dialog open in the window shows as asking, like a turn that
+                // ended with a question: the agent waits for you although its
+                // turn runs on. While it waits, claude writes nothing to the
+                // transcript -- not even the tool_use that opened the dialog --
+                // so what it waits for comes from the script's hooks, in "ask".
+                // The transcript still has the questions answered long ago, and
+                // reading one there is the fallback.
+                "running" => {
+                    let ask = read(&jd.join("ask"));
+                    if !ask.is_empty() {
                         status = "asks".into();
-                        q
+                        dialog = true;
+                        ask
+                    } else {
+                        match activity(&read(&jd.join("transcript"))) {
+                            Activity::Doing(d) => d,
+                            Activity::Asking(q) => {
+                                status = "asks".into();
+                                dialog = true;
+                                q
+                            }
+                        }
                     }
-                },
+                }
                 "done" | "asks" => read(&jd.join("last")),
                 "failed" => read(&jd.join("err")),
                 _ => String::new(),
@@ -647,18 +698,22 @@ impl App {
                 mode: read(&jd.join("mode")),
                 with: read_num(&jd.join("with")).map(|n| n as u32),
                 prompt: read(&jd.join("prompt")),
+                order: read_num(&jd.join("order")).unwrap_or(id as u64),
                 since,
                 detail,
+                dialog,
                 session: read(&jd.join("session")),
             });
         }
         let was = self.selected().map(|j| j.status.clone());
         // Three zones with a rule between them (see `zone`): closed agents at
         // the top, then finished turns (done, asking), then the working and
-        // queued ones at the bottom, each oldest first. An agent you talk to
-        // again is working and drops back down.
-        jobs.sort_by_key(|j| (j.zone(), j.id));
+        // queued ones at the bottom, each oldest first -- the queue's order,
+        // where an agent was moved. An agent you talk to again is working and
+        // drops back down.
+        jobs.sort_by_key(|j| (j.zone(), j.order));
         self.jobs = jobs;
+        self.place_drag();
         // The selection sits on the oldest working agent, the first row below
         // the rules (else the first queued one, else whatever is on top): when
         // nothing (valid) is selected, and when the selected agent is not
@@ -680,6 +735,14 @@ impl App {
             if !self.jobs.iter().any(|j| j.id == id && j.waiting()) {
                 self.editing = None;
                 self.msg = format!("#{id} is not queued any more: Enter sends the prompt as a new agent");
+            }
+        }
+        if let (Focus::Move, Some((id, _))) = (self.focus, &self.moving) {
+            let id = *id;
+            if !self.jobs.iter().any(|j| j.id == id && j.waiting()) {
+                self.moving = None;
+                self.focus = Focus::List;
+                self.msg = format!("#{id} is not queued any more");
             }
         }
     }
@@ -722,7 +785,137 @@ impl App {
     /// The queue goes in order: a queued agent waits behind the first held
     /// queue agent before it (parallel ones are not in the queue).
     fn held_ahead(&self, id: u32) -> Option<u32> {
-        self.jobs.iter().find(|j| j.id < id && j.status == "held" && j.with.is_none() && j.mode != "now").map(|j| j.id)
+        let order = self.jobs.iter().find(|j| j.id == id)?.order;
+        self.jobs
+            .iter()
+            .filter(|j| j.order < order && j.status == "held" && j.with.is_none() && j.mode != "now")
+            .min_by_key(|j| j.order)
+            .map(|j| j.id)
+    }
+
+    // -- moving queued agents
+
+    /// Puts the dragged agent's row where the pointer has it, after `load`
+    /// sorted the list from the files again.
+    fn place_drag(&mut self) {
+        let Some(d) = &self.drag else {
+            return;
+        };
+        let (id, before) = (d.id, d.before);
+        let Some(cur) = self.jobs.iter().position(|j| j.id == id && j.waiting()) else {
+            self.drag = None;
+            self.msg = format!("#{id} is not queued any more");
+            return;
+        };
+        let job = self.jobs.remove(cur);
+        // Only among the working and queued at the bottom; when the agent it
+        // was held above went away or up, the end of the list.
+        let at = before.and_then(|b| self.jobs.iter().position(|j| j.id == b && j.zone() == 2)).unwrap_or(self.jobs.len());
+        self.jobs.insert(at, job);
+        let next = self.jobs.get(at + 1).map(|j| j.id);
+        if let Some(d) = &mut self.drag {
+            d.before = next;
+        }
+    }
+
+    /// The pointer went to screen line `y` while dragging: the row follows it,
+    /// but stays among the working and queued at the bottom.
+    fn drag_to(&mut self, y: u16) {
+        let Some(id) = self.drag.as_ref().map(|d| d.id) else {
+            return;
+        };
+        let (Some(cur), Some(first)) = (self.jobs.iter().position(|j| j.id == id), self.jobs.iter().position(|j| j.zone() == 2)) else {
+            return;
+        };
+        // The table row under the pointer (above the rows it is one before the
+        // first shown, below them past the last) and the agent on it; a rule's
+        // row counts as the agent below it.
+        let row = (y as isize - self.rows_rect.y as isize + self.table.offset() as isize).max(0) as usize;
+        let to = (0..self.jobs.len()).find(|&i| self.row_of(i) >= row).unwrap_or(self.jobs.len() - 1).max(first);
+        if to != cur {
+            let job = self.jobs.remove(cur);
+            self.jobs.insert(to, job);
+        }
+        let before = self.jobs.get(to + 1).map(|j| j.id);
+        if let Some(d) = &mut self.drag {
+            d.before = before;
+        }
+        self.table.select(Some(self.row_of(to)));
+        self.msg = match before {
+            Some(b) => format!("let go: #{id} goes before #{b}"),
+            None => format!("let go: #{id} goes to the end of the queue"),
+        };
+    }
+
+    /// The button came up: the dragged agent moves to where its row is now.
+    fn drop_drag(&mut self) {
+        let Some(d) = self.drag.take() else {
+            return;
+        };
+        self.msg.clear();
+        if d.before != d.from {
+            let to = d.before.map_or("end".to_string(), |b| b.to_string());
+            self.act(&["move", &d.id.to_string(), &to]);
+        }
+    }
+
+    /// Typing in the move field: digits, "-" for the end of the queue,
+    /// Backspace; Enter moves, Esc cancels.
+    fn key_move(&mut self, b: u8) {
+        let Some((_, to)) = &mut self.moving else {
+            self.focus = Focus::List;
+            return;
+        };
+        match b {
+            b'0'..=b'9' if to.len() < 4 => {
+                if to == "-" {
+                    to.clear();
+                }
+                to.push(b as char);
+            }
+            b'-' => *to = "-".into(),
+            0x7f | 0x08 => {
+                to.pop();
+            }
+            0x15 => to.clear(), // Ctrl+U
+            b'\r' | b'\n' => self.do_move(),
+            0x1b => self.key_esc(),
+            _ => {}
+        }
+    }
+
+    /// What Enter in the move field would do: the script's target ("end", or
+    /// the number of a queued agent), or why it cannot.
+    fn move_target(&self) -> Result<String, String> {
+        let Some((id, to)) = &self.moving else {
+            return Err(String::new());
+        };
+        if to == "-" {
+            return Ok("end".into());
+        }
+        let Ok(n) = to.parse::<u32>() else {
+            return Err("the number of the agent it goes before, or - for the end of the queue".into());
+        };
+        match self.jobs.iter().find(|j| j.id == n) {
+            _ if n == *id => Err(format!("that is #{id} itself")),
+            None => Err(format!("there is no agent #{n}")),
+            Some(j) if !j.waiting() => Err(format!("#{n} has started: only queued ones have a place in the queue")),
+            Some(_) => Ok(n.to_string()),
+        }
+    }
+
+    fn do_move(&mut self) {
+        let Some(id) = self.moving.as_ref().map(|m| m.0) else {
+            return;
+        };
+        match self.move_target() {
+            Ok(to) => {
+                self.moving = None;
+                self.focus = Focus::List;
+                self.act(&["move", &id.to_string(), &to]);
+            }
+            Err(e) => self.msg = e,
+        }
     }
 
     fn counts(&self) -> (usize, usize, usize, usize, usize) {
@@ -1096,6 +1289,18 @@ impl App {
                     self.mouse(seq);
                     continue;
                 }
+                if seq.starts_with(b"\x1b[") && seq.ends_with(b"u") {
+                    // A key in the kitty keyboard protocol (see main).
+                    match kitty_key(seq) {
+                        Some((13, KITTY_SHIFT)) if self.focus == Focus::Editor => pass.push(b'\r'), // Shift+Enter: newline
+                        Some((key, mods)) => {
+                            self.flush_pass(&mut pass);
+                            self.input(&legacy_key(key, mods));
+                        }
+                        None => {}
+                    }
+                    continue;
+                }
                 match (self.focus, seq) {
                     (_, b"\x1b") => {
                         self.flush_pass(&mut pass);
@@ -1118,13 +1323,12 @@ impl App {
                     }
                     (Focus::Shots, b"\x1b[A") | (Focus::Shots, b"\x1bOA") => self.move_shot_sel(-1),
                     (Focus::Shots, b"\x1b[B") | (Focus::Shots, b"\x1bOB") => self.move_shot_sel(1),
-                    (Focus::Editor, b"\x1b\r") | (Focus::Editor, b"\x1b\n") => pass.push(b'\r'), // Alt+Enter: newline
                     (Focus::Editor, _) => pass.extend_from_slice(seq),
                     (Focus::List, b"\x1b[A") | (Focus::List, b"\x1bOA") => self.move_sel(-1),
                     (Focus::List, b"\x1b[B") | (Focus::List, b"\x1bOB") => self.move_sel(1),
                     (Focus::List, b"\x1b[5~") => self.move_sel(-10),
                     (Focus::List, b"\x1b[6~") => self.move_sel(10),
-                    (Focus::List, _) | (Focus::With, _) | (Focus::Shots, _) => {}
+                    (Focus::List, _) | (Focus::With, _) | (Focus::Shots, _) | (Focus::Move, _) => {}
                 }
                 continue;
             }
@@ -1173,6 +1377,10 @@ impl App {
                     self.flush_pass(&mut pass);
                     self.key_shots(b);
                 }
+                (Focus::Move, _) => {
+                    self.flush_pass(&mut pass);
+                    self.key_move(b);
+                }
             }
         }
         self.flush_pass(&mut pass);
@@ -1198,6 +1406,24 @@ impl App {
         let wheel = b & 64 != 0;
         let motion = b & 32 != 0;
         let at = |r: Rect| x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height;
+
+        // A queued agent's row in the hand, wherever the pointer is: moving
+        // with the button down takes the row along, letting go puts it there.
+        if self.drag.is_some() {
+            if motion && b & 3 == 0 {
+                self.drag_to(y);
+                return;
+            }
+            if release {
+                self.drop_drag();
+            }
+            if release || motion || wheel {
+                return;
+            }
+            // A press: the release got lost (let go outside the window), so
+            // the drag ended where the row is now.
+            self.drop_drag();
+        }
 
         // micro gets every event on its screen, and the rest of a drag that started there.
         if self.editor.is_some() && (self.drag_editor || at(self.editor_rect)) {
@@ -1239,11 +1465,16 @@ impl App {
         }
         let double = self.last_click.is_some_and(|(t, lx, ly)| t.elapsed() < Duration::from_millis(400) && lx == x && ly == y);
         self.last_click = Some((Instant::now(), x, y));
+        // A click anywhere but on the move field's keys gives up typing the number.
+        if self.focus == Focus::Move && !matches!(act, Some(Act::MoveKey(_))) {
+            self.moving = None;
+            self.focus = Focus::List;
+        }
         match act {
             Some(Act::Table) => {
                 let row = (y - self.rows_rect.y) as usize + self.table.offset();
-                if let Some(job) = self.job_at_row(row).map(|i| &self.jobs[i]) {
-                    let id = job.id;
+                if let Some(i) = self.job_at_row(row) {
+                    let (id, waiting) = (self.jobs[i].id, self.jobs[i].waiting());
                     self.msg.clear();
                     self.sel = Some(id);
                     self.sel_manual = true;
@@ -1251,6 +1482,10 @@ impl App {
                     self.focus = Focus::List;
                     if double {
                         self.act(&["open", &id.to_string()]);
+                    } else if waiting {
+                        // Picked up: the motion that follows drags it (see drag_to).
+                        let next = self.jobs.get(i + 1).map(|j| j.id);
+                        self.drag = Some(Drag { id, from: next, before: next });
                     }
                 }
             }
@@ -1283,6 +1518,7 @@ impl App {
                 self.focus = Focus::Editor;
             }
             Some(Act::ListKey(k)) => self.key_list(k),
+            Some(Act::MoveKey(k)) => self.key_move(k),
             _ => {}
         }
     }
@@ -1292,6 +1528,10 @@ impl App {
         self.focus = match self.focus {
             Focus::Editor => Focus::List,
             Focus::List | Focus::With | Focus::Shots => Focus::Editor,
+            Focus::Move => {
+                self.moving = None;
+                Focus::List
+            }
         };
     }
 
@@ -1351,6 +1591,19 @@ impl App {
                         self.focus = Focus::Editor;
                     } else {
                         self.msg = format!("#{id} has started: r queues its prompt again");
+                    }
+                }
+            }
+            b'm' | b'M' => {
+                // A queued agent goes before the one whose number is typed next.
+                if let (Some(id), Some(job)) = (self.sel, self.selected()) {
+                    if job.waiting() {
+                        self.moving = Some((id, String::new()));
+                        self.focus = Focus::Move;
+                        // The selection stays on it while the number is typed.
+                        self.sel_manual = true;
+                    } else {
+                        self.msg = format!("#{id} has started: only queued ones have a place in the queue");
                     }
                 }
             }
@@ -1487,14 +1740,42 @@ fn draw(f: &mut Frame, app: &mut App) -> Rect {
         title = format!(" #{} · {} · {} ", j.id, j.status, &j.session[..j.session.len().min(8)]);
         lines.push(Line::from(cut(&squash(&j.prompt), area.width.saturating_sub(2) as usize)));
         let keys = |s: &str| Span::styled(format!("   {s}"), Style::new().dim());
-        let hold_keys = if app.editing == Some(j.id) { "its prompt is in the box below: Enter there saves it, e cancels" } else { "p holds it back, e changes its prompt" };
+        let hold_keys = if app.editing == Some(j.id) {
+            "its prompt is in the box below: Enter there saves it, e cancels"
+        } else {
+            "p holds it back, e changes its prompt, m or dragging its row moves it"
+        };
+        let moving = app.moving.as_ref().filter(|(id, _)| app.focus == Focus::Move && *id == j.id);
         lines.push(match j.status.as_str() {
+            // m: the number of the agent it goes before is typed here.
+            _ if moving.is_some() => {
+                let to = moving.map(|(_, to)| to.as_str()).unwrap_or("");
+                let (hint, hint_style) = match app.move_target() {
+                    Ok(t) if t == "end" => (format!("⏎ puts #{} at the end of the queue", j.id), Style::new()),
+                    Ok(t) => (format!("⏎ puts #{} right before #{t}", j.id), Style::new()),
+                    Err(e) if to.is_empty() => (e, Style::new().dim()),
+                    Err(e) => (e, Style::new().fg(Color::Red)),
+                };
+                Line::from(vec![
+                    Span::styled("move before agent #", Style::new().bold()),
+                    Span::styled(format!(" {to:<4}▏"), Style::new().fg(Color::Black).bg(Color::White).bold()),
+                    Span::styled(format!("  {hint}"), hint_style),
+                    keys("Esc cancels"),
+                ])
+            }
             "running" => Line::from(vec![Span::styled("now  ", status_style("running")), Span::raw(j.detail.clone())]),
+            // Asking in the middle of its turn: the window has the dialog, so
+            // the way to answer is to go there.
+            "asks" if j.dialog => Line::from(vec![
+                Span::styled("asks  ", status_style("asks")),
+                Span::raw(j.detail.clone()),
+                keys("Enter opens its window to answer"),
+            ]),
             "done" | "asks" => Line::from(vec![Span::styled("said  ", status_style(&j.status)), Span::raw(j.detail.clone())]),
             "failed" => Line::from(vec![Span::styled("error  ", status_style("failed")), Span::raw(j.detail.clone()), keys("Enter opens a new window resuming it, d removes it")]),
             "held" => Line::from(vec![
                 Span::styled("held: does not start whatever frees up, and the queue behind it waits", status_style("held").remove_modifier(Modifier::BOLD)),
-                keys(if app.editing == Some(j.id) { hold_keys } else { "p releases it, e changes its prompt" }),
+                keys(if app.editing == Some(j.id) { hold_keys } else { "p releases it, e changes its prompt, m or dragging its row moves it" }),
             ]),
             "queued" => {
                 let waiting = match j.with {
@@ -1576,7 +1857,7 @@ fn draw(f: &mut Frame, app: &mut App) -> Rect {
     f.render_widget(Paragraph::new(Line::from(left)), chunks[0]);
 
     // The agent table.
-    let list_focused = app.focus == Focus::List;
+    let list_focused = matches!(app.focus, Focus::List | Focus::Move);
     let list_block = frame_block(" agents ", list_focused, Color::Cyan);
     // Its rows: below the border and the header row.
     let list_inner = list_block.inner(chunks[1]);
@@ -1636,7 +1917,14 @@ fn draw(f: &mut Frame, app: &mut App) -> Rect {
         for &(row, _) in &rules {
             rows.insert(row, Row::new(Vec::<Cell>::new()));
         }
-        let highlight = if list_focused { Style::new().reversed() } else { Style::new().bg(Color::DarkGray) };
+        let highlight = if app.drag.is_some() {
+            // The row in the hand.
+            Style::new().fg(Color::Black).bg(Color::Yellow)
+        } else if list_focused {
+            Style::new().reversed()
+        } else {
+            Style::new().bg(Color::DarkGray)
+        };
         let table = Table::new(
             rows,
             [
@@ -1788,7 +2076,7 @@ fn draw(f: &mut Frame, app: &mut App) -> Rect {
             at,
             &[
                 ("⏎", enter_does.as_str(), Act::None),
-                ("Alt+⏎", "newline", Act::None),
+                ("Shift+⏎", "newline", Act::None),
                 ("Tab", "mode", Act::Mode),
                 ("Shift+Tab", "with #", Act::With),
                 ("Ctrl+V", "screenshot", Act::Shots),
@@ -1819,6 +2107,17 @@ fn draw(f: &mut Frame, app: &mut App) -> Rect {
                 ("Tab", "mode", Act::Mode),
             ],
         ),
+        Focus::Move => key_help(
+            &mut app.hits,
+            at,
+            &[
+                ("0-9", "agent it goes before", Act::None),
+                ("-", "end of the queue", Act::MoveKey(b'-')),
+                ("⌫", "delete", Act::MoveKey(0x7f)),
+                ("⏎", "move", Act::MoveKey(b'\r')),
+                ("Esc", "cancel", Act::MoveKey(0x1b)),
+            ],
+        ),
         Focus::List => key_help(
             &mut app.hits,
             at,
@@ -1831,6 +2130,7 @@ fn draw(f: &mut Frame, app: &mut App) -> Rect {
                 ("r", "retry", Act::ListKey(b'r')),
                 ("p", "hold/release", Act::ListKey(b'p')),
                 ("e", edit_key, Act::ListKey(b'e')),
+                ("m", "move", Act::ListKey(b'm')),
                 ("w", "prompt with", Act::ListKey(b'w')),
                 ("l", "transcript", Act::ListKey(b'l')),
                 ("x", "clear finished", Act::ListKey(b'x')),
@@ -1865,6 +2165,77 @@ fn draw(f: &mut Frame, app: &mut App) -> Rect {
     inner
 }
 
+const KITTY_SHIFT: u8 = 1;
+const KITTY_ALT: u8 = 2;
+const KITTY_CTRL: u8 = 4;
+
+/// A key in the kitty keyboard protocol, `CSI key[:alt] ; mods u`: its code
+/// point and the Shift/Alt/Ctrl bits (Caps and Num Lock left out).
+fn kitty_key(seq: &[u8]) -> Option<(u32, u8)> {
+    let body = std::str::from_utf8(seq.strip_prefix(b"\x1b[")?.strip_suffix(b"u")?).ok()?;
+    let mut fields = body.split(';');
+    let key = fields.next()?.split(':').next()?.parse().ok()?;
+    let mods = match fields.next() {
+        Some(m) => m.split(':').next()?.parse::<u8>().ok()?.saturating_sub(1),
+        None => 0,
+    };
+    Some((key, mods & (KITTY_SHIFT | KITTY_ALT | KITTY_CTRL)))
+}
+
+/// The bytes a legacy terminal sends for a kitty-protocol key: what `input`
+/// and micro understand.
+fn legacy_key(key: u32, mods: u8) -> Vec<u8> {
+    let (shift, alt, ctrl) = (mods & KITTY_SHIFT != 0, mods & KITTY_ALT != 0, mods & KITTY_CTRL != 0);
+    // The keypad has its own codes in the protocol.
+    let nav: &[u8] = match key {
+        57417 => b"\x1b[D",
+        57418 => b"\x1b[C",
+        57419 => b"\x1b[A",
+        57420 => b"\x1b[B",
+        57421 => b"\x1b[5~",
+        57422 => b"\x1b[6~",
+        57423 => b"\x1b[H",
+        57424 => b"\x1b[F",
+        57425 => b"\x1b[2~",
+        57426 => b"\x1b[3~",
+        _ => b"",
+    };
+    if !nav.is_empty() {
+        return nav.to_vec();
+    }
+    let key = match key {
+        57399..=57408 => '0' as u32 + key - 57399,
+        57409 => '.' as u32,
+        57410 => '/' as u32,
+        57411 => '*' as u32,
+        57412 => '-' as u32,
+        57413 => '+' as u32,
+        57414 => '\r' as u32,
+        57415 => '=' as u32,
+        0xe000..=0xf8ff => return Vec::new(), // other functional keys: nothing legacy
+        k => k,
+    };
+    if key == '\t' as u32 && shift {
+        return b"\x1b[Z".to_vec();
+    }
+    let Some(c) = char::from_u32(key) else { return Vec::new() };
+    let mut out = Vec::new();
+    if alt {
+        out.push(0x1b);
+    }
+    match c {
+        'a'..='z' | '@' | '[' | '\\' | ']' | '^' | '_' if ctrl => out.push(c as u8 & 0x1f),
+        ' ' | '2' if ctrl => out.push(0),
+        '/' if ctrl => out.push(0x1f),
+        '\x7f' if ctrl => out.push(0x08),
+        _ => {
+            let c = if shift { c.to_ascii_uppercase() } else { c };
+            out.extend_from_slice(c.encode_utf8(&mut [0; 4]).as_bytes());
+        }
+    }
+    out
+}
+
 fn main() {
     let mut app = match App::new() {
         Ok(a) => a,
@@ -1874,7 +2245,15 @@ fn main() {
         }
     };
     let mut term: DefaultTerminal = ratatui::init();
-    let _ = execute!(io::stdout(), EnableBracketedPaste, EnableMouseCapture);
+    // Shift+Enter is a plain \r in a legacy terminal; the kitty keyboard
+    // protocol (kitty, foot, alacritty, ...) tells it apart. Pushed on the
+    // alternate screen, so the shell gets its keyboard back even after a crash.
+    let _ = execute!(
+        io::stdout(),
+        EnableBracketedPaste,
+        EnableMouseCapture,
+        PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
+    );
 
     // The keyboard, as raw bytes: most of them are for micro.
     let (tx, rx) = mpsc::channel::<Vec<u8>>();
@@ -1926,6 +2305,6 @@ fn main() {
     if let Some(mut ed) = app.editor.take() {
         let _ = ed.child.kill();
     }
-    let _ = execute!(io::stdout(), DisableMouseCapture, DisableBracketedPaste);
+    let _ = execute!(io::stdout(), PopKeyboardEnhancementFlags, DisableMouseCapture, DisableBracketedPaste);
     ratatui::restore();
 }

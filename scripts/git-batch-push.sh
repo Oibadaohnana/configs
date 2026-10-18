@@ -236,13 +236,12 @@ for repo in "${REPOS[@]}"; do
     count="$(counter_get "$repo")"
     next=$(( count + 1 ))
 
-    info "  ${DIM}commit #$next for this repo (edit the line below as you like)${RESET}"
-    msg=''
-    while [[ -z ${msg// } ]]; do
-        read -e -r -i "[#${next}${HOST_TAG}] " -p "  message: " msg </dev/tty || { msg=''; break; }
-        [[ -z ${msg// } ]] && echo "  message cannot be empty"
-    done
-    [[ -z ${msg// } ]] && { warn "aborted"; SKIPPED+=("$name"); continue; }
+    # -i only prefills when bash has readline; a nix shell's bash does not,
+    # so an empty line falls back to the tag instead of asking again
+    default_msg="[#${next}${HOST_TAG}]"
+    info "  ${DIM}commit #$next for this repo (edit the line below as you like, empty = $default_msg)${RESET}"
+    read -e -r -i "$default_msg " -p "  message: " msg </dev/tty || { warn "aborted"; SKIPPED+=("$name"); continue; }
+    [[ -z ${msg// } ]] && msg="$default_msg"
 
     if run git commit -m "$msg"; then
         (( DRY_RUN )) || counter_set "$repo" "$next"

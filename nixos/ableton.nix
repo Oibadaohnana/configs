@@ -1,0 +1,71 @@
+{ pkgs, ... }:
+
+let
+  wine = pkgs.wineWow64Packages.unstableFull;
+  wineasio = (pkgs.wineasio.override {
+    wineWow64Packages = pkgs.wineWow64Packages // { stable = wine; };
+  }).overrideAttrs (old: {
+    postPatch = (old.postPatch or "") + ''
+      sed -i '/mlockall(MCL_FUTURE);/d' asio.c
+    '';
+  });
+in
+{
+  environment.systemPackages = with pkgs; [
+    wine
+    winetricks
+    wineasio
+    (let
+      wineasioDlls = runCommand "wineasio-dlls" { } ''
+        for arch in windows unix; do
+          ext=dll; [ $arch = unix ] && ext=dll.so
+          mkdir -p $out/x86_64-$arch
+          for name in wineasio wineasio64; do
+            ln -s ${wineasio}/lib/wine/x86_64-$arch/wineasio64.$ext \
+              $out/x86_64-$arch/$name.$ext
+          done
+        done
+      '';
+    in writeShellScriptBin "ableton" ''
+      export WINEPREFIX="''${WINEPREFIX:-$HOME/.wine-ableton}"
+      export WINEDLLPATH="${wineasioDlls}"
+      export PIPEWIRE_LATENCY="''${PIPEWIRE_LATENCY:-128/48000}"
+      rm -f "$WINEPREFIX/dosdevices/z:"
+      if [ -f "$WINEPREFIX/system.reg" ] && [ "$(cat "$WINEPREFIX/.nix-wine" 2>/dev/null)" != "${wine}" ]; then
+        (cd "$WINEPREFIX/drive_c" && wineboot -u && wineserver -w) && echo "${wine}" > "$WINEPREFIX/.nix-wine"
+      fi
+      case "$1" in
+        setup)
+          wineboot --init
+          wine reg add 'HKCU\Software\Wine\Drivers' /v Audio /t REG_SZ /d alsa /f
+          wine regsvr32 /s wineasio64.dll && echo "WineASIO registered in $WINEPREFIX"
+          ;;
+        install)
+          shift
+          case "$1" in
+            *.msi) wine msiexec /i "$1" ;;
+            *) wine "$1" ;;
+          esac
+          ;;
+        *)
+          exe=$(ls "$WINEPREFIX"/drive_c/ProgramData/Ableton/Live\ 10*/Program/Ableton\ Live\ 10*.exe 2>/dev/null | head -1)
+          [ -n "$exe" ] || { echo "Live 10 not found in $WINEPREFIX -- run 'ableton install <installer>' first" >&2; exit 1; }
+          cd "$WINEPREFIX/drive_c"
+          exec wine "$exe" "$@"
+          ;;
+      esac
+    '')
+    (makeDesktopItem {
+      name = "ableton";
+      desktopName = "Ableton Live 10";
+      exec = "ableton %u";
+      mimeTypes = [ "x-scheme-handler/ableton" ];
+      noDisplay = true;
+    })
+  ];
+
+  xdg.mime.defaultApplications."x-scheme-handler/ableton" = "ableton.desktop";
+
+  services.pipewire.jack.enable = true;
+  security.rtkit.enable = true;
+}
