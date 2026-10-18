@@ -16,6 +16,7 @@
     ./server/games/worms-whup.nix
     ./server/games/bank-bobbery.nix
     ./server/games/bims.nix
+    ./server/games/grimgobber.nix
     ./server/todo.nix
     ./server/makinglist.nix
     ./server/split.nix

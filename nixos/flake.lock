@@ -81,6 +81,27 @@
         "type": "github"
       }
     },
+    "grimgobber": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792336747,
+        "narHash": "sha256-rihdu43BksQcAkVxj4IDi+GFQ1UWIpJEj5w0TqBKoKs=",
+        "ref": "main",
+        "rev": "a652f1acaff1f0ab2b99df40f43d9dc21b2cadd3",
+        "revCount": 10,
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/grimgobber"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/grimgobber"
+      }
+    },
     "makinglist": {
       "inputs": {
         "nixpkgs": [
@@ -124,6 +145,7 @@
         "bims": "bims",
         "bobby-dangling": "bobby-dangling",
         "flake-utils": "flake-utils",
+        "grimgobber": "grimgobber",
         "makinglist": "makinglist",
         "nixpkgs": "nixpkgs",
         "sops-nix": "sops-nix",

@@ -42,6 +42,14 @@
       url = "git+ssh://git@github.com/Oibadaohnana/bims_bevy?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Grimgobber, the Rust Bank Bobbery at grim.buggly.de. Same account, so the
+    # same key reaches it; only the headless server is built from it
+    # (`packages.grimgobber-server`). Two steps to move it: `grimupdate`, then
+    # `bsyssl`.
+    grimgobber = {
+      url = "git+ssh://git@github.com/Oibadaohnana/grimgobber?ref=main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # Shared expenses, split between friends. Same account again, so the same
     # key reaches it, and the same two steps: `splitupdate`, then `bsyss`.
     split = {
@@ -97,7 +105,7 @@
 
       # Only the modules that package something need inputs, so hand them
       # just those rather than the whole inputs set.
-      specialArgs = { inherit (inputs) bobby-dangling worms-whup todo makinglist bank-bobbery split bims; };
+      specialArgs = { inherit (inputs) bobby-dangling worms-whup todo makinglist bank-bobbery split bims grimgobber; };
 
       modules = [
         inputs.sops-nix.nixosModules.sops

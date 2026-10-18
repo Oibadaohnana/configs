@@ -32,6 +32,10 @@ alias splitupdate="nix flake update split --flake /home/benji/nixcfg/nixos"
 # bims.buggly.de is built from it. Same two steps: this moves the pin, bsyssl
 # deploys it.
 alias bimsupdate="nix flake update bims --flake /home/benji/nixcfg/nixos"
+# grimupdate: bump the grimgobber pin to current main -- the door and lobbies
+# at grim.buggly.de are built from it. Same two steps: this moves the pin,
+# bsyssl deploys it.
+alias grimupdate="nix flake update grimgobber --flake /home/benji/nixcfg/nixos"
 alias onesync="onedrive --synchronize --verbose"
 alias geoguessr="electron /home/benji/nixcfg/scripts/webwindow.js"
 alias tmr='nix-shell ~/nixcfg/shells/ --run "python ./nixcfg/scripts/python/timer.py"'
