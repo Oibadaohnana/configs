@@ -142,6 +142,19 @@ monitor_list() {
     '
 }
 
+# hl.monitor() replaces an output's whole rule, so a position-only call resets
+# mode and scale to defaults. Prefix every rule with what the output has now,
+# plus any reserved_area its desc: rule in hyprland.lua sets (not queryable).
+keep_fields() {
+    local desc reserved
+    desc=$(monitor_list | awk -F'\t' -v n="$1" '$1 == n { print $2 }')
+    reserved=$(grep -F "output = \"desc:$desc\"" ~/nixcfg/configs/hyprland.lua \
+        | grep -o 'reserved_area = {[^}]*}' | head -1)
+    monitor_list | awk -F'\t' -v n="$1" -v r="$reserved" '
+        $1 == n && $4 != "" { printf "mode = \"%s\", scale = %s, ", $4, $5 }
+        $1 == n && r != ""  { printf "%s, ", r }'
+}
+
 # "yes" if any two enabled outputs share screen area. Two rectangles miss each
 # other when one ends before the other starts on either axis, so they intersect
 # only when neither axis separates them.
@@ -285,14 +298,14 @@ cmd_layout() {
     local lua="" y=$PARK_Y
     while read -r name lw lh; do
         [[ -n $name ]] || continue
-        lua+="hl.monitor({ output = \"$name\", position = \"0x${y}\" }) "
+        lua+="hl.monitor({ output = \"$name\", $(keep_fields "$name")position = \"0x${y}\" }) "
         y=$((y + lh))
     done <<<"$ordered"
 
     local x=0
     while read -r name lw lh; do
         [[ -n $name ]] || continue
-        lua+="hl.monitor({ output = \"$name\", position = \"${x}x0\" }) "
+        lua+="hl.monitor({ output = \"$name\", $(keep_fields "$name")position = \"${x}x0\" }) "
         x=$((x + lw))
     done <<<"$ordered"
 
@@ -478,7 +491,7 @@ set_monitor() {
         # long enough for anything inspecting the layout to see a broken one.
         # Switching it on *at* a free spot, in the same call, closes that
         # window; cmd_layout then moves it where the pins actually want it.
-        hyprctl eval "hl.monitor({ output = \"$name\", disabled = false, position = \"$(rightmost_edge)x0\" })" >/dev/null
+        hyprctl eval "hl.monitor({ output = \"$name\", $(keep_fields "$name")disabled = false, position = \"$(rightmost_edge)x0\" })" >/dev/null
     fi
 
     if [[ $disabled == true ]]; then
@@ -524,7 +537,7 @@ cmd_all() {
         [[ $dis == true ]] || continue
         valid_name "$name" || continue
         (( lw > 0 )) || lw=1920
-        lua+="hl.monitor({ output = \"$name\", disabled = false, position = \"${x}x0\" }) "
+        lua+="hl.monitor({ output = \"$name\", $(keep_fields "$name")disabled = false, position = \"${x}x0\" }) "
         x=$((x + lw))
         turned+="$(icon_for "$name") $desc"$'\n'
     done < <(monitor_list)

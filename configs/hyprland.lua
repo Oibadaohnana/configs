@@ -22,6 +22,11 @@ hl.monitor({ output = "DP-3", mode = "2560x1440@180", position = "0x0", scale = 
 -- resolution. Named rules take precedence over the wildcard rule below.
 hl.monitor({ output = "HDMI-A-1", mode = "1280x720@60", position = "auto", scale = 1 })
 
+-- 43" 4K TV on the framework; by desc since the DP-n name shifts per port.
+-- reserved_area = 2% overscan per edge (no real overscan in Hyprland);
+-- monitors.sh copies it from this line, so keep the rule on one line
+hl.monitor({ output = "desc:Vestel Elektronik Sanayi ve Ticaret A. S. 43UHD_LCD_TV", mode = "3840x2160@60", position = "auto", scale = 3, reserved_area = { top = 14, bottom = 14, left = 26, right = 26 } })
+
 -- Any other/unlisted external display auto-enables at its preferred
 -- resolution whenever it's plugged in.
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = "auto" })
