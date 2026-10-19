@@ -60,7 +60,10 @@
   };
 
   # Enable GameMode daemon + CLI wrapper for Steam launch options.
-  programs.gamemode.enable = true;
+  programs.gamemode = {
+    enable = true;
+    settings.general.renice = 10;
+  };
   programs.steam.enable = true;
 
   # GParted alternative; module also registers kpmcore polkit helper.
@@ -152,6 +155,7 @@
     numbat
     pavucontrol
     gamemode
+    mangohud
     onedrive
     hplip
     unrar
@@ -335,7 +339,7 @@ services.avahi = {
     isNormalUser = true;
     description = "Benjamin Wüst";
     shell = pkgs.zsh;
-    extraGroups = [ "wheel" "networkmanager" "plugdev" "adbusers" ];
+    extraGroups = [ "wheel" "networkmanager" "plugdev" "adbusers" "gamemode" ];
   };
 
   # Bootloader

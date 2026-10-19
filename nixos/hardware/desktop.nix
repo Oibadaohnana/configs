@@ -7,7 +7,10 @@
 
   boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" "thunderbolt" "usb_storage" "uas" "sd_mod" ];
   boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ "kvm-amd" ];
+  boot.kernelModules = [ "kvm-amd" "ntsync" ];
+  services.udev.extraRules = ''
+    KERNEL=="ntsync", MODE="0644"
+  '';
   boot.extraModulePackages = [ ];
 
   # HDMI-A-1 shows "no signal" until its input button is pressed by hand. The
