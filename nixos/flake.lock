@@ -88,11 +88,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792336747,
-        "narHash": "sha256-rihdu43BksQcAkVxj4IDi+GFQ1UWIpJEj5w0TqBKoKs=",
+        "lastModified": 1792419123,
+        "narHash": "sha256-haM7nB35RPIVUVqFOo/hbtZPOrCltYZgOzOCVB+0byA=",
         "ref": "main",
-        "rev": "a652f1acaff1f0ab2b99df40f43d9dc21b2cadd3",
-        "revCount": 10,
+        "rev": "e3f8e1f166430aa877e1731daf74a194a388e782",
+        "revCount": 11,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/grimgobber"
       },
