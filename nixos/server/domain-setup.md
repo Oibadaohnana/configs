@@ -191,8 +191,9 @@ Expect `DNS:buggly.de, DNS:*.buggly.de`.
 4. The import in `server_configuration.nix`.
 
 Ports in use: 8787 bobby-dangling, 8788 worms-whup, 8789 todo, 8790 makinglist,
-8791 bank-bobbery, 8792 bims (the relay; the desktop game dials
-`wss://bims.buggly.de`, so it sits behind nginx from the start).
+8791 bank-bobbery, 8792 split, 8793 bims (the relay; the desktop game dials
+`wss://bims.buggly.de`, so it sits behind nginx from the start), 8794-8802
+grimgobber (door and lobbies), 8803 gtp.
 
 No DNS record and no certificate work -- the wildcards already cover it.
 
@@ -232,6 +233,7 @@ remains are two password hashes, read as systemd credentials:
 
 - `/etc/todo/pw.hash` -- see `server/todo.nix`
 - `/etc/makinglist/pw.hash` -- see `server/makinglist.nix`
+- `/etc/gtp/pw.hash` -- see `server/gtp.nix`
 
 Their units fail to start without them. Both could move into sops the same way
 the token did; until they do, this is the list.

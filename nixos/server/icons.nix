@@ -100,6 +100,16 @@
       '';
     };
 
+    "gtp.buggly.de" = {
+      accent = "#93a3ff"; # the shelf's own dark-mode accent
+      # An up arrow over a bar: a vote on the shelf. Two solid shapes, which
+      # is what still reads at 16px.
+      glyph = ''
+        <path d="M32 7 L53 32 L40 32 L40 44 L24 44 L24 32 L11 32 Z"/>
+        <rect x="9" y="50" width="46" height="8" rx="4"/>
+      '';
+    };
+
     "rezepte.buggly.de" = {
       accent = "#fb7185";
       # A pot: knob, lid, two handles, tapered body. Crossed cutlery is the
