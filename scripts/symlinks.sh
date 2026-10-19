@@ -27,6 +27,7 @@ function make_symlink {
 
 make_symlink configs/bashrc .bashrc
 make_symlink configs/zshrc .zshrc
+make_symlink configs/sshconfig .ssh/config
 make_symlink configs/waybarconfig/config .config/waybar/config
 make_symlink configs/waybarconfig/style.css .config/waybar/style.css
 make_symlink configs/makoconfig .config/mako/config

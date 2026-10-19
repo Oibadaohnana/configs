@@ -49,11 +49,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790758124,
-        "narHash": "sha256-wBs6T/87sMXpqBmJlK0ktmaz+qA7Exuiou0VhHBKj9M=",
+        "lastModified": 1792425546,
+        "narHash": "sha256-ezp0zJ+JJPbhGOLgcBlqMJ5eMUp63YXSCIk6BD4monU=",
         "ref": "main",
-        "rev": "22f88dab1c64d2844051d39b272c9da8fc45647b",
-        "revCount": 27,
+        "rev": "14ea4c0e7baee86faec04e777a0ad49d47bf43d8",
+        "revCount": 28,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/bobby_dangling"
       },
@@ -61,6 +61,21 @@
         "ref": "main",
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/bobby_dangling"
+      }
+    },
+    "crane": {
+      "locked": {
+        "lastModified": 1792350552,
+        "narHash": "sha256-292lvpvxTGKryKxh3/3tcIVi85CwYGdl4oOi113Sob8=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "e675a36b7377bebe41d548388a2501cbb16d380d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
       }
     },
     "flake-utils": {
@@ -83,16 +98,17 @@
     },
     "grimgobber": {
       "inputs": {
+        "crane": "crane",
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1792419123,
-        "narHash": "sha256-haM7nB35RPIVUVqFOo/hbtZPOrCltYZgOzOCVB+0byA=",
+        "lastModified": 1792425551,
+        "narHash": "sha256-yFRAlzJ+gUQw8huK7VIBlIInUFfyATEyjkcD5DLIoQs=",
         "ref": "main",
-        "rev": "e3f8e1f166430aa877e1731daf74a194a388e782",
-        "revCount": 11,
+        "rev": "62cb1a424d83f85e459f1041cb89c86b30da4916",
+        "revCount": 12,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/grimgobber"
       },

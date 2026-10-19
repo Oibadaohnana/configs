@@ -8,6 +8,7 @@
 # gamemode is. See `net/src/lib.rs` in the game for why that split is drawn
 # where it is.
 {
+  lib,
   pkgs,
   worms-whup,
   ...
@@ -32,7 +33,9 @@ in {
     };
 
     serviceConfig = {
-      ExecStart = "${ww}/bin/worms-whup-server";
+      # By the package's mainProgram: the binary is `bobbies-server`, and a
+      # hard-coded `worms-whup-server` here left the unit unable to start.
+      ExecStart = lib.getExe ww;
       Restart = "on-failure";
       # Nothing is written down: rooms live in memory and die with the process.
       # No state directory, and no account to create or clean up.
