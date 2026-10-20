@@ -125,11 +125,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792432671,
-        "narHash": "sha256-FTBp7rVg8xHo0Bqs58WhlixZZ/mMrvLmF7o6tgcwfK4=",
+        "lastModified": 1792432994,
+        "narHash": "sha256-MT9gr8QvOFovAKXjk498UswYTuOd599DDcewwbQmdKI=",
         "ref": "main",
-        "rev": "27c647d9f51040d40b629a5725713996777aa916",
-        "revCount": 3,
+        "rev": "a825d92f6afdcc5626bb89e376184dda6f3a67da",
+        "revCount": 4,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/games_to_play"
       },
