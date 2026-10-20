@@ -63,6 +63,27 @@
         "url": "ssh://git@github.com/Oibadaohnana/bobby_dangling"
       }
     },
+    "calendar": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792488707,
+        "narHash": "sha256-wV+9igNdKFkMQvqge88N+TbJjqitXFFd5jhOYRCZ7kM=",
+        "ref": "main",
+        "rev": "00e656fa141b3ad0422c46fb6a211c9b0c9fbde6",
+        "revCount": 2,
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/calendar"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/calendar"
+      }
+    },
     "crane": {
       "locked": {
         "lastModified": 1792350552,
@@ -181,6 +202,7 @@
         "bank-bobbery": "bank-bobbery",
         "bims": "bims",
         "bobby-dangling": "bobby-dangling",
+        "calendar": "calendar",
         "flake-utils": "flake-utils",
         "grimgobber": "grimgobber",
         "gtp": "gtp",
