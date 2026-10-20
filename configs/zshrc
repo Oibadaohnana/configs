@@ -40,6 +40,9 @@ alias grimupdate="nix flake update grimgobber --flake /home/benji/nixcfg/nixos"
 # gtp.buggly.de is built from it. Same two steps: this moves the pin, bsyss
 # deploys it.
 alias gtpupdate="nix flake update gtp --flake /home/benji/nixcfg/nixos"
+# calendarupdate: bump the calendar pin to current main -- calendar.buggly.de
+# is built from it. Same two steps: this moves the pin, bsyss deploys it.
+alias calendarupdate="nix flake update calendar --flake /home/benji/nixcfg/nixos"
 alias onesync="onedrive --synchronize --verbose"
 alias geoguessr="electron /home/benji/nixcfg/scripts/webwindow.js"
 alias tmr='nix-shell ~/nixcfg/shells/ --run "python ./nixcfg/scripts/python/timer.py"'

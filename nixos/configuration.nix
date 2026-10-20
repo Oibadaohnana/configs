@@ -109,12 +109,6 @@
     git
     spotify
     telegram-desktop
-    # umpv is the image viewer (see xdg.mime below). mpv shows an image for
-    # image-display-duration (1s) and then advances -- or quits, since umpv's
-    # pseudo-gui profile uses idle=once -- so this auto-profile pauses on
-    # images and holds them indefinitely. profile-restore=copy undoes both
-    # when the playlist moves on to a real video. Passed via --include because
-    # there's no home-manager to own ~/.config/mpv; umpv execs this wrapper.
     (mpv.override {
       scripts = [ mpvScripts.sponsorblock ];
       extraMakeWrapperArgs = [
@@ -168,6 +162,7 @@
     qpwgraph
     kdePackages.kdenlive
     ffmpeg
+    unzip
   ];
 
   # Open images in umpv. umpv.desktop doesn't list image types in MimeType=,

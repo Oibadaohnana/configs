@@ -20,6 +20,7 @@
     ./server/todo.nix
     ./server/makinglist.nix
     ./server/split.nix
+    ./server/calendar.nix
     ./server/gtp.nix
     ./server/share.nix
   ];
