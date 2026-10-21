@@ -63,6 +63,7 @@
   programs.gamemode = {
     enable = true;
     settings.general.renice = 10;
+    settings.cpu.pin_cores = "no";
   };
   programs.steam.enable = true;
 

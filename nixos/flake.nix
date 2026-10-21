@@ -97,6 +97,7 @@
         ./hardware/desktop.nix
         ./vm.nix
         ./ableton.nix
+        ./pkgs/dayz/module.nix
         { networking.hostName = "benji-desktop"; }
       ];
     };
