@@ -99,26 +99,6 @@
         "type": "github"
       }
     },
-    "dzgui-nix": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1764972059,
-        "narHash": "sha256-MLdmXiPhouR4nSxIZwNEHWGYT2rR9UquaYGbZPEBgRk=",
-        "owner": "lelgenio",
-        "repo": "dzgui-nix",
-        "rev": "14bd77c58f4cc4864513f9d887ad387337c9411f",
-        "type": "github"
-      },
-      "original": {
-        "owner": "lelgenio",
-        "repo": "dzgui-nix",
-        "type": "github"
-      }
-    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -223,7 +203,6 @@
         "bims": "bims",
         "bobby-dangling": "bobby-dangling",
         "calendar": "calendar",
-        "dzgui-nix": "dzgui-nix",
         "flake-utils": "flake-utils",
         "grimgobber": "grimgobber",
         "gtp": "gtp",

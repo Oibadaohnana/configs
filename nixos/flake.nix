@@ -76,10 +76,6 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    dzgui-nix = {
-      url = "github:lelgenio/dzgui-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = inputs @ {
@@ -101,7 +97,6 @@
         ./hardware/desktop.nix
         ./vm.nix
         ./ableton.nix
-        ./dzgui.nix
         { networking.hostName = "benji-desktop"; }
       ];
     };
