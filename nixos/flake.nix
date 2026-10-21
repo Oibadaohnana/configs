@@ -76,6 +76,10 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    dzgui-nix = {
+      url = "github:lelgenio/dzgui-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs @ {
@@ -87,6 +91,8 @@
     nixosConfigurations."benji-desktop" = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
 
+      specialArgs = { inherit inputs; };
+
       modules = [
         ./configuration.nix
         ./fonts.nix
@@ -95,6 +101,7 @@
         ./hardware/desktop.nix
         ./vm.nix
         ./ableton.nix
+        ./dzgui.nix
         { networking.hostName = "benji-desktop"; }
       ];
     };

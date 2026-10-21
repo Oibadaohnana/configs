@@ -70,11 +70,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792489515,
-        "narHash": "sha256-oOZL6FhKYGxwe1J7XM+SN7whB2/8j50RRhF/fQHhMXM=",
+        "lastModified": 1792520849,
+        "narHash": "sha256-PBG6Yr8uW+9xtQcjaXeLQxpbvlR/Z5JU4j25/xaM8Ao=",
         "ref": "main",
-        "rev": "7528d1a17c6156270947bddb3ed69bc14180b7e1",
-        "revCount": 3,
+        "rev": "bfb128a89ffcea639a9a15dc993e1047052c3bb3",
+        "revCount": 4,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/calendar"
       },
@@ -96,6 +96,26 @@
       "original": {
         "owner": "ipetkov",
         "repo": "crane",
+        "type": "github"
+      }
+    },
+    "dzgui-nix": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1764972059,
+        "narHash": "sha256-MLdmXiPhouR4nSxIZwNEHWGYT2rR9UquaYGbZPEBgRk=",
+        "owner": "lelgenio",
+        "repo": "dzgui-nix",
+        "rev": "14bd77c58f4cc4864513f9d887ad387337c9411f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lelgenio",
+        "repo": "dzgui-nix",
         "type": "github"
       }
     },
@@ -203,6 +223,7 @@
         "bims": "bims",
         "bobby-dangling": "bobby-dangling",
         "calendar": "calendar",
+        "dzgui-nix": "dzgui-nix",
         "flake-utils": "flake-utils",
         "grimgobber": "grimgobber",
         "gtp": "gtp",
