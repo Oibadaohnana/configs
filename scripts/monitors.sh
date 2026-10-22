@@ -128,8 +128,10 @@ monitor_list() {
         # Anchored on a leading digit so "availableModes:" cannot match it.
         /^[ \t]+[0-9]+x[0-9]+@/ {
             if (mode == "") {
-                split($1, m, "@");  mode = m[1]
-                split(mode, wh, "x"); pw = wh[1]; ph = wh[2]
+                # keep the refresh rate: without it hl.monitor picks 60Hz
+                mode = $1
+                if (mode ~ /\./) { sub(/0+$/, "", mode); sub(/\.$/, "", mode) }
+                split(mode, m, "@"); split(m[1], wh, "x"); pw = wh[1]; ph = wh[2]
                 split($3, p, "x");    px = p[1];  py = p[2]
             }
             next

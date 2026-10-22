@@ -80,6 +80,15 @@
   # nixos/server/games/bank-bobbery.nix, which uses 8789.
   networking.firewall.allowedTCPPorts = [ 8787 8080 ];
 
+  # Vimium: keyboard browsing (f = link hints). Policy force-installs from AMO.
+  programs.firefox = {
+    enable = true;
+    policies.ExtensionSettings."{d7742d87-e61d-4b78-b8a1-b469842139fa}" = {
+      installation_mode = "force_installed";
+      install_url = "https://addons.mozilla.org/firefox/downloads/latest/vimium-ff/latest.xpi";
+    };
+  };
+
   # System packages
   environment.systemPackages = with pkgs; [
     # Editing the server's encrypted secrets -- `sops nixos/server/secrets/*.yaml`
@@ -88,7 +97,6 @@
     sops
     age
     ssh-to-age
-    firefox
     adwaita-icon-theme
     # Terminal editor. Nano-style keys (ctrl+s save, ctrl+q quit, ctrl+z undo)
     # but with syntax highlighting and mouse support. Set as EDITOR below.
