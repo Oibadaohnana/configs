@@ -250,7 +250,7 @@ hl.config({
         -- Adaptive sync. 3 = fullscreen_game: VRR engages only when the
         -- fullscreen app reports game content, so the desktop keeps a fixed
         -- refresh and only games get the variable one.
-        vrr = 3,
+        vrr = 2,
         disable_hyprland_logo = true,
         disable_splash_rendering = true,
         force_default_wallpaper = 0,
