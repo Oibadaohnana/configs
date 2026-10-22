@@ -60,7 +60,11 @@
   };
 
   # Enable GameMode daemon + CLI wrapper for Steam launch options.
-  programs.gamemode.enable = true;
+  programs.gamemode = {
+    enable = true;
+    settings.general.renice = 10;
+    settings.cpu.pin_cores = "no";
+  };
   programs.steam.enable = true;
 
   # GParted alternative; module also registers kpmcore polkit helper.
@@ -114,12 +118,6 @@
     git
     spotify
     telegram-desktop
-    # umpv is the image viewer (see xdg.mime below). mpv shows an image for
-    # image-display-duration (1s) and then advances -- or quits, since umpv's
-    # pseudo-gui profile uses idle=once -- so this auto-profile pauses on
-    # images and holds them indefinitely. profile-restore=copy undoes both
-    # when the playlist moves on to a real video. Passed via --include because
-    # there's no home-manager to own ~/.config/mpv; umpv execs this wrapper.
     (mpv.override {
       scripts = [ mpvScripts.sponsorblock ];
       extraMakeWrapperArgs = [
@@ -160,6 +158,7 @@
     numbat
     pavucontrol
     gamemode
+    mangohud
     onedrive
     hplip
     unrar
@@ -172,6 +171,7 @@
     qpwgraph
     kdePackages.kdenlive
     ffmpeg
+    unzip
   ];
 
   # Open images in umpv. umpv.desktop doesn't list image types in MimeType=,
@@ -343,7 +343,7 @@ services.avahi = {
     isNormalUser = true;
     description = "Benjamin Wüst";
     shell = pkgs.zsh;
-    extraGroups = [ "wheel" "networkmanager" "plugdev" "adbusers" ];
+    extraGroups = [ "wheel" "networkmanager" "plugdev" "adbusers" "gamemode" ];
   };
 
   # Bootloader

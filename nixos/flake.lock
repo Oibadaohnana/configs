@@ -49,11 +49,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790758124,
-        "narHash": "sha256-wBs6T/87sMXpqBmJlK0ktmaz+qA7Exuiou0VhHBKj9M=",
+        "lastModified": 1792425546,
+        "narHash": "sha256-ezp0zJ+JJPbhGOLgcBlqMJ5eMUp63YXSCIk6BD4monU=",
         "ref": "main",
-        "rev": "22f88dab1c64d2844051d39b272c9da8fc45647b",
-        "revCount": 27,
+        "rev": "14ea4c0e7baee86faec04e777a0ad49d47bf43d8",
+        "revCount": 28,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/bobby_dangling"
       },
@@ -61,6 +61,42 @@
         "ref": "main",
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/bobby_dangling"
+      }
+    },
+    "calendar": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792520849,
+        "narHash": "sha256-PBG6Yr8uW+9xtQcjaXeLQxpbvlR/Z5JU4j25/xaM8Ao=",
+        "ref": "main",
+        "rev": "bfb128a89ffcea639a9a15dc993e1047052c3bb3",
+        "revCount": 4,
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/calendar"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/calendar"
+      }
+    },
+    "crane": {
+      "locked": {
+        "lastModified": 1792350552,
+        "narHash": "sha256-292lvpvxTGKryKxh3/3tcIVi85CwYGdl4oOi113Sob8=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "e675a36b7377bebe41d548388a2501cbb16d380d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
       }
     },
     "flake-utils": {
@@ -83,16 +119,17 @@
     },
     "grimgobber": {
       "inputs": {
+        "crane": "crane",
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1792336747,
-        "narHash": "sha256-rihdu43BksQcAkVxj4IDi+GFQ1UWIpJEj5w0TqBKoKs=",
+        "lastModified": 1792425551,
+        "narHash": "sha256-yFRAlzJ+gUQw8huK7VIBlIInUFfyATEyjkcD5DLIoQs=",
         "ref": "main",
-        "rev": "a652f1acaff1f0ab2b99df40f43d9dc21b2cadd3",
-        "revCount": 10,
+        "rev": "62cb1a424d83f85e459f1041cb89c86b30da4916",
+        "revCount": 12,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/grimgobber"
       },
@@ -100,6 +137,27 @@
         "ref": "main",
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/grimgobber"
+      }
+    },
+    "gtp": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792482354,
+        "narHash": "sha256-3RsUSCwIDpo/6KEpmfBSMKJj0lE2Zlob3cRDN84LsB4=",
+        "ref": "main",
+        "rev": "bd828631469a37b553a8b95a6c78c2c2c34ddf65",
+        "revCount": 5,
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/games_to_play"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/games_to_play"
       }
     },
     "makinglist": {
@@ -144,8 +202,10 @@
         "bank-bobbery": "bank-bobbery",
         "bims": "bims",
         "bobby-dangling": "bobby-dangling",
+        "calendar": "calendar",
         "flake-utils": "flake-utils",
         "grimgobber": "grimgobber",
+        "gtp": "gtp",
         "makinglist": "makinglist",
         "nixpkgs": "nixpkgs",
         "sops-nix": "sops-nix",

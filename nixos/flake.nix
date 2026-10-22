@@ -56,6 +56,18 @@
       url = "git+ssh://git@github.com/Oibadaohnana/split?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # The LAN game shelf with shared votes, at gtp.buggly.de. Same account, so
+    # the same key reaches it, and the same two steps: `gtpupdate`, then `bsyss`.
+    gtp = {
+      url = "git+ssh://git@github.com/Oibadaohnana/games_to_play?ref=main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # The shared calendar at calendar.buggly.de. Same account, so the same key
+    # reaches it, and the same two steps: `calendarupdate`, then `bsyss`.
+    calendar = {
+      url = "git+ssh://git@github.com/Oibadaohnana/calendar?ref=main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # Encrypted secrets, decrypted on the server at activation. Public repo or
     # not, an API token with write access to the DNS zone does not belong in
     # git as plaintext -- and /nix/store is world-readable on every machine
@@ -75,6 +87,8 @@
     nixosConfigurations."benji-desktop" = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
 
+      specialArgs = { inherit inputs; };
+
       modules = [
         ./configuration.nix
         ./fonts.nix
@@ -83,6 +97,7 @@
         ./hardware/desktop.nix
         ./vm.nix
         ./ableton.nix
+        ./pkgs/dayz/module.nix
         { networking.hostName = "benji-desktop"; }
       ];
     };
@@ -105,7 +120,7 @@
 
       # Only the modules that package something need inputs, so hand them
       # just those rather than the whole inputs set.
-      specialArgs = { inherit (inputs) bobby-dangling worms-whup todo makinglist bank-bobbery split bims grimgobber; };
+      specialArgs = { inherit (inputs) bobby-dangling worms-whup todo makinglist bank-bobbery split bims grimgobber gtp calendar; };
 
       modules = [
         inputs.sops-nix.nixosModules.sops
