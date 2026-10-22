@@ -112,6 +112,7 @@
         ./garbage_collect.nix
         ./hardware/framework.nix
         ./vm.nix
+        ./pkgs/dayz/module.nix
         { networking.hostName = "benji-framework"; }
       ];
     };
