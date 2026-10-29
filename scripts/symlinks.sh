@@ -13,15 +13,15 @@ function make_symlink {
     mkdir -p $(dirname "$name")
     if [[ -L "$name" ]]; then
         if [[ $(readlink -f "$name") != $target ]]; then
-            echo "Deleting previously existing symlink: $target"
+            echo "relinked ~/$2 (pointed elsewhere)"
             rm $name
             ln -s "$target" "$name"
         fi
     elif [[ ! -a "$name" ]]; then
-        echo "$target\t\t -> $name"
+        echo "linked   ~/$2"
         ln -s "$target" "$name"
     else
-        echo "File already exists: $name"
+        echo "skipped  ~/$2 (a real file is in the way)"
     fi
 }
 

@@ -1,20 +1,23 @@
-on the pc:
+New PC
+======
 
-git:
-cd ~
-mv nixcfg nixcfg.bak
-mkdir nixcfg
-git clone git@github.com:Oibadaohnana/configs.git ~/nixcfg
+1. Install NixOS (UEFI, user `benji`).
 
-hardware:
-adjust the labels in hardware/pc.nix!
+2. SSH key for GitHub (the repo is private):
 
-to do so you can list them in /dev/disk/by-uuid or just copy them from the (probably?) working config thats on your desktop in /etc/nixos/hardware-configuration.nix
+       ssh-keygen -t ed25519
+       cat ~/.ssh/id_ed25519.pub     # add at https://github.com/settings/ssh/new
 
-then build ONCE without using bsys but by using 
+3. Clone to exactly ~/nixcfg (a fresh install has no git yet):
 
-sudo nixos-rebuild switch --flake /home/benji/nixcfg/nixos#benji-desktop
+       nix-shell -p git --run 'git clone git@github.com:Oibadaohnana/configs.git ~/nixcfg'
 
+4. Run the setup checklist and follow it:
 
-after that, the bsys alias should work since you dont need to add the #benji-desktop anymore.
+       ~/nixcfg/scripts/setup.sh
 
+   It checks everything before the first build (host entry, disk UUIDs,
+   untracked files, dotfile symlinks, a dry evaluation), runs the build, and
+   after the reboot walks through keys, server access, Nextcloud and the
+   manual steps. Run it again any time; it picks up where it stopped.
+   `setup.sh --list` only prints the checklist.

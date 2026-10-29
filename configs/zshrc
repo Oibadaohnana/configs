@@ -50,7 +50,7 @@ alias geoguessr="electron /home/benji/nixcfg/scripts/webwindow.js"
 alias tmr='nix-shell ~/nixcfg/shells/ --run "python ./nixcfg/scripts/python/timer.py"'
 alias nxsh="nix-shell ~/nixcfg/shells/"
 alias cleansys="nix-collect-garbage --delete-older-than 7d"
-alias cleanboot="sudo nixos-rebuild boot --flake /home/benji/nixcfg/nixos#benji"
+alias cleanboot="sudo nixos-rebuild boot --flake /home/benji/nixcfg/nixos"
 alias mi="micro"
 alias displ="~/nixcfg/scripts/monitors.sh"
 # Block suspend: lid, hypridle timeout, systemctl suspend. Same lock the waybar

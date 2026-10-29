@@ -37,7 +37,7 @@
     shellAliases = {
       ll = "ls -l";
       edit = "sudo -e";
-      update = "sudo nixos-rebuild switch";
+      update = "sudo nixos-rebuild switch --flake /home/benji/nixcfg/nixos";
       # Record whatever is playing on the default sink to ~/Music as mp3;
       # press q to stop. Timestamped so repeat runs don't overwrite.
       record-desktop = "ffmpeg -f pulse -i \"$(pactl get-default-sink).monitor\" -c:a libmp3lame -b:a 192k ~/Music/rec-$(date +%F_%H%M).mp3";
@@ -152,7 +152,6 @@
     kitty
     btop
     obs-studio
-    syncthing
     nextcloud-client
     numbat
     pavucontrol
