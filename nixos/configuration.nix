@@ -84,12 +84,11 @@
   # nixos/server/games/bank-bobbery.nix, which uses 8789.
   networking.firewall.allowedTCPPorts = [ 8787 8080 ];
 
-  # Vimium: keyboard browsing (f = link hints). Policy force-installs from AMO.
+  # Vimium blocked: "blocked" also uninstalls the old force-installed copy.
   programs.firefox = {
     enable = true;
     policies.ExtensionSettings."{d7742d87-e61d-4b78-b8a1-b469842139fa}" = {
-      installation_mode = "force_installed";
-      install_url = "https://addons.mozilla.org/firefox/downloads/latest/vimium-ff/latest.xpi";
+      installation_mode = "blocked";
     };
   };
 

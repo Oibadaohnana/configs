@@ -11,6 +11,8 @@ alias shipl='~/nixcfg/scripts/server-ship.sh --local'
 # Launcher for Claude Code agents, each in its own kitty window, in the current dir
 # (`agents` opens the app, `agents "prompt"` queues, `agents now "prompt"` runs alongside).
 alias agents='~/nixcfg/scripts/agents.sh'
+# gamma 1-9: lift the TV's shadows; gamma 0 resets.
+alias gamma='~/nixcfg/scripts/gamma.sh'
 # bobbyupdate: bump bobby-dangling pin to current main. deploy separately with bsyss
 alias bobbyupdate="nix flake update bobby-dangling --flake /home/benji/nixcfg/nixos"
 # wormsupdate: bump the worms_whup pin to current main. Same two steps as
