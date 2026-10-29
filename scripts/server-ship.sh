@@ -229,7 +229,7 @@ DEPLOY_RC=0
 
 if (( BUILD_LOCAL )); then
     DEPLOY_NAME=bsyssl
-    DEPLOY_ARGS=(--cores 0)
+    DEPLOY_ARGS=(--cores 0 --use-substitutes)
     DEPLOY_WHERE="build here, switch $TARGET"
     DEPLOY_ASK="build the server closure locally and deploy it?"
 else
