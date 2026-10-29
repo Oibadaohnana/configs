@@ -12,6 +12,8 @@ dayz namalsk    start with a filter
 ```
 
 - **enter** joins the selected server
+- **tab** switches to the community servers that have players, busiest first,
+  and back
 - **ctrl-r** refreshes the list
 - type to filter by name, map or region (`dayone`, `livonia`, `DE`, ...)
 
@@ -65,7 +67,11 @@ Or without flakes: `environment.systemPackages = [ (pkgs.callPackage ./dayz/pack
 - Server list: [dayzsalauncher.com](https://dayzsalauncher.com) public API,
   cached for a minute in `~/.cache/dayz/servers.json`.
 - "Favorite" = listed in `~/.config/dayz/favorites`; "DayOne" = server name
-  starts with `DayOne`; "Official" = official shard.
+  starts with `DayOne`; "Official" = official shard; "Community" = every other
+  server with players.
+- Third person servers are hidden unless they are favorites. A server counts as
+  3PP when its name says so, or, if the name says neither 1PP nor 3PP, when the
+  API's `firstPersonOnly` field is true (the API has that field inverted).
 - Mods are symlinked from the Workshop folder into the DayZ folder as
   `@ModName` and passed to the game with `-mod=`.
 - The game is started with `steam -applaunch 221100 -connect=... -mod=...`.

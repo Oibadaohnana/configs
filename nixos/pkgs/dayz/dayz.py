@@ -27,9 +27,11 @@ STEAM_ROOTS = [
 ]
 USAGE = """usage: dayz [search]
 
-Browse DayOne and official DayZ servers and join one.
+Browse DayOne and official DayZ servers and join one. Third person (3PP)
+servers are hidden unless they are favorites.
 
   enter    join the selected server
+  tab      switch to community servers sorted by players, and back
   ctrl-r   refresh the server list
   search   start with this filter, e.g. dayz namalsk
 
@@ -51,7 +53,12 @@ MAPS = {
     "pripyat": "Pripyat",
     "esseker": "Esseker",
 }
-KINDS = ["Favorite", "DayOne", "Official"]
+KINDS = ["Favorite", "DayOne", "Official", "Community"]
+TABS = {"main": "Main> ", "community": "Community> "}
+HEADERS = {
+    "main": "enter: join  tab: community  ctrl-r: refresh  type to filter (e.g. dayone, namalsk, DE)",
+    "community": "enter: join  tab: back to main  ctrl-r: refresh  community servers with players, busiest first",
+}
 
 
 def load_favorites():
@@ -76,7 +83,29 @@ def kind(server):
         return "DayOne"
     if server.get("shard") == "public":
         return "Official"
-    return None
+    return "Community"
+
+
+def third_person(server):
+    first = re.search(r"(?<!\d)1\s*pp|first[\s-]*person|1st[\s-]*person", server["name"], re.I)
+    third = re.search(r"(?<!\d)3\s*pp|third[\s-]*person|3rd[\s-]*person", server["name"], re.I)
+    if bool(first) != bool(third):
+        return bool(third)
+    return bool(server.get("firstPersonOnly"))
+
+
+def wanted(server):
+    if kind(server) == "Favorite":
+        return True
+    if third_person(server):
+        return False
+    return kind(server) != "Community" or server["players"]
+
+
+def slim(server):
+    fields = ["name", "gamePort", "players", "maxPlayers", "map", "version", "time", "timeAcceleration", "password", "shard"]
+    mods = [{"name": m["name"], "steamWorkshopId": m["steamWorkshopId"]} for m in server.get("mods") or []]
+    return {**{f: server.get(f) for f in fields}, "endpoint": {"ip": server["endpoint"]["ip"]}, "mods": mods}
 
 
 def key(server):
@@ -92,7 +121,7 @@ def fetch(max_age=MAX_AGE):
         raw = response.read()
         if response.headers.get("Content-Encoding") == "gzip":
             raw = gzip.decompress(raw)
-    servers = [s for s in json.loads(raw)["result"] if kind(s)]
+    servers = [slim(s) for s in json.loads(raw)["result"] if wanted(s)]
     servers.sort(key=lambda s: (KINDS.index(kind(s)), -s["players"], s["name"]))
     CACHE.parent.mkdir(parents=True, exist_ok=True)
     tmp = CACHE.with_suffix(".tmp")
@@ -143,7 +172,7 @@ def line(server):
     missing = sum(not installed(m) for m in server["mods"])
     mods = f"\033[33m{missing} missing\033[0m" if missing else ""
     world = MAPS.get(server["map"].lower(), server["map"])
-    return f"{key(server)}\t{full}{players:>7}\033[0m  {kind(server):<8}  {world:<10}  {server['name']}  {mods}"
+    return f"{key(server)}\t{full}{players:>7}\033[0m  {kind(server):<9}  {world:<10}  {server['name']}  {mods}"
 
 
 def find(servers, address):
@@ -242,6 +271,24 @@ def join(server):
     steam("-applaunch", APPID, *args)
 
 
+def listing(servers, tab):
+    return "\n".join(line(s) for s in servers if (kind(s) == "Community") == (tab == "community"))
+
+
+def current_tab():
+    return next((tab for tab, prompt in TABS.items() if prompt == os.environ.get("FZF_PROMPT")), "main")
+
+
+def action(name):
+    cmd = shlex.join([sys.executable, os.path.realpath(__file__)])
+    tab = current_tab()
+    if name == "refresh":
+        print(f"reload[{cmd} --list {tab} --refresh]")
+        return
+    tab = "community" if tab == "main" else "main"
+    print(f"change-prompt[{TABS[tab]}]+change-header[{HEADERS[tab]}]+reload[{cmd} --list {tab}]+first")
+
+
 def browse(query):
     print("Fetching server list...", file=sys.stderr)
     servers = fetch()
@@ -250,12 +297,14 @@ def browse(query):
         [
             "fzf", "--ansi", "--no-sort", "--layout=reverse", "--delimiter=\t", "--with-nth=2",
             "--query", query,
-            "--header", "enter: join  ctrl-r: refresh  type to filter (e.g. dayone, namalsk, DE)",
+            "--prompt", TABS["main"],
+            "--header", HEADERS["main"],
             "--preview", f"{cmd} --preview {{1}}",
             "--preview-window", "right,45%,wrap",
-            "--bind", f"ctrl-r:reload({cmd} --list --refresh)",
+            "--bind", f"tab:transform({cmd} --action switch)",
+            "--bind", f"ctrl-r:transform({cmd} --action refresh)",
         ],
-        input="\n".join(line(s) for s in servers),
+        input=listing(servers, "main"),
         stdout=subprocess.PIPE,
         text=True,
     )
@@ -274,7 +323,9 @@ def main():
         if args[:1] in (["-h"], ["--help"]):
             print(USAGE)
         elif args[:1] == ["--list"]:
-            print("\n".join(line(s) for s in fetch(0 if "--refresh" in args else MAX_AGE)))
+            print(listing(fetch(0 if "--refresh" in args else MAX_AGE), args[1]))
+        elif args[:1] == ["--action"]:
+            action(args[1])
         elif args[:1] == ["--preview"]:
             preview(args[1])
         else:

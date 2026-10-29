@@ -27,9 +27,6 @@ hl.monitor({ output = "HDMI-A-1", mode = "1280x720@60", position = "auto", scale
 -- monitors.sh copies it from this line, so keep the rule on one line
 hl.monitor({ output = "desc:Vestel Elektronik Sanayi ve Ticaret A. S. 43UHD_LCD_TV", mode = "3840x2160@60", position = "auto", scale = 3, reserved_area = { top = 14, bottom = 14, left = 26, right = 26 } })
 
--- AOC 27" on the framework; 1080p at its max 1080p refresh
-hl.monitor({ output = "desc:AOC Q27G3XMN 1APR6JA000982", mode = "1920x1080@120", position = "auto", scale = 1 })
-
 -- Any other/unlisted external display auto-enables at its preferred
 -- resolution whenever it's plugged in.
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = "auto" })
@@ -253,7 +250,7 @@ hl.config({
         -- Adaptive sync. 3 = fullscreen_game: VRR engages only when the
         -- fullscreen app reports game content, so the desktop keeps a fixed
         -- refresh and only games get the variable one.
-        vrr = 3,
+        vrr = 2,
         disable_hyprland_logo = true,
         disable_splash_rendering = true,
         force_default_wallpaper = 0,

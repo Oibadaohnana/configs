@@ -153,12 +153,11 @@
     btop
     obs-studio
     syncthing
-    onedrive
+    nextcloud-client
     numbat
     pavucontrol
     gamemode
     mangohud
-    onedrive
     hplip
     unrar
     claude-code

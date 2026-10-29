@@ -2,7 +2,7 @@ alias bsys="sudo nixos-rebuild switch --flake /home/benji/nixcfg/nixos"
 alias bsyss="nixos-rebuild switch --flake /home/benji/nixcfg/nixos#server --build-host benji@45.129.182.102 --target-host benji@45.129.182.102 --ask-sudo-password"
 # Same deploy, built here instead of on the server -- local build, closure
 # copied over ssh. Use when the server is too slow or short on RAM/disk.
-alias bsyssl="nixos-rebuild switch --cores 0 --flake /home/benji/nixcfg/nixos#server --target-host benji@45.129.182.102 --ask-sudo-password"
+alias bsyssl="nixos-rebuild switch --cores 0 --use-substitutes --flake /home/benji/nixcfg/nixos#server --target-host benji@45.129.182.102 --ask-sudo-password"
 # ship: the three steps in one run -- gitgo, bump any game input whose branch
 # moved, then bsyss. Flags: --dry-run, --yes, --no-git/--no-update/--no-deploy.
 alias ship='~/nixcfg/scripts/server-ship.sh'
@@ -45,7 +45,7 @@ alias gtpupdate="nix flake update gtp --flake /home/benji/nixcfg/nixos"
 # calendarupdate: bump the calendar pin to current main -- calendar.buggly.de
 # is built from it. Same two steps: this moves the pin, bsyss deploys it.
 alias calendarupdate="nix flake update calendar --flake /home/benji/nixcfg/nixos"
-alias onesync="onedrive --sync --verbose"
+alias ncsync="nextcloudcmd -n --non-interactive --path /OneDrive ~/OneDrive https://cloud.buggly.de"
 alias geoguessr="electron /home/benji/nixcfg/scripts/webwindow.js"
 alias tmr='nix-shell ~/nixcfg/shells/ --run "python ./nixcfg/scripts/python/timer.py"'
 alias nxsh="nix-shell ~/nixcfg/shells/"

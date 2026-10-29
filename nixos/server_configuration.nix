@@ -23,6 +23,7 @@
     ./server/calendar.nix
     ./server/gtp.nix
     ./server/share.nix
+    ./server/nextcloud.nix
   ];
 
   nix.settings.experimental-features = ["nix-command" "flakes"];
