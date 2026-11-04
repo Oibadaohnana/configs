@@ -1,5 +1,26 @@
 {
   "nodes": {
+    "anatomy": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793787644,
+        "narHash": "sha256-t6TIL1cQtzbK6v14hMAf2dNH8bgihoMR26fFVo5Gc0Y=",
+        "ref": "main",
+        "rev": "d01dbb03e24bcaa27628da1ea4b39ef6c96c402d",
+        "revCount": 3,
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/anatomy"
+      },
+      "original": {
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/Oibadaohnana/anatomy"
+      }
+    },
     "bank-bobbery": {
       "inputs": {
         "nixpkgs": [
@@ -199,6 +220,7 @@
     },
     "root": {
       "inputs": {
+        "anatomy": "anatomy",
         "bank-bobbery": "bank-bobbery",
         "bims": "bims",
         "bobby-dangling": "bobby-dangling",
