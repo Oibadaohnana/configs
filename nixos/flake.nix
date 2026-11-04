@@ -68,6 +68,13 @@
       url = "git+ssh://git@github.com/Oibadaohnana/calendar?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # The anatomy atlas at anatomie.buggly.de. Same account, so the same key
+    # reaches it, and the same two steps: `anatomieupdate`, then `bsyss`. Its
+    # 3D models are not in the repo -- see server/anatomie.nix.
+    anatomy = {
+      url = "git+ssh://git@github.com/Oibadaohnana/anatomy?ref=main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # Encrypted secrets, decrypted on the server at activation. Public repo or
     # not, an API token with write access to the DNS zone does not belong in
     # git as plaintext -- and /nix/store is world-readable on every machine
@@ -95,9 +102,7 @@
         ./hyprland.nix
         ./garbage_collect.nix
         ./hardware/desktop.nix
-        ./vm.nix
         ./ableton.nix
-        ./pkgs/dayz/module.nix
         { networking.hostName = "benji-desktop"; }
       ];
     };
@@ -111,8 +116,6 @@
         ./hyprland.nix
         ./garbage_collect.nix
         ./hardware/framework.nix
-        ./vm.nix
-        ./pkgs/dayz/module.nix
         { networking.hostName = "benji-framework"; }
       ];
     };
@@ -121,7 +124,7 @@
 
       # Only the modules that package something need inputs, so hand them
       # just those rather than the whole inputs set.
-      specialArgs = { inherit (inputs) bobby-dangling worms-whup todo makinglist bank-bobbery split bims grimgobber gtp calendar; };
+      specialArgs = { inherit (inputs) bobby-dangling worms-whup todo makinglist bank-bobbery split bims grimgobber gtp calendar anatomy; };
 
       modules = [
         inputs.sops-nix.nixosModules.sops

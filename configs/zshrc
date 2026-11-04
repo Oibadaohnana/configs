@@ -13,6 +13,7 @@ alias shipl='~/nixcfg/scripts/server-ship.sh --local'
 alias agents='~/nixcfg/scripts/agents.sh'
 # gamma 1-9: lift the TV's shadows; gamma 0 resets.
 alias gamma='~/nixcfg/scripts/gamma.sh'
+alias dayz='nix shell nixpkgs#fzf -c ~/nixcfg/scripts/dayz.py'
 # bobbyupdate: bump bobby-dangling pin to current main. deploy separately with bsyss
 alias bobbyupdate="nix flake update bobby-dangling --flake /home/benji/nixcfg/nixos"
 # wormsupdate: bump the worms_whup pin to current main. Same two steps as
@@ -45,6 +46,10 @@ alias gtpupdate="nix flake update gtp --flake /home/benji/nixcfg/nixos"
 # calendarupdate: bump the calendar pin to current main -- calendar.buggly.de
 # is built from it. Same two steps: this moves the pin, bsyss deploys it.
 alias calendarupdate="nix flake update calendar --flake /home/benji/nixcfg/nixos"
+# anatomieupdate: bump the anatomy pin to current main -- anatomie.buggly.de is
+# built from it. Same two steps: this moves the pin, bsyss deploys it. The 3D
+# models go up separately with rsync, see nixos/server/anatomie.nix.
+alias anatomieupdate="nix flake update anatomy --flake /home/benji/nixcfg/nixos"
 alias ncsync="nextcloudcmd -n --non-interactive --path /OneDrive ~/OneDrive https://cloud.buggly.de"
 alias geoguessr="electron /home/benji/nixcfg/scripts/webwindow.js"
 alias tmr='nix-shell ~/nixcfg/shells/ --run "python ./nixcfg/scripts/python/timer.py"'

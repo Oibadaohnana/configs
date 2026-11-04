@@ -24,6 +24,7 @@
     ./server/gtp.nix
     ./server/share.nix
     ./server/nextcloud.nix
+    ./server/anatomie.nix
   ];
 
   nix.settings.experimental-features = ["nix-command" "flakes"];

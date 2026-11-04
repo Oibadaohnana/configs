@@ -938,7 +938,7 @@ check_steam() {
     [[ -s $HOME/.config/dayz/name ]] && st ok || st ok "logged in; DayZ not joined yet"
 }
 help_steam() {
-    info "Log in to Steam. For DayZ (pkgs/dayz/README.md): enable Proton for it,"
+    info "Log in to Steam. For DayZ (dayz --help): enable Proton for it,"
     info "launch options '%command%' (or 'gamemoderun %command%'), and tick"
     info "\"Always use this option → Run DayZ Client\". 'dayz' asks for the player name"
     info "on the first join."

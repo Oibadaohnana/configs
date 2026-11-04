@@ -193,7 +193,7 @@ Expect `DNS:buggly.de, DNS:*.buggly.de`.
 Ports in use: 8787 bobby-dangling, 8788 worms-whup, 8789 todo, 8790 makinglist,
 8791 bank-bobbery, 8792 split, 8793 bims (the relay; the desktop game dials
 `wss://bims.buggly.de`, so it sits behind nginx from the start), 8794-8802
-grimgobber (door and lobbies), 8803 gtp.
+grimgobber (door and lobbies), 8803 gtp, 8804 calendar, 8805 anatomie.
 
 No DNS record and no certificate work -- the wildcards already cover it.
 

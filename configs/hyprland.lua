@@ -535,18 +535,17 @@ hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("~/nixcfg/scripts/volume_notify
 hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("~/nixcfg/scripts/volume_notify.sh mute"),        { locked = true })
 hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd("~/nixcfg/scripts/volume_notify.sh mic-mute"),    { locked = true })
 -- F9 = Discord's own hotkey while Discord is running, mic-mute otherwise.
--- Wayland never lets an unfocused app see a key, so a hotkey set inside
--- Discord only works while its window is focused. `pass` forwards the raw
--- press *and* release to the window regardless of focus (both matter: a
--- push-to-talk/-mute hotkey is held). Decided per press so the pactl
--- fallback still mutes when Discord is closed; a single unconditional
--- `pass` bind would warn on every press instead.
+-- Since 1.0.166 Discord registers its keybinds through the GlobalShortcuts
+-- portal (`hyprctl globalshortcuts`) instead of hooking X11 input, so a
+-- `pass` of the raw key no longer reaches it; the shortcut has to be fired
+-- with `global`. Decided per press so the pactl fallback still mutes when
+-- Discord is closed.
 local discord         = "class:^(discord)$"
-local pass_to_discord = hl.dsp.pass({ window = discord })
+local discord_mute    = hl.dsp.global("discord:discord-toggle-mute")
 local mic_mute        = hl.dsp.exec_cmd("~/nixcfg/scripts/volume_notify.sh mic-mute")
 hl.bind("F9", function()
     if hl.get_window(discord) then
-        hl.dispatch(pass_to_discord)
+        hl.dispatch(discord_mute)
     else
         hl.dispatch(mic_mute)
     end

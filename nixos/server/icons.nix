@@ -123,6 +123,21 @@
         <path d="M13 31 L51 31 L47 51 Q 46 56 41 56 L23 56 Q 18 56 17 51 Z"/>
       '';
     };
+
+    "anatomie.buggly.de" = {
+      accent = "#e9d8b4"; # bone
+      # A bone: a thick shaft with two round knobs at each end, on the
+      # diagonal. Solid shapes only, so it survives 16px.
+      glyph = ''
+        <g transform="rotate(-45 32 32)">
+          <rect x="14" y="26" width="36" height="12" rx="2"/>
+          <circle cx="13" cy="25" r="7.5"/>
+          <circle cx="13" cy="39" r="7.5"/>
+          <circle cx="51" cy="25" r="7.5"/>
+          <circle cx="51" cy="39" r="7.5"/>
+        </g>
+      '';
+    };
   };
 
   source = site:
