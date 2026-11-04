@@ -169,6 +169,7 @@
     kdePackages.kdenlive
     ffmpeg
     unzip
+    freemind
   ];
 
   # Open images in umpv. umpv.desktop doesn't list image types in MimeType=,

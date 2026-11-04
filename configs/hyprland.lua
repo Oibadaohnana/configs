@@ -21,7 +21,7 @@ hl.monitor({ output = "DP-3", mode = "2560x1440@180", position = "0x0", scale = 
 -- Secondary display always auto-enables at a fixed 720p, not its native
 -- resolution. Named rules take precedence over the wildcard rule below.
 hl.monitor({ output = "HDMI-A-1", mode = "1280x720@60", position = "auto", scale = 1 })
-
+hl.monitor({ output = "eDP-1", position = "auto", scale = 1.57 })
 -- 43" 4K TV on the framework; by desc since the DP-n name shifts per port.
 -- reserved_area = 2% overscan per edge (no real overscan in Hyprland);
 -- monitors.sh copies it from this line, so keep the rule on one line
