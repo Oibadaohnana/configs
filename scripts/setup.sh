@@ -722,9 +722,7 @@ check_onedrive() {
 }
 help_onedrive() { info "The first ncsync downloads the OneDrive folder from Nextcloud (several GB)."; }
 do_onedrive() {
-    local cmd dest
-    cmd=$(sed -nE 's/^alias ncsync="(.*)"$/\1/p' "$REPO/configs/zshrc")
-    [[ -n $cmd ]] || { err "No ncsync alias in configs/zshrc."; return 1; }
+    local dest
     command -v nextcloudcmd >/dev/null || { err "nextcloudcmd isn't installed (nextcloud-client)."; return 1; }
     if [[ -d $NC_DIR && -n $(ls -A "$NC_DIR" 2>/dev/null) ]] && ! compgen -G "$NC_DIR/.sync_*.db" >/dev/null; then
         warn "~/OneDrive already has files but has never been synced here. Anything"
@@ -736,7 +734,7 @@ do_onedrive() {
         fi
     fi
     mkdir -p "$NC_DIR"
-    run bash -c "$cmd" && ok "~/OneDrive is synced. From now on: ncsync"
+    run "$REPO/scripts/ncsync.sh" && ok "~/OneDrive is synced. From now on: ncsync"
 }
 
 # ============================================================ optional ===

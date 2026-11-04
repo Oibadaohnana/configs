@@ -50,7 +50,9 @@ alias calendarupdate="nix flake update calendar --flake /home/benji/nixcfg/nixos
 # built from it. Same two steps: this moves the pin, bsyss deploys it. The 3D
 # models go up separately with rsync, see nixos/server/anatomie.nix.
 alias anatomieupdate="nix flake update anatomy --flake /home/benji/nixcfg/nixos"
-alias ncsync="nextcloudcmd -n --non-interactive --path /OneDrive ~/OneDrive https://cloud.buggly.de"
+# ncsync: two-way sync of ~/OneDrive, lists every file that moved, then free
+# space on the server. ncsync -v streams the full log, ncsync -q only the space.
+alias ncsync='~/nixcfg/scripts/ncsync.sh'
 alias geoguessr="electron /home/benji/nixcfg/scripts/webwindow.js"
 alias tmr='nix-shell ~/nixcfg/shells/ --run "python ./nixcfg/scripts/python/timer.py"'
 alias nxsh="nix-shell ~/nixcfg/shells/"

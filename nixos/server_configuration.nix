@@ -34,6 +34,20 @@
 
   nixpkgs.config.allowUnfree = true;
 
+  services.journald.settings.Journal.SystemMaxUse = "200M";
+
+  systemd.paths.prune-generations = {
+    wantedBy = ["paths.target"];
+    pathConfig.PathChanged = "/nix/var/nix/profiles";
+  };
+  systemd.services.prune-generations = {
+    serviceConfig.Type = "oneshot";
+    script = ''
+      ${config.nix.package}/bin/nix-env --profile /nix/var/nix/profiles/system --delete-generations +10
+      ${config.nix.package}/bin/nix-collect-garbage
+    '';
+  };
+
   programs.zsh = {
     enable = true;
     enableCompletion = true;
