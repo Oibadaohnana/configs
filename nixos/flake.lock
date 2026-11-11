@@ -7,11 +7,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793787644,
-        "narHash": "sha256-t6TIL1cQtzbK6v14hMAf2dNH8bgihoMR26fFVo5Gc0Y=",
+        "lastModified": 1794385963,
+        "narHash": "sha256-Gde4i7PVASFu5cnRW/uPM6A/mc9w1F/M25QJziNVVwE=",
         "ref": "main",
-        "rev": "d01dbb03e24bcaa27628da1ea4b39ef6c96c402d",
-        "revCount": 3,
+        "rev": "5b61b89ca0f53cbebab1590afe5e7cd1de2f4645",
+        "revCount": 4,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/anatomy"
       },
@@ -70,11 +70,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792425546,
-        "narHash": "sha256-ezp0zJ+JJPbhGOLgcBlqMJ5eMUp63YXSCIk6BD4monU=",
+        "lastModified": 1794386666,
+        "narHash": "sha256-wBs6T/87sMXpqBmJlK0ktmaz+qA7Exuiou0VhHBKj9M=",
         "ref": "main",
-        "rev": "14ea4c0e7baee86faec04e777a0ad49d47bf43d8",
-        "revCount": 28,
+        "rev": "cc8b598814a66539cf26f5bc4f36b1a13167a091",
+        "revCount": 29,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/bobby_dangling"
       },
