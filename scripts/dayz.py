@@ -44,6 +44,9 @@ servers are hidden unless they are favorites, which are listed at the top.
 
 Ping is measured from here and kept for 5 minutes, ctrl-r measures again.
 
+After joining, the server's player count is shown every 5 minutes until
+DayZ closes.
+
 The player name is asked on first join and kept in ~/.config/dayz/name.
 
 Favorites are kept in ~/.config/dayz/favorites, one per line: an address
@@ -66,6 +69,7 @@ A2S_INFO = b"\xff\xff\xff\xffTSource Engine Query\x00"
 PING_TIMEOUT = 1
 PING_GAP = 0.0005
 PING_AGE = 300
+WATCH = 300
 KINDS = ["DayOne", "Official", "Community"]
 TABS = {"main": "Main> ", "community": "Community> "}
 HEADERS = {
@@ -419,6 +423,22 @@ def join(server):
             time.sleep(1)
     print("Launching DayZ")
     launch(args)
+    watch(key(server))
+
+
+def watch(address):
+    print(f"\nPlayer count every {WATCH // 60} minutes until DayZ closes (ctrl-c to stop)")
+    while game_running():
+        try:
+            server = find(fetch(WATCH), address)
+            count = f"{server['players']}/{server['maxPlayers']}" if server else "not listed"
+        except (OSError, ValueError):
+            count = "could not fetch the server list"
+        print(f"{time.strftime('%H:%M')}  {count}")
+        deadline = time.time() + WATCH
+        while time.time() < deadline and game_running():
+            time.sleep(5)
+    print("DayZ closed")
 
 
 def listing(servers, tab, refresh=False):

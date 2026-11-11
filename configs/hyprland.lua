@@ -345,7 +345,7 @@ hl.on("hyprland.start", function()
     -- Registers the BlueZ pairing/authorization agent. Without it, devices
     -- reconnecting at login are rejected outright ("Authentication attempt
     -- without agent") with no way to approve them.
-    hl.exec_cmd("blueman-applet")
+    hl.exec_cmd("dconf write /org/blueman/general/plugin-list \"['!StatusNotifierItem']\"; blueman-applet")
 end)
 
 ----------------------------------------

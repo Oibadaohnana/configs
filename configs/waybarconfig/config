@@ -123,8 +123,7 @@
         "battery",
         "battery#bat2",
         "group/datetime",
-        "tray",
-        "custom/power"
+        "tray"
     ],
 
     // Retractable hardware tray: chevron stays, rest slide out leftward on click.
