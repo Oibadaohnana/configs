@@ -91,11 +91,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793174148,
-        "narHash": "sha256-bFOaXfuFg5QfgRXMjllre75RmrgajA5Ouh29v1PKXk4=",
+        "lastModified": 1794748577,
+        "narHash": "sha256-2W0PNOTA9/rchwPxe/p/K7GfwcC7tUw0YwWRBFgOEwY=",
         "ref": "main",
-        "rev": "c689bfb4c66e87df9b4222bd2b95b040410eae23",
-        "revCount": 5,
+        "rev": "c974999c27de25de1a14ad047da567e5850ac037",
+        "revCount": 6,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/calendar"
       },
