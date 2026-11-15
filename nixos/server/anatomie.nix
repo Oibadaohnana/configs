@@ -1,4 +1,6 @@
-# Muskelatlas -- the 3D skeleton and muscle atlas at https://anatomie.buggly.de.
+# Muskelatlas -- the 3D skeleton and muscle atlas at https://anatomie.buggly.de,
+# plus its text-only overview site at https://info.anatomie.buggly.de (one page
+# per body region, rendered by the same server under /info/).
 #
 # nginx terminates TLS with the shared *.buggly.de cert and proxies to the
 # loopback port below, on the same terms as the other apps. The app itself is
@@ -79,6 +81,42 @@
     </body>
     </html>
   '';
+  # Both hosts sit behind the same door; `upstream` is where "/" goes.
+  door = upstream: {
+    # Behind the shared wildcard cert -- see ./web.nix.
+    useACMEHost = "buggly.de";
+    forceSSL = true;
+
+    # Everything without the cookie goes to the password page. `return` is the
+    # one thing that is always safe inside an nginx `if`.
+    locations."/" = {
+      proxyPass = upstream;
+      extraConfig = ''
+        if ($cookie_${cookie} != "${password}") {
+          return 302 /login;
+        }
+      '';
+    };
+
+    # The form submits here as ?pw=. Right: set the cookie (400 days, so a
+    # browser stays in) and go to the start page. Wrong or none: the form again.
+    # Domain= makes one login count for the atlas and the info site alike.
+    #
+    # The cookie goes through a variable rather than an add_header inside the
+    # `if`: a nested add_header drops the outer ones, and the config check
+    # (gixy) refuses to build it. nginx skips a header whose value is empty.
+    locations."= /login".extraConfig = ''
+      set $anatomie_cookie "";
+      if ($arg_pw = "${password}") {
+        set $anatomie_cookie "${cookie}=${password}; Domain=${domain}; Path=/; Max-Age=34560000; Secure; HttpOnly; SameSite=Lax";
+        return 302 /;
+      }
+      default_type text/html;
+      add_header Set-Cookie $anatomie_cookie;
+      add_header Cache-Control "no-store";
+      alias ${loginPage};
+    '';
+  };
 in {
   systemd.tmpfiles.rules = [
     "d /var/lib/anatomie 0755 benji users -"
@@ -93,7 +131,9 @@ in {
 
     serviceConfig = {
       # The server binds 127.0.0.1 itself -- nginx is the only way in.
-      ExecStart = "${app}/bin/muskelatlas server --port ${port} --web ${web}";
+      # --atlas-url: the info pages link structures into the 3D atlas on the
+      # other host.
+      ExecStart = "${app}/bin/muskelatlas server --port ${port} --web ${web} --atlas-url https://${domain}/";
       Restart = "on-failure";
       # Reads files and nothing else; no state of its own.
       DynamicUser = true;
@@ -121,38 +161,10 @@ in {
   # The server reads them per request, so no restart. Browsers revalidate every
   # file (the app sends Cache-Control: no-cache), so a reload shows them.
 
-  # Behind the shared wildcard cert -- see ./web.nix.
-  services.nginx.virtualHosts.${domain} = {
-    useACMEHost = "buggly.de";
-    forceSSL = true;
+  services.nginx.virtualHosts.${domain} = door "http://127.0.0.1:${port}";
 
-    # Everything without the cookie goes to the password page. `return` is the
-    # one thing that is always safe inside an nginx `if`.
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:${port}";
-      extraConfig = ''
-        if ($cookie_${cookie} != "${password}") {
-          return 302 /login;
-        }
-      '';
-    };
-
-    # The form submits here as ?pw=. Right: set the cookie (400 days, so a
-    # browser stays in) and go to the atlas. Wrong or none: the form again.
-    #
-    # The cookie goes through a variable rather than an add_header inside the
-    # `if`: a nested add_header drops the outer ones, and the config check
-    # (gixy) refuses to build it. nginx skips a header whose value is empty.
-    locations."= /login".extraConfig = ''
-      set $anatomie_cookie "";
-      if ($arg_pw = "${password}") {
-        set $anatomie_cookie "${cookie}=${password}; Path=/; Max-Age=34560000; Secure; HttpOnly; SameSite=Lax";
-        return 302 /;
-      }
-      default_type text/html;
-      add_header Set-Cookie $anatomie_cookie;
-      add_header Cache-Control "no-store";
-      alias ${loginPage};
-    '';
-  };
+  # The info site is the server's /info/ section: proxy_pass with a URI swaps
+  # the matched "/" for "/info/", so /huefte/ arrives as /info/huefte/. The
+  # pages link relatively, so they work under either prefix.
+  services.nginx.virtualHosts."info.${domain}" = door "http://127.0.0.1:${port}/info/";
 }

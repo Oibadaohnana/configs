@@ -26,7 +26,12 @@
       # module builds systemd unit names from it. The wildcard rides along as
       # an extra SAN instead. The apex needs naming explicitly: *.buggly.de
       # matches www but never buggly.de itself.
-      extraDomainNames = ["*.buggly.de"];
+      extraDomainNames = [
+        "*.buggly.de"
+        # A wildcard covers one label only, so the anatomy info site
+        # (info.anatomie.buggly.de, see ./anatomie.nix) needs its own.
+        "*.anatomie.buggly.de"
+      ];
 
       # Let's Encrypt will not issue a wildcard over HTTP-01 -- there is no
       # single hostname to fetch a challenge file from -- so DNS-01 is the only

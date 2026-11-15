@@ -7,11 +7,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794385963,
-        "narHash": "sha256-Gde4i7PVASFu5cnRW/uPM6A/mc9w1F/M25QJziNVVwE=",
+        "lastModified": 1794749918,
+        "narHash": "sha256-Ubipup/7GTTPzNUQf3S/8bAptAWYWCRxRDsVXz2Upgs=",
         "ref": "main",
-        "rev": "5b61b89ca0f53cbebab1590afe5e7cd1de2f4645",
-        "revCount": 4,
+        "rev": "e90ec94acdd41d3147905d1c5331753a799114f8",
+        "revCount": 5,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/anatomy"
       },
