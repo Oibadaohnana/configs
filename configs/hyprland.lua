@@ -192,8 +192,8 @@ local perfmode_file =
     .. "/hypr/perfmode"
 
 local perfmodes = {
-    performance     = { blur = false, opacity = 1.0, animations = false, tearing = true  },
-    balanced        = { blur = true,  opacity = 0.9, animations = true,  tearing = true  },
+    performance     = { blur = false, opacity = 1.0, animations = false, tearing = false },
+    balanced        = { blur = true,  opacity = 0.9, animations = true,  tearing = false },
     ["power-saver"] = { blur = false, opacity = 1.0, animations = false, tearing = false },
 }
 
@@ -287,15 +287,6 @@ hl.config({
 ----------------------------------------
 -- Window rules
 ----------------------------------------
--- Tearing for every window, not just games. Still only bites while a window is
--- fullscreen and alone on its output: tiled windows never tear.
-hl.window_rule({
-    name  = "tearing-all",
-    match = { class = ".*" },
-
-    immediate = true,
-})
-
 -- Steam games often resize themselves to screen size instead of properly
 -- requesting fullscreen, so Hyprland treats them as a normal maximized window
 -- and respects waybar's reserved space, leaving the bar visible. Force real

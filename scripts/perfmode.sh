@@ -76,8 +76,8 @@ declare -A BLURBS=(
 # non-legacy parsers") now that the config is Lua. It still exits 0 while doing
 # nothing, so a silent no-op is the failure mode to watch for here.
 declare -A HYPR=(
-    [performance]='hl.config({ general = { allow_tearing = true }, decoration = { inactive_opacity = 1.0, blur = { enabled = false } }, animations = { enabled = false } })'
-    [balanced]='hl.config({ general = { allow_tearing = true }, decoration = { inactive_opacity = 0.9, blur = { enabled = true, size = 5, passes = 2 } }, animations = { enabled = true } })'
+    [performance]='hl.config({ general = { allow_tearing = false }, decoration = { inactive_opacity = 1.0, blur = { enabled = false } }, animations = { enabled = false } })'
+    [balanced]='hl.config({ general = { allow_tearing = false }, decoration = { inactive_opacity = 0.9, blur = { enabled = true, size = 5, passes = 2 } }, animations = { enabled = true } })'
     [power-saver]='hl.config({ general = { allow_tearing = false }, decoration = { inactive_opacity = 1.0, blur = { enabled = false } }, animations = { enabled = false } })'
 )
 

@@ -20,6 +20,7 @@ x-scheme-handler/claude-cli=claude-code-url-handler.desktop;
 x-scheme-handler/discord-1185990483143569448=Beyond-All-Reason.desktop;
 x-scheme-handler/tg=org.telegram.desktop.desktop;
 x-scheme-handler/tonsite=org.telegram.desktop.desktop;
+x-scheme-handler/ton=org.telegram.desktop.desktop;
 
 [Default Applications]
 application/javascript=micro.desktop;
@@ -97,3 +98,4 @@ x-scheme-handler/claude-cli=claude-code-url-handler.desktop
 x-scheme-handler/discord-1185990483143569448=Beyond-All-Reason.desktop;
 x-scheme-handler/tg=org.telegram.desktop.desktop;
 x-scheme-handler/tonsite=org.telegram.desktop.desktop;
+x-scheme-handler/ton=org.telegram.desktop.desktop

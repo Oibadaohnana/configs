@@ -167,11 +167,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792779941,
-        "narHash": "sha256-mUBgxUkQFwNGBaFMBZTrKlyeQV+dsG047+a3VxBZgGg=",
+        "lastModified": 1794389001,
+        "narHash": "sha256-BoyXl6qhLZTRDJrO70gMp3obPiZ5lLJP7GY+pYE4Yis=",
         "ref": "main",
-        "rev": "04a22ce1ea59ea84d6faad0368183d6c06be8baa",
-        "revCount": 8,
+        "rev": "63f99ebecec7979a593c95a9a7abca4ff71d1507",
+        "revCount": 9,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/games_to_play"
       },
@@ -188,11 +188,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789240921,
-        "narHash": "sha256-f0o78njZCDtHKakaOAR54xh0VWEotGR2tAAKFk2u+KE=",
+        "lastModified": 1794388998,
+        "narHash": "sha256-IOSWVieZsgYFzCrGTPpbhxwi5St5rk+wE/EBi5eVh0k=",
         "ref": "main",
-        "rev": "33502ab7cc5f97214673f336a598d8002797a1d3",
-        "revCount": 8,
+        "rev": "75d11cab3690b8e15ce2c1967869508d269ff9e0",
+        "revCount": 9,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/makinglist"
       },
@@ -284,11 +284,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791449619,
-        "narHash": "sha256-udXbts6I3yiPANG95j7MAFY8/BlCOtFM5GO7RxxBM4Q=",
+        "lastModified": 1794388999,
+        "narHash": "sha256-oAV/T8B8YxbsrPjZYYts4ve/zHRdPUaIAlGFd+xJsxE=",
         "ref": "main",
-        "rev": "2253082aa48a66e534811930281a8b9d0de94a8e",
-        "revCount": 7,
+        "rev": "dbf1b72c3f8ed46157cc9391992f51aac3c317cb",
+        "revCount": 8,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/split"
       },
@@ -320,11 +320,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789240878,
-        "narHash": "sha256-RzAxmLjrbjvVf8hp/N/k2L7RoDq8WdDHw27TNzoOb1E=",
+        "lastModified": 1794388996,
+        "narHash": "sha256-ObCf558r0ImXFRildLOIRq7zjjXN2c7jTBI17ZJvRSs=",
         "ref": "main",
-        "rev": "b8060b288ceba55c7f83c6cc2fad61a4c93b45e0",
-        "revCount": 6,
+        "rev": "0376b6890b35b21e37f975d3a02a45f3aa3cee5c",
+        "revCount": 7,
         "type": "git",
         "url": "ssh://git@github.com/Oibadaohnana/todo"
       },
